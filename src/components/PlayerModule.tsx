@@ -19,7 +19,7 @@ import PlayerForm from './PlayerForm';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { FileText, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileSpreadsheet, RefreshCw } from 'lucide-react';
 
 const fieldToString = (val: any): string => {
     if (val === null || val === undefined) return '';
@@ -84,7 +84,7 @@ const PlayerModule: React.FC = () => {
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
     const [showColumnSelector, setShowColumnSelector] = useState(false);
 
-    const { players, schema, systemLists, loading, addPlayer, updatePlayer } = usePlayers(false);
+    const { players, schema, systemLists, loading, addPlayer, updatePlayer, refresh } = usePlayers(false);
     const [isReducedView, setIsReducedView] = useState(false);
 
     const categories: (Category | 'All')[] = ['All', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'];
@@ -302,15 +302,20 @@ const PlayerModule: React.FC = () => {
     };
 
     const handleExportExcel = () => {
-        // Map visible columns via config
-        const headers = visibleColumns.map(id => {
+        // Map visible columns via config, respecting Reduced View
+        const columnsToExport = visibleColumns.filter(id => {
+            if (!isReducedView) return true;
+            return systemLists.reducedColumns?.includes(id);
+        });
+
+        const headers = columnsToExport.map(id => {
             const col = allColumns.find(c => c.id === id);
             return col ? col.label : id;
         });
 
         const exportData = filteredAndSortedPlayers.map(p => {
             const row: any = {};
-            visibleColumns.forEach(id => {
+            columnsToExport.forEach(id => {
                 const col = allColumns.find(c => c.id === id);
                 if (!col) return;
 
@@ -366,13 +371,19 @@ const PlayerModule: React.FC = () => {
         doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 280, 26, { align: 'right' });
         doc.text(`Registros: ${filteredAndSortedPlayers.length}`, 280, 31, { align: 'right' });
 
-        const tableColumn = visibleColumns.map(id => {
+        // Map visible columns respecting Reduced View
+        const columnsToExport = visibleColumns.filter(id => {
+            if (!isReducedView) return true;
+            return systemLists.reducedColumns?.includes(id);
+        });
+
+        const tableColumn = columnsToExport.map(id => {
             const col = allColumns.find(c => c.id === id);
             return col ? col.label.toUpperCase() : id;
         });
 
         const tableRows = filteredAndSortedPlayers.map(p => {
-            return visibleColumns.map(id => {
+            return columnsToExport.map(id => {
                 let val = (p as any)[id];
                 // Quick manual mapping for PDF text values
                 if (id === 'endDate') val = p.contract?.endDate;
@@ -457,6 +468,10 @@ const PlayerModule: React.FC = () => {
                     initialData={editingPlayer}
                     onClose={() => setEditingPlayer(null)}
                     onSave={async (data) => { await updatePlayer(editingPlayer.id, data); }}
+                    onDelete={async (id) => {
+                        await deletePlayer(id);
+                        if (refresh) refresh();
+                    }}
                 />
             )}
 
@@ -612,6 +627,13 @@ const PlayerModule: React.FC = () => {
                         <span className="text-[10px] font-black bg-[#b4c885]/10 text-[#b4c885] px-3 py-1 rounded-full uppercase tracking-widest">
                             {filteredAndSortedPlayers.length} REGISTROS
                         </span>
+                        <button
+                            onClick={() => refresh && refresh()}
+                            className="bg-zinc-50 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 p-1.5 rounded-lg transition-all active:rotate-180"
+                            title="Actualizar Tabla"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
                     </div>
                 </div>
 
@@ -630,7 +652,7 @@ const PlayerModule: React.FC = () => {
                         <tbody>
                             {filteredAndSortedPlayers.map((player, idx) => (
                                 <tr
-                                    key={player.id}
+                                    key={`${player.id}-${idx}`}
                                     onClick={() => setEditingPlayer(player)}
                                     className="hover:bg-[#f9faf6] transition-colors group cursor-pointer"
                                 >

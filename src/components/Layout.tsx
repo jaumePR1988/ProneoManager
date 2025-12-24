@@ -94,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                             </h2>
                         )}
 
-                        {!['dashboard', 'reports'].includes(activeTab) && (
+                        {!['dashboard', 'reports', 'players'].includes(activeTab) && (
                             <>
                                 <div className="h-10 w-[1px] bg-zinc-100 hidden md:block" />
                                 <div className="relative hidden md:block group">

@@ -120,6 +120,13 @@ export const usePlayers = (isScouting: boolean = false) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    const refresh = () => {
+        setLoading(true);
+        setRefreshTrigger(prev => prev + 1);
+    };
+
     useEffect(() => {
         if (isDemoMode) {
             setSchema(SESSION_SCHEMA);
@@ -142,7 +149,7 @@ export const usePlayers = (isScouting: boolean = false) => {
         });
 
         return () => { unsubSchema(); unsubLists(); };
-    }, []);
+    }, [refreshTrigger]);
 
     useEffect(() => {
         if (isDemoMode) {
@@ -174,7 +181,7 @@ export const usePlayers = (isScouting: boolean = false) => {
         );
 
         return () => unsubscribe();
-    }, [isScouting]);
+    }, [isScouting, refreshTrigger]);
 
     const addPlayer = async (playerData: Partial<Player>) => {
         if (isDemoMode) {
@@ -263,5 +270,5 @@ export const usePlayers = (isScouting: boolean = false) => {
         }
     };
 
-    return { players, schema, systemLists, loading, error, addPlayer, updatePlayer, deletePlayer, signPlayer, updateSchema, updateSystemLists };
+    return { players, schema, systemLists, loading, error, addPlayer, updatePlayer, deletePlayer, signPlayer, updateSchema, updateSystemLists, refresh };
 };

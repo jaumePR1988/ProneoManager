@@ -114,7 +114,7 @@ function App() {
                     onClose={() => setShowPlayerForm(false)}
                     onSave={async (data) => {
                         await addPlayer(data);
-                        setShowPlayerForm(false);
+                        // Don't close immediately, let PlayerForm handle the success popup and then close
                     }}
                 />
             )}

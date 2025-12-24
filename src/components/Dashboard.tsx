@@ -57,13 +57,13 @@ const Dashboard: React.FC = () => {
         }).length;
     }, [allPlayers]);
 
-    // Pending Renovations (Active players with contract ending this year)
+    // Pending Renovations (Active players with AGENCY contract ending this year)
     const renovationCount = useMemo(() => {
         if (!allPlayers.length) return 0;
         const currentYear = new Date().getFullYear();
         return allPlayers.filter(p => {
-            if (!p.contract?.endDate) return false;
-            const end = new Date(p.contract.endDate);
+            if (!p.proneo?.agencyEndDate) return false;
+            const end = new Date(p.proneo.agencyEndDate);
             return end.getFullYear() === currentYear;
         }).length;
     }, [allPlayers]);
@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
 
                     <div className="space-y-4">
                         {[
-                            { label: 'Fin de Contrato (Año)', value: renovationCount.toString(), color: renovationCount > 0 ? 'text-red-500' : 'text-zinc-600' },
+                            { label: 'Fin Contrato Proneo (Año)', value: renovationCount.toString(), color: renovationCount > 0 ? 'text-red-500' : 'text-zinc-600' },
                             { label: 'Ligas Activas', value: leagueData.length.toString(), color: 'text-blue-500' },
                             { label: 'Scouting Activo', value: scoutingCount.toString(), color: 'text-proneo-green' },
                         ].map((item, i) => (

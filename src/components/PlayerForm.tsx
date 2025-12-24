@@ -17,6 +17,7 @@ import { usePlayers } from '../hooks/usePlayers';
 interface PlayerFormProps {
     onClose: () => void;
     onSave: (data: Partial<Player>) => Promise<void>;
+    onDelete?: (id: string) => Promise<void>;
     isScoutingInitial?: boolean;
     initialData?: Player | null;
 }
@@ -48,7 +49,7 @@ const Select = ({ name, value, onChange, options }: { name: string, value: any, 
     </div>
 );
 
-const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, isScoutingInitial = false, initialData = null }) => {
+const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isScoutingInitial = false, initialData = null }) => {
     const { schema, systemLists } = usePlayers(false);
     const [formData, setFormData] = useState<Partial<Player>>(() => {
         if (initialData) {
@@ -94,8 +95,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, isScoutingInit
             customFields: initialData?.customFields || {},
         } as Partial<Player>;
     });
+
     const [showSuccess, setShowSuccess] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -125,6 +130,23 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, isScoutingInit
 
             return newState;
         });
+    };
+
+    const handleDeleteClick = () => {
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!initialData?.id || !onDelete) return;
+        setDeleting(true);
+        try {
+            await onDelete(initialData.id);
+            onClose();
+        } catch (err: any) {
+            alert("Error al eliminar: " + err.message);
+            setDeleting(false);
+            setShowDeleteConfirm(false);
+        }
     };
 
     const handleSave = async () => {
@@ -160,14 +182,49 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, isScoutingInit
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4 md:p-8">
-            {showSuccess && (
-                <div className="fixed inset-0 z-[120] bg-white/80 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200">
-                    <div className="bg-white p-6 rounded-[30px] shadow-2xl border border-zinc-100 flex flex-col items-center gap-3 animate-in zoom-in-95 duration-200">
-                        <div className="w-16 h-16 bg-[#b4c885] rounded-full flex items-center justify-center text-white shadow-lg shadow-[#b4c885]/30">
-                            <Check className="w-8 h-8" />
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[10000] bg-zinc-900/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+                    <div className="bg-white p-8 rounded-[30px] shadow-2xl border border-zinc-100 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-200 min-w-[320px] max-w-sm text-center">
+                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center text-red-500 shadow-lg shadow-red-500/20">
+                            <Trash className="w-10 h-10" />
                         </div>
-                        <h3 className="text-xl font-black text-zinc-800 uppercase tracking-widest">¡Datos Guardados!</h3>
-                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">El jugador ha sido actualizado correctamente</p>
+                        <div className="space-y-2">
+                            <h3 className="text-xl font-black text-zinc-800 uppercase tracking-widest leading-tight">¿Eliminar Jugador?</h3>
+                            <p className="text-xs font-medium text-zinc-500 leading-relaxed px-4">
+                                Esta acción eliminará permanentemente a <span className="font-bold text-zinc-800">{initialData?.name}</span> de la base de datos. No se puede deshacer.
+                            </p>
+                        </div>
+                        <div className="flex gap-3 w-full mt-2">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="flex-1 h-12 rounded-xl border border-zinc-200 text-zinc-400 font-bold hover:bg-zinc-50 transition-all uppercase tracking-wider text-xs"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                disabled={deleting}
+                                className="flex-1 h-12 rounded-xl bg-red-500 text-white font-black hover:bg-red-600 transition-all uppercase tracking-wider text-xs shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                            >
+                                {deleting ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : 'Eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showSuccess && (
+                <div className="fixed inset-0 z-[9999] bg-zinc-900/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+                    <div className="bg-white p-8 rounded-[30px] shadow-2xl border border-zinc-100 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200 min-w-[300px]">
+                        <div className="w-20 h-20 bg-[#b4c885] rounded-full flex items-center justify-center text-white shadow-lg shadow-[#b4c885]/30">
+                            <Check className="w-10 h-10" />
+                        </div>
+                        <div className="text-center space-y-1">
+                            <h3 className="text-2xl font-black text-zinc-800 uppercase tracking-widest">¡Guardado!</h3>
+                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                {initialData ? 'Jugador actualizado' : 'Jugador creado correctamente'}
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
@@ -606,21 +663,39 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, isScoutingInit
                     </div>
 
                     {/* Fixed Footer for Save Action */}
-                    <div className="p-6 bg-white border-t border-zinc-100 flex justify-end gap-4 shrink-0">
-                        <button
-                            onClick={onClose}
-                            className="px-8 h-12 rounded-xl border border-zinc-200 text-zinc-400 font-bold hover:bg-zinc-50 transition-all uppercase tracking-wider text-xs"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="bg-[#b4c885] hover:bg-[#a3b774] text-white px-10 h-12 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
-                        >
-                            {saving ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : <Save className="w-4 h-4" />}
-                            {saving ? 'Guardando...' : 'Guardar Cambios'}
-                        </button>
+                    <div className="p-6 bg-white border-t border-zinc-100 flex justify-between gap-4 shrink-0">
+                        <div>
+                            {onDelete && initialData && (
+                                <button
+                                    onClick={handleDeleteClick}
+                                    disabled={deleting || saving}
+                                    className="px-6 h-12 rounded-xl bg-red-50 text-red-500 font-black hover:bg-red-100 transition-all uppercase tracking-wider text-xs flex items-center gap-2 group"
+                                >
+                                    {deleting ? (
+                                        <div className="w-4 h-4 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
+                                    ) : (
+                                        <Trash className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                    )}
+                                    {deleting ? 'Eliminando...' : 'Eliminar Jugador'}
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={onClose}
+                                className="px-8 h-12 rounded-xl border border-zinc-200 text-zinc-400 font-bold hover:bg-zinc-50 transition-all uppercase tracking-wider text-xs"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving || deleting}
+                                className="bg-[#b4c885] hover:bg-[#a3b774] text-white px-10 h-12 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {saving ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : <Save className="w-4 h-4" />}
+                                {saving ? 'Guardando...' : 'Guardar Cambios'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
