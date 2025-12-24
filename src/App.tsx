@@ -11,6 +11,7 @@ import Dashboard from './components/Dashboard';
 import PlayerModule from './components/PlayerModule';
 import ScoutingModule from './components/ScoutingModule';
 import ReportsModule from './components/ReportsModule';
+import AdministrationModule from './components/AdministrationModule';
 import AvisosModule from './components/AvisosModule';
 import SettingsModule from './components/SettingsModule';
 
@@ -68,6 +69,8 @@ function App() {
                 return <ScoutingModule />;
             case 'reports':
                 return <ReportsModule />;
+            case 'admin':
+                return <AdministrationModule />;
             case 'avisos':
                 return <AvisosModule />;
             case 'settings':

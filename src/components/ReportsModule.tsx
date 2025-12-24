@@ -7,21 +7,54 @@ import {
     Calendar,
     User,
     ExternalLink,
-    ArrowUpRight
+    ArrowUpRight,
+    TrendingUp,
+    AlertTriangle,
+    Target
 } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
+import { useReportHistory } from '../hooks/useReportHistory';
 import PortfolioPreview from './PortfolioPreview';
+import EconomicReportPreview from './EconomicReportPreview';
+import AgencyExpiryReportPreview from './AgencyExpiryReportPreview';
+import ScoutingPreview from './ScoutingPreview';
 
 const ReportsModule: React.FC = () => {
-    const { players: databasePlayers, loading } = usePlayers(false); // Fetch database players for the report
-    const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+    const { players: databasePlayers } = usePlayers(false); // Fetch database players for the report
+    const { players: scoutingPlayers } = usePlayers(true); // Fetch scouting players for the report
+    const { history: reports, addReport } = useReportHistory();
 
-    const reports = [
-        { id: 1, title: 'Informe Mensual Scouting - Diciembre 2024', type: 'Scouting', date: '21 Dic 2024', author: 'Joan Francesc', status: 'Completado' },
-        { id: 2, title: 'Análisis de Mercado: Liga F 2024/25', type: 'Mercado', date: '18 Dic 2024', author: 'Sistema AI', status: 'Completado' },
-        { id: 3, title: 'Seguimiento Juvenil A - División de Honor', type: 'Seguimiento', date: '15 Dic 2024', author: 'Albert Redondo', status: 'Pendiente' },
-        { id: 4, title: 'Auditoría Contractual Q4', type: 'Legal', date: '10 Dic 2024', author: 'Legal Team', status: 'Completado' },
-    ];
+    const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+    const [isAgencyExpiryOpen, setIsAgencyExpiryOpen] = useState(false);
+    const [isScoutingReportOpen, setIsScoutingReportOpen] = useState(false);
+
+    // Handlers that open report AND log history
+    const openPortfolio = () => {
+        setIsPortfolioOpen(true);
+        addReport(`Dosier Deportivo ${new Date().getFullYear()}`, 'Scouting');
+    };
+
+    const openExpiry = () => {
+        setIsAgencyExpiryOpen(true);
+        addReport('Alerta Vencimientos de Contrato', 'Vencimientos');
+    };
+
+    const openScouting = () => {
+        setIsScoutingReportOpen(true);
+        addReport('Dosier de Captación (Scouting)', 'Scouting');
+    };
+
+    const handleBackup = () => {
+        const dataStr = JSON.stringify(databasePlayers, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        const exportFileDefaultName = `proneo_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+
+        addReport(`Copia de Seguridad CSV/JSON`, 'Copia Seguridad');
+    };
 
     return (
         <div className="space-y-8">
@@ -29,6 +62,18 @@ const ReportsModule: React.FC = () => {
                 <PortfolioPreview
                     players={databasePlayers}
                     onClose={() => setIsPortfolioOpen(false)}
+                />
+            )}
+            {isAgencyExpiryOpen && (
+                <AgencyExpiryReportPreview
+                    players={databasePlayers}
+                    onClose={() => setIsAgencyExpiryOpen(false)}
+                />
+            )}
+            {isScoutingReportOpen && (
+                <ScoutingPreview
+                    players={scoutingPlayers}
+                    onClose={() => setIsScoutingReportOpen(false)}
                 />
             )}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -39,19 +84,35 @@ const ReportsModule: React.FC = () => {
 
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => setIsPortfolioOpen(true)}
+                        onClick={handleBackup}
+                        className="h-12 px-6 rounded-xl bg-orange-500 text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg hover:shadow-xl"
+                    >
+                        <Download className="w-4 h-4" />
+                        Copia de Seguridad
+                    </button>
+
+                    <button
+                        onClick={openPortfolio}
                         className="h-12 px-6 rounded-xl bg-zinc-900 text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl"
                     >
                         <ExternalLink className="w-4 h-4" />
-                        Ver Dosier 2025
+                        Ver Dosier
                     </button>
-                    <button className="h-12 px-6 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center gap-2 text-zinc-600 font-black text-xs uppercase tracking-widest hover:bg-white transition-all shadow-sm">
-                        <Filter className="w-4 h-4" />
-                        Filtrar
+
+                    <button
+                        onClick={openExpiry}
+                        className="h-12 px-6 rounded-xl bg-red-500 text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg hover:shadow-xl"
+                    >
+                        <AlertTriangle className="w-4 h-4" />
+                        Vencimientos
                     </button>
-                    <button className="h-12 px-6 rounded-xl bg-proneo-green text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:shadow-xl hover:shadow-proneo-green/20 transition-all shadow-lg">
-                        <FileText className="w-4 h-4" />
-                        Nuevo Informe
+
+                    <button
+                        onClick={openScouting}
+                        className="h-12 px-6 rounded-xl bg-blue-500 text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg hover:shadow-xl"
+                    >
+                        <Target className="w-4 h-4" />
+                        Scouting
                     </button>
                 </div>
             </div>
@@ -136,7 +197,7 @@ const ReportsModule: React.FC = () => {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

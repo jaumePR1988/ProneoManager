@@ -138,12 +138,21 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
 
     const confirmDelete = async () => {
         if (!initialData?.id || !onDelete) return;
+
         setDeleting(true);
         try {
             await onDelete(initialData.id);
-            onClose();
+
+            // Hide confirmation, show success
+            setShowDeleteConfirm(false);
+            setShowSuccess(true);
+            setTimeout(() => {
+                setShowSuccess(false);
+                onClose();
+            }, 1000);
         } catch (err: any) {
-            alert("Error al eliminar: " + err.message);
+            console.error(err);
+            alert("Error al eliminar: " + (err.message || err));
             setDeleting(false);
             setShowDeleteConfirm(false);
         }
@@ -216,13 +225,13 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
             {showSuccess && (
                 <div className="fixed inset-0 z-[9999] bg-zinc-900/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
                     <div className="bg-white p-8 rounded-[30px] shadow-2xl border border-zinc-100 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200 min-w-[300px]">
-                        <div className="w-20 h-20 bg-[#b4c885] rounded-full flex items-center justify-center text-white shadow-lg shadow-[#b4c885]/30">
-                            <Check className="w-10 h-10" />
+                        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white shadow-lg ${deleting ? 'bg-red-500 shadow-red-500/30' : 'bg-[#b4c885] shadow-[#b4c885]/30'}`}>
+                            {deleting ? <Trash className="w-10 h-10" /> : <Check className="w-10 h-10" />}
                         </div>
                         <div className="text-center space-y-1">
-                            <h3 className="text-2xl font-black text-zinc-800 uppercase tracking-widest">¡Guardado!</h3>
+                            <h3 className="text-2xl font-black text-zinc-800 uppercase tracking-widest">{deleting ? '¡ELIMINADO!' : '¡GUARDADO!'}</h3>
                             <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                                {initialData ? 'Jugador actualizado' : 'Jugador creado correctamente'}
+                                {deleting ? 'Jugador eliminado correctamente' : (initialData ? 'Jugador actualizado' : 'Jugador creado correctamente')}
                             </p>
                         </div>
                     </div>

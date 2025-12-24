@@ -7,7 +7,8 @@ import {
     Plus,
     LogOut,
     Bell,
-    FileText
+    FileText,
+    Briefcase
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase-config';
@@ -26,6 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         { id: 'players', label: 'Futbolistas/Entrenadores', icon: Users },
         { id: 'scouting', label: 'Scouting', icon: Search },
         { id: 'reports', label: 'Reportes', icon: FileText },
+        { id: 'admin', label: 'Administración', icon: Briefcase }, // New Admin Tab
         { id: 'avisos', label: 'Avisos', icon: Bell },
         { id: 'settings', label: 'Ajustes', icon: Settings },
     ];
@@ -94,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                             </h2>
                         )}
 
-                        {!['dashboard', 'reports', 'players'].includes(activeTab) && (
+                        {!['dashboard', 'reports', 'players', 'avisos', 'admin'].includes(activeTab) && (
                             <>
                                 <div className="h-10 w-[1px] bg-zinc-100 hidden md:block" />
                                 <div className="relative hidden md:block group">
@@ -110,8 +112,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                     </div>
 
                     <div className="flex items-center gap-4">
-
-                        {!['dashboard', 'reports', 'settings'].includes(activeTab) && (
+                        {!['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin'].includes(activeTab) && (
                             <button
                                 onClick={onNewPlayer}
                                 className="bg-proneo-green text-white px-6 h-12 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-proneo-green/20 transition-all active:scale-95 shadow-lg"

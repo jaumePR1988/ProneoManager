@@ -14,12 +14,14 @@ import { usePlayers } from '../hooks/usePlayers';
 import ScoutingForm from './ScoutingForm';
 import PlayerForm from './PlayerForm';
 import { Player } from '../types/player';
+import ScoutingPreview from './ScoutingPreview';
 
 const ScoutingModule: React.FC = () => {
     const { players: scoutingPlayers, loading, addPlayer, updatePlayer } = usePlayers(true);
     const { addPlayer: addFullPlayer } = usePlayers(false); // To sign player
 
     const [isScoutingFormOpen, setIsScoutingFormOpen] = useState(false);
+    const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
     const [editingScouting, setEditingScouting] = useState<Player | null>(null);
     const [signingPlayer, setSigningPlayer] = useState<Player | null>(null);
 
@@ -62,6 +64,13 @@ const ScoutingModule: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            {isScoutingPreviewOpen && (
+                <ScoutingPreview
+                    players={scoutingPlayers}
+                    onClose={() => setIsScoutingPreviewOpen(false)}
+                />
+            )}
+
             {/* Forms */}
             {(isScoutingFormOpen || editingScouting) && (
                 <ScoutingForm
@@ -93,7 +102,14 @@ const ScoutingModule: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsScoutingPreviewOpen(true)}
+                        className="h-14 px-6 bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-lg hover:shadow-xl"
+                    >
+                        <Target className="w-5 h-5" />
+                        Ver Dosier Scouting
+                    </button>
                     <button
                         onClick={() => setIsScoutingFormOpen(true)}
                         className="h-14 px-8 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl"

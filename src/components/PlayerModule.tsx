@@ -84,7 +84,7 @@ const PlayerModule: React.FC = () => {
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
     const [showColumnSelector, setShowColumnSelector] = useState(false);
 
-    const { players, schema, systemLists, loading, addPlayer, updatePlayer, refresh } = usePlayers(false);
+    const { players, schema, systemLists, loading, addPlayer, updatePlayer, deletePlayer, refresh } = usePlayers(false);
     const [isReducedView, setIsReducedView] = useState(false);
 
     const categories: (Category | 'All')[] = ['All', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'];

@@ -44,12 +44,27 @@ export interface ScoutingData {
     contactPerson?: string;
 }
 
+export type PaymentStatus = 'Pendiente' | 'Pagado' | 'Pospuesto' | 'Cancelado';
+
+export interface PaymentInfo {
+    status: PaymentStatus;
+    paymentDate?: string; // Cuando se pagó
+    dueDate?: string;     // Fecha prevista de pago
+    isPaid: boolean;
+    notes?: string;
+}
+
 export interface ContractYear {
     id: string;
     year: string; // e.g. "2024/2025"
     salary: number; // Net salary
     clubCommissionPct: number;
     playerCommissionPct: number;
+
+    // New fields for Administration/Billing
+    clubPayment: PaymentInfo;
+    playerPayment: PaymentInfo;
+    globalStatus: PaymentStatus; // Resumen del año
 }
 
 export interface Player {

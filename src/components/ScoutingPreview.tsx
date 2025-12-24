@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { X, TrendingUp, Shield, Award, Calendar, ExternalLink, Printer, Filter } from 'lucide-react';
+import { X, TrendingUp, Shield, Award, Calendar, ExternalLink, Printer, Filter, User, FileText } from 'lucide-react';
 import { Player, Category, Position } from '../types/player';
 
-interface PortfolioPreviewProps {
+interface ScoutingPreviewProps {
     onClose: () => void;
     players: Player[];
 }
 
-const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players }) => {
+const ScoutingPreview: React.FC<ScoutingPreviewProps> = ({ onClose, players }) => {
     const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
     const [selectedPosition, setSelectedPosition] = useState<string>('Todos');
 
@@ -28,9 +28,9 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
         : allCategories.filter(c => c === selectedCategory);
 
     // Helper to get all positions available in the current dataset for filtering
-    // Only show positions relevant to the selected category/categories
     const availablePositions = Array.from(new Set(
         players
+            .filter(p => p.isScouting)
             .filter(p => selectedCategory === 'Todos' || p.category === selectedCategory)
             .map(p => p.position)
     )).sort();
@@ -38,26 +38,20 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
     // Helper to chunk array into pages
     const PLAYERS_PER_PAGE = 10;
 
-    // Prepare pages data structure: Array of { category: string, items: Player[] }
+    // Prepare pages data structure
     const pages: { category: string, items: Player[] }[] = [];
 
     activeCategories.forEach(cat => {
         const catPlayers = players.filter(p => {
-            // Strict Database Players check
-            const isDatabasePlayer = !p.isScouting;
+            // Strict Scouting Players check
+            const isScoutingPlayer = p.isScouting;
             // Category check
             const isCategory = p.category === cat;
-
-            // Contract End check
-            if (!p.contract?.endDate) return false;
-            const contractDate = new Date(p.contract.endDate);
-            const contractYear = contractDate.getFullYear();
-            const expiresThisSeason = contractYear === targetYear;
 
             // Position Filter
             const isPositionMatch = selectedPosition === 'Todos' || p.position === selectedPosition;
 
-            return isDatabasePlayer && isCategory && expiresThisSeason && isPositionMatch;
+            return isScoutingPlayer && isCategory && isPositionMatch;
         });
 
         // Split into chunks/pages
@@ -81,10 +75,10 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-4">
                         <span className="text-white font-black uppercase tracking-widest text-sm">
-                            Portfolio {seasonString} • {pages.length} Páginas
+                            Scouting {seasonString} • {pages.length} Páginas
                         </span>
-                        <span className="bg-proneo-green text-black px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full">
-                            Diseño A4
+                        <span className="bg-blue-500 text-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full">
+                            Confidencial
                         </span>
                     </div>
 
@@ -97,9 +91,9 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
                                 value={selectedCategory}
                                 onChange={(e) => {
                                     setSelectedCategory(e.target.value);
-                                    setSelectedPosition('Todos'); // Reset position when category changes
+                                    setSelectedPosition('Todos');
                                 }}
-                                className="bg-zinc-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 outline-none focus:border-proneo-green transition-colors uppercase tracking-wide"
+                                className="bg-zinc-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 outline-none focus:border-blue-500 transition-colors uppercase tracking-wide"
                             >
                                 <option value="Todos">Todos los Deportes</option>
                                 {allCategories.map(cat => (
@@ -113,7 +107,7 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
                             <select
                                 value={selectedPosition}
                                 onChange={(e) => setSelectedPosition(e.target.value)}
-                                className="bg-zinc-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 outline-none focus:border-proneo-green transition-colors uppercase tracking-wide"
+                                className="bg-zinc-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 outline-none focus:border-blue-500 transition-colors uppercase tracking-wide"
                             >
                                 <option value="Todos">Todas las Posiciones</option>
                                 {availablePositions.map(pos => (
@@ -127,7 +121,7 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => window.print()}
-                        className="bg-white text-zinc-900 px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-proneo-green transition-all"
+                        className="bg-white text-zinc-900 px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-blue-500 hover:text-white transition-all"
                     >
                         <Printer className="w-4 h-4" />
                         Imprimir PDF
@@ -146,38 +140,37 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
                 {pages.map((page, pageIndex) => (
                     <div key={pageIndex} className="bg-white w-[210mm] h-[297mm] shadow-2xl relative flex flex-col overflow-hidden shrink-0 print:shadow-none print:break-after-page print:mb-0 print:w-full">
 
-                        {/* Header with Geometry */}
+                        {/* Header with Scouting Blue Theme */}
                         <div className="h-40 bg-zinc-900 relative overflow-hidden flex items-center px-10 shrink-0">
-                            <div className="absolute top-0 right-0 w-96 h-96 bg-proneo-green/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
                             <div className="relative z-10 w-full flex justify-between items-end pb-8 border-b border-zinc-800">
                                 <div>
                                     <h1 className="text-4xl font-black italic text-white tracking-tighter mb-1">
-                                        OPORTUNIDADES <span className="text-proneo-green">DE MERCADO</span>
+                                        INFORME <span className="text-blue-500">DE SCOUTING</span>
                                     </h1>
                                     <div className="flex items-center gap-3">
                                         <p className="text-zinc-400 font-bold uppercase tracking-[0.2em] text-xs">
-                                            Fin de Contrato {seasonString}
+                                            Talento & Seguimiento {seasonString}
                                         </p>
                                         <div className="w-1 h-1 bg-zinc-600 rounded-full" />
-                                        <p className="text-proneo-green font-black uppercase tracking-[0.2em] text-xs">
+                                        <p className="text-blue-500 font-black uppercase tracking-[0.2em] text-xs">
                                             {page.category}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    {/* <div className="text-3xl font-black text-white italic">PRONEO</div> */}
-                                    <div className="text-[10px] text-proneo-green font-bold uppercase tracking-widest translate-y-6">Sports Management</div>
+                                    <div className="text-[10px] text-blue-500 font-bold uppercase tracking-widest translate-y-6">Sports Management</div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Content Grid - 2 Cols x 5 Rows = 10 Items */}
+                        {/* Content Grid */}
                         <div className="p-8 grid grid-cols-2 gap-x-6 gap-y-4 bg-zinc-50 flex-1 content-start">
                             {page.items.length === 0 && (
                                 <div className="col-span-2 flex flex-col items-center justify-center h-full text-zinc-300 space-y-2">
                                     <Shield className="w-12 h-12 mb-2 opacity-50" />
                                     <p className="font-bold uppercase tracking-widest text-sm text-center">
-                                        No se encontraron jugadores<br />para esta categoría en {seasonString}
+                                        No se encontraron prospectos<br />para esta categoría.
                                         {selectedPosition !== 'Todos' && (
                                             <>
                                                 <br />
@@ -190,8 +183,8 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
 
                             {page.items.map((player) => (
                                 <div key={player.id} className="bg-white rounded-[1.5rem] p-3 flex gap-4 shadow-sm border border-zinc-100 relative overflow-hidden group hover:shadow-md transition-all h-32 print:break-inside-avoid">
-                                    {/* Vertical Strip Decoration */}
-                                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-zinc-200 to-zinc-100 group-hover:from-proneo-green group-hover:to-emerald-400 transition-colors" />
+                                    {/* Vertical Strip Decoration - Blue for Scouting */}
+                                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-zinc-200 to-zinc-100 group-hover:from-blue-500 group-hover:to-cyan-400 transition-colors" />
 
                                     <div className="w-24 h-24 rounded-xl bg-zinc-100 overflow-hidden shrink-0 shadow-inner translate-x-1 self-center flex items-center justify-center relative">
                                         {player.photoUrl ? (
@@ -200,7 +193,6 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
                                                 className="w-full h-full object-cover rounded-xl transition-all duration-500"
                                                 alt={player.name}
                                                 onError={(e) => {
-                                                    // Fallback if URL fails
                                                     e.currentTarget.style.display = 'none';
                                                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                                 }}
@@ -238,19 +230,27 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
 
                                         <div className="space-y-1 mb-2">
                                             <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 truncate">
-                                                <Shield className="w-3 h-3 text-proneo-green shrink-0" />
+                                                <Shield className="w-3 h-3 text-blue-500 shrink-0" />
                                                 <span className="truncate">{player.club || 'Sin Equipo'}</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 truncate">
-                                                <Award className="w-3 h-3 text-proneo-green shrink-0" />
+                                                <Award className="w-3 h-3 text-blue-500 shrink-0" />
                                                 <span className="truncate">{player.position || 'Jugador'} - {player.nationality}</span>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-1.5 mt-auto pt-1.5 border-t border-zinc-100">
-                                            <Calendar className="w-3 h-3 text-orange-500 shrink-0" />
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
-                                                Libre: Junio {targetYear}
+                                        <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-zinc-100">
+                                            <div className="flex items-center gap-1.5">
+                                                <User className="w-3 h-3 text-zinc-400 shrink-0" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 truncate max-w-[80px]">
+                                                    {player.scouting?.currentAgent || 'Sin Agente'}
+                                                </span>
+                                            </div>
+                                            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${player.scouting?.status === 'Contactado' ? 'bg-blue-100 text-blue-600' :
+                                                player.scouting?.status === 'Rechazado' ? 'bg-red-100 text-red-600' :
+                                                    'bg-zinc-100 text-zinc-500'
+                                                }`}>
+                                                {player.scouting?.status || 'Pendiente'}
                                             </span>
                                         </div>
                                     </div>
@@ -265,7 +265,7 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
                                 <span>info@proneosports.com</span>
                             </div>
                             <div>
-                                Página {pageIndex + 1} de {pages.length} • Estrictamente Confidencial
+                                Página {pageIndex + 1} de {pages.length} • Informe Confidencial
                             </div>
                         </div>
 
@@ -298,4 +298,4 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
     );
 };
 
-export default PortfolioPreview;
+export default ScoutingPreview;
