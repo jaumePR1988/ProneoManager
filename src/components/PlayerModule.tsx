@@ -10,7 +10,10 @@ import {
     Check,
     ArrowUp,
     ArrowDown,
-    GripVertical
+    GripVertical,
+    FileText,
+    FileSpreadsheet,
+    RefreshCw
 } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { Category, Player } from '../types/player';
@@ -19,7 +22,6 @@ import PlayerForm from './PlayerForm';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { FileText, FileSpreadsheet, RefreshCw } from 'lucide-react';
 
 const fieldToString = (val: any): string => {
     if (val === null || val === undefined) return '';
@@ -421,6 +423,8 @@ const PlayerModule: React.FC = () => {
         doc.save(`Proneo_Players_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
+
+
     const [showExportMenu, setShowExportMenu] = useState(false);
 
     if (loading) {
@@ -572,6 +576,7 @@ const PlayerModule: React.FC = () => {
                             }
                         }}
                         category={selectedCategory === 'All' ? 'Fútbol' : selectedCategory}
+                        schema={schema}
                     />
                     <div className="relative">
                         <button
