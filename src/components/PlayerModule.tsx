@@ -15,6 +15,7 @@ import {
     FileSpreadsheet,
     RefreshCw
 } from 'lucide-react';
+import { TableVirtuoso } from 'react-virtuoso';
 import { usePlayers } from '../hooks/usePlayers';
 import { Category, Player } from '../types/player';
 import ExcelImport from './ExcelImport';
@@ -622,7 +623,7 @@ const PlayerModule: React.FC = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-[40px] border border-zinc-100 shadow-xl overflow-hidden flex flex-col">
+            <div className="flex-1 bg-white rounded-[40px] border border-zinc-100 shadow-xl overflow-hidden flex flex-col">
                 <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/30">
                     <h2 className="text-sm font-black text-zinc-800 uppercase tracking-widest flex items-center gap-2">
                         <TableIcon className="w-4 h-4 text-[#b4c885]" />
@@ -642,48 +643,75 @@ const PlayerModule: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="overflow-auto scroll-smooth max-h-[calc(100vh-400px)] min-h-[400px]">
-                    <table className="w-full border-collapse">
-                        <thead className="sticky top-0 z-10 shadow-sm">
-                            <tr className="text-left">
-                                <th className="px-2 py-3 text-[9px] font-black text-zinc-900 uppercase tracking-tighter border border-zinc-200 bg-[#e1e9cc] whitespace-nowrap">Nº</th>
+                <div className="flex-1 min-h-[400px]">
+                    <TableVirtuoso
+                        style={{ height: 'calc(100vh - 400px)', minHeight: '400px' }}
+                        data={filteredAndSortedPlayers}
+                        fixedHeaderContent={() => (
+                            <tr className="text-left bg-zinc-50">
+                                <th className="px-2 py-3 text-[9px] font-black text-zinc-900 uppercase tracking-tighter border border-zinc-200 bg-[#e1e9cc] whitespace-nowrap sticky top-0 z-20">Nº</th>
                                 {visibleColumns.map((colId, index) => {
                                     const config = allColumns.find(c => c.id === colId);
                                     if (!config) return null;
-                                    return <TableHeader key={colId} config={config} index={index} />;
+
+                                    if (isReducedView && systemLists.reducedColumns && !systemLists.reducedColumns.includes(config.id)) return null;
+
+                                    return (
+                                        <th
+                                            key={colId}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, index)}
+                                            onDragEnd={handleDragEnd}
+                                            onDragOver={(e) => handleDragOver(e, index)}
+                                            onDrop={(e) => handleDrop(e, index)}
+                                            className={`px-2 py-3 text-[9px] font-black text-zinc-900 uppercase tracking-tighter border border-zinc-200 bg-[#e1e9cc] whitespace-nowrap sticky top-0 z-20 ${config.sortable !== false ? 'cursor-pointer hover:bg-[#d5dfb8] transition-colors' : ''} ${config.headerClassName || ''} ${draggedItem === index ? 'opacity-50 border-dashed border-zinc-500' : ''}`}
+                                            onClick={() => config.sortable !== false && handleSort(config.id)}
+                                        >
+                                            <div className="flex items-center justify-center gap-1 cursor-grab active:cursor-grabbing">
+                                                {config.label}
+                                                {config.sortable !== false && <ArrowUpDown className="w-2.5 h-2.5 opacity-30" />}
+                                            </div>
+                                        </th>
+                                    );
                                 })}
                             </tr>
-                        </thead>
-                        <tbody>
-                            {filteredAndSortedPlayers.map((player, idx) => (
-                                <tr
-                                    key={`${player.id}-${idx}`}
-                                    onClick={() => setEditingPlayer(player)}
-                                    className="hover:bg-[#f9faf6] transition-colors group cursor-pointer"
-                                >
-                                    <TableCell className="bg-zinc-50 font-black">{idx + 1}</TableCell>
-                                    {visibleColumns.map(colId => {
-                                        const config = allColumns.find(c => c.id === colId);
-                                        if (!config) return null;
+                        )}
+                        itemContent={(index, player) => (
+                            <>
+                                <TableCell className="bg-zinc-50 font-black">{index + 1}</TableCell>
+                                {visibleColumns.map(colId => {
+                                    const config = allColumns.find(c => c.id === colId);
+                                    if (!config) return null;
 
-                                        // If using reduced view and this column is not in safe list
-                                        if (isReducedView && systemLists.reducedColumns && !systemLists.reducedColumns.includes(colId)) return null;
+                                    if (isReducedView && systemLists.reducedColumns && !systemLists.reducedColumns.includes(colId)) return null;
 
-                                        let content: React.ReactNode = (player as any)[colId];
-                                        if (config.render) {
-                                            content = config.render(player);
-                                        }
+                                    let content: React.ReactNode = (player as any)[colId];
+                                    if (config.render) {
+                                        content = config.render(player);
+                                    }
 
-                                        return (
-                                            <TableCell key={colId} className={config.className}>
-                                                {content}
-                                            </TableCell>
-                                        );
-                                    })}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    return (
+                                        <TableCell key={colId} className={config.className}>
+                                            {content}
+                                        </TableCell>
+                                    );
+                                })}
+                            </>
+                        )}
+                        components={{
+                            TableRow: (props) => {
+                                const index = props['data-index'];
+                                const player = filteredAndSortedPlayers[index];
+                                return (
+                                    <tr
+                                        {...props}
+                                        onClick={() => setEditingPlayer(player)}
+                                        className="hover:bg-[#f9faf6] transition-colors group cursor-pointer border-b border-zinc-100 last:border-0"
+                                    />
+                                );
+                            }
+                        }}
+                    />
                 </div>
 
                 {filteredAndSortedPlayers.length === 0 && (

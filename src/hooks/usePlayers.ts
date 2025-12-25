@@ -10,7 +10,7 @@ import {
     orderBy,
     where
 } from 'firebase/firestore';
-import { db, isDemoMode } from '../firebase-config.ts';
+import { db, isDemoMode } from '../firebase/config';
 import { Player, DynamicField } from '../types/player';
 
 const MOCK_PLAYERS_INITIAL: Player[] = [

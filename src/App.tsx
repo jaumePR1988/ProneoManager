@@ -4,7 +4,8 @@ import {
     signOut,
     User as FirebaseUser
 } from 'firebase/auth';
-import { auth, isDemoMode } from './firebase-config';
+import { auth, isDemoMode } from './firebase/config';
+// isDemoMode removed from config, checking if used elsewhere or if I should re-add it to config.ts
 import Login from './components/Login';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -14,6 +15,8 @@ import ReportsModule from './components/ReportsModule';
 import AdministrationModule from './components/AdministrationModule';
 import AvisosModule from './components/AvisosModule';
 import SettingsModule from './components/SettingsModule';
+import UsersModule from './components/UsersModule';
+import ProfileModule from './components/ProfileModule';
 
 import PlayerForm from './components/PlayerForm';
 
@@ -28,6 +31,8 @@ function App() {
 
     const { addPlayer } = usePlayers();
 
+    const [userRole, setUserRole] = useState<string>('guest');
+
     useEffect(() => {
         if (isDemoMode) {
             setUser({
@@ -35,22 +40,55 @@ function App() {
                 displayName: 'Proneo Demo User',
                 photoURL: 'https://i.pravatar.cc/150?u=proneo'
             } as FirebaseUser);
+            setUserRole('admin');
             setLoading(false);
             return;
         }
 
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
                 // Domain restriction check
-                if (user.email?.endsWith('@proneosports.com')) {
-                    setUser(user);
-                    setError(null);
+                if (firebaseUser.email?.endsWith('@proneosports.com')) {
+
+                    // RBAC: Fetch User Profile
+                    try {
+                        const { getDoc, doc } = await import('firebase/firestore');
+                        const { db } = await import('./firebase/config');
+                        const userRef = doc(db, 'users', firebaseUser.email || 'unknown'); // Use email as ID
+                        const userSnap = await getDoc(userRef);
+
+                        if (userSnap.exists()) {
+                            const userData = userSnap.data();
+
+                            // CHECK APPROVAL
+                            if (userData.approved !== true) {
+                                signOut(auth);
+                                setError('Cuenta pendiente de aprobación por el Director.');
+                                setLoading(false);
+                                return;
+                            }
+
+                            setUserRole(userData.role || 'guest');
+                            setUser(firebaseUser);
+                            setError(null);
+                        } else {
+                            // Should have been created during registration
+                            // If not (e.g. manual creation in console), treat as guest
+                            signOut(auth);
+                            setError('Usuario no registrado en la base de datos.');
+                        }
+                    } catch (err) {
+                        console.error("Error fetching user data:", err);
+                        setError('Error de conexión al verificar permisos.');
+                    }
+
                 } else {
                     signOut(auth);
                     setError('Acceso denegado: Solo usuarios @proneosports.com');
                 }
             } else {
                 setUser(null);
+                setUserRole('guest');
             }
             setLoading(false);
         });
@@ -75,6 +113,10 @@ function App() {
                 return <AvisosModule />;
             case 'settings':
                 return <SettingsModule />;
+            case 'users':
+                return <UsersModule />;
+            case 'profile':
+                return user ? <ProfileModule user={user} /> : <Dashboard />;
             default:
                 return <Dashboard />;
         }
@@ -106,7 +148,7 @@ function App() {
             <Layout
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
-                user={user}
+                user={{ ...user, role: userRole }}
                 onNewPlayer={() => setShowPlayerForm(true)}
             >
                 {renderContent()}

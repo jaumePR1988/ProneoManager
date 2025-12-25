@@ -9,10 +9,12 @@ import {
     User,
     Trophy,
     Building2,
-    Briefcase
+    Briefcase,
+    Sparkles
 } from 'lucide-react';
 import { Player, Category, Position, PreferredFoot, PayerType, ContractYear } from '../types/player';
 import { usePlayers } from '../hooks/usePlayers';
+import PlayerProfile360 from './PlayerProfile360';
 
 interface PlayerFormProps {
     onClose: () => void;
@@ -101,6 +103,17 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
     const [deleting, setDeleting] = useState(false);
 
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showProfile360, setShowProfile360] = useState(false);
+
+    // If 360 Mode is active, show only that component
+    if (showProfile360 && initialData) {
+        return (
+            <PlayerProfile360
+                player={initialData as Player}
+                onClose={() => setShowProfile360(false)}
+            />
+        );
+    }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -272,6 +285,16 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                         <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
                             Base de Datos Proneo Sports
                         </p>
+
+                        {initialData && (
+                            <button
+                                onClick={() => setShowProfile360(true)}
+                                className="mt-6 w-full h-12 bg-zinc-900 text-white rounded-xl shadow-lg border border-zinc-800 flex items-center justify-center gap-2 hover:bg-black transition-all hover:scale-105 group"
+                            >
+                                <Sparkles className="w-4 h-4 text-[#b4c885] group-hover:rotate-12 transition-transform" />
+                                <span className="font-black text-xs uppercase tracking-widest">Ver Perfil 360°</span>
+                            </button>
+                        )}
                     </div>
 
                     {/* Decorative Elements or Summary */}
@@ -333,12 +356,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
 
                                                         // 2. Try Upload to Firebase (if not demo mode)
                                                         // We import isDemoMode dynamically or check config
-                                                        const { isDemoMode } = await import('../firebase-config');
+                                                        const { isDemoMode } = await import('../firebase/config');
 
                                                         if (!isDemoMode) {
                                                             try {
                                                                 const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-                                                                const { storage } = await import('../firebase-config');
+                                                                const { storage } = await import('../firebase/config');
                                                                 const storageRef = ref(storage, `players/${crypto.randomUUID()}_${file.name}`);
                                                                 const snapshot = await uploadBytes(storageRef, file);
                                                                 const url = await getDownloadURL(snapshot.ref);
@@ -604,7 +627,10 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                             year: '',
                                             salary: 0,
                                             clubCommissionPct: 10,
-                                            playerCommissionPct: 0
+                                            playerCommissionPct: 0,
+                                            clubPayment: { status: 'Pendiente', dueDate: '' },
+                                            playerPayment: { status: 'Pendiente', dueDate: '' },
+                                            globalStatus: 'Pendiente'
                                         };
                                         setFormData(prev => ({
                                             ...prev,

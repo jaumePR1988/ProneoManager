@@ -8,10 +8,12 @@ import {
     LogOut,
     Bell,
     FileText,
-    Briefcase
+    Briefcase,
+    UserCircle,
+    UserCog
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase-config';
+import { auth, isDemoMode } from '../firebase/config';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -22,15 +24,21 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer }) => {
+    // Role-based Tab Filtering
+    const userRole = user?.role || 'guest';
+    const isAdmin = ['admin', 'director'].includes(userRole);
+    const isAgent = userRole === 'agent';
+    const isScout = userRole === 'scout';
+
     const tabs = [
         { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
         { id: 'players', label: 'Futbolistas/Entrenadores', icon: Users },
         { id: 'scouting', label: 'Scouting', icon: Search },
         { id: 'reports', label: 'Reportes', icon: FileText },
-        { id: 'admin', label: 'Administración', icon: Briefcase }, // New Admin Tab
-        { id: 'avisos', label: 'Avisos', icon: Bell },
-        { id: 'settings', label: 'Ajustes', icon: Settings },
-    ];
+        { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin },
+        { id: 'avisos', label: 'Avisos', icon: Bell }, // Agent sees only own alerts (logic inside module)
+        { id: 'settings', label: 'Ajustes', icon: Settings, hidden: isScout }, // Scouts don't need settings
+    ].filter(tab => !tab.hidden);
 
     return (
         <div className="flex h-screen bg-white text-zinc-900 overflow-hidden font-sans">
@@ -71,7 +79,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                         />
                         <div className="overflow-hidden">
                             <p className="text-sm font-black text-zinc-900 truncate">{user?.displayName || 'Usuario'}</p>
-                            <p className="text-[10px] font-bold text-proneo-green uppercase tracking-widest truncate">Admin Proneo</p>
+                            <p className="text-[10px] font-bold text-proneo-green uppercase tracking-widest truncate">
+                                {user?.role === 'admin' ? 'Director / Admin' :
+                                    user?.role === 'agent' ? 'Agente Proneo' :
+                                        user?.role === 'scout' ? 'Scouting' : 'Invitado'}
+                            </p>
                         </div>
                     </div>
 

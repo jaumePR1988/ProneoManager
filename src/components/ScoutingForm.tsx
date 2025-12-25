@@ -175,7 +175,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                                 if (!file) return;
                                                 try {
                                                     const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-                                                    const { storage } = await import('../firebase-config');
+                                                    const { db, storage, isDemoMode } = await import('../firebase/config');
                                                     const storageRef = ref(storage, `scouting/${crypto.randomUUID()}_${file.name}`);
                                                     const snapshot = await uploadBytes(storageRef, file);
                                                     const url = await getDownloadURL(snapshot.ref);

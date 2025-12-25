@@ -10,6 +10,7 @@ import {
     ArrowUpDown,
     Plus
 } from 'lucide-react';
+import { TableVirtuoso } from 'react-virtuoso';
 import { usePlayers } from '../hooks/usePlayers';
 import ScoutingForm from './ScoutingForm';
 import PlayerForm from './PlayerForm';
@@ -122,80 +123,89 @@ const ScoutingModule: React.FC = () => {
 
             {/* High-Density Scouting Table */}
             <div className="bg-white rounded-[40px] border border-zinc-100 shadow-sm overflow-hidden flex flex-col">
-                <div className="overflow-x-auto no-scrollbar">
-                    <table className="w-full text-left border-collapse min-w-[1000px]">
-                        <thead>
-                            <tr className="border-b border-zinc-100 bg-zinc-50/50">
-                                <th className="px-8 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Objetivo</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Agente / Fin Contrato</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Agente Proneo</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Estado</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Acciones</th>
+                <div className="flex-1 min-h-[400px]">
+                    <TableVirtuoso
+                        style={{ height: 'calc(100vh - 400px)', minHeight: '400px' }}
+                        data={scoutingPlayers}
+                        fixedHeaderContent={() => (
+                            <tr className="border-b border-zinc-100 bg-zinc-50/50 text-left">
+                                <th className="px-8 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Objetivo</th>
+                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente / Fin Contrato</th>
+                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente Proneo</th>
+                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Estado</th>
+                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right bg-white sticky top-0 z-20">Acciones</th>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {scoutingPlayers.map((target) => (
-                                <tr
-                                    key={target.id}
-                                    className="group hover:bg-zinc-50 transition-colors border-b border-zinc-50 last:border-0 italic-hover cursor-pointer"
-                                    onClick={() => setEditingScouting(target)}
-                                >
-                                    <td className="px-8 py-5">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shadow-sm">
-                                                <img src={target.photoUrl || 'https://i.pravatar.cc/150'} alt="" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div>
-                                                <p className="font-black text-zinc-900 uppercase italic tracking-tight group-hover:text-proneo-green transition-colors">{target.name || `${target.firstName} ${target.lastName1}`}</p>
-                                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{target.club} • {target.position}</p>
-                                            </div>
+                        )}
+                        itemContent={(index, target) => (
+                            <>
+                                <td className="px-8 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shadow-sm">
+                                            <img src={target.photoUrl || 'https://i.pravatar.cc/150'} alt="" className="w-full h-full object-cover" />
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-black text-zinc-700 uppercase tracking-tighter">{target.scouting?.currentAgent || 'Sin Agente'}</p>
-                                            <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400">
-                                                <Calendar className="w-3 h-3" />
-                                                <span>EXP: {target.scouting?.agentEndDate || 'N/A'}</span>
-                                            </div>
+                                        <div>
+                                            <p className="font-black text-zinc-900 uppercase italic tracking-tight group-hover:text-proneo-green transition-colors">{target.name || `${target.firstName} ${target.lastName1}`}</p>
+                                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{target.club} • {target.position}</p>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className="text-xs font-bold text-zinc-600 bg-zinc-100 px-3 py-1 rounded-lg">
-                                            {target.scouting?.contactPerson || '—'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${target.scouting?.status === 'Negociando'
-                                            ? 'bg-proneo-green/10 text-proneo-green border-proneo-green/20'
-                                            : target.scouting?.status === 'Contactado'
-                                                ? 'bg-blue-50 text-blue-600 border-blue-200'
-                                                : 'bg-red-50 text-red-600 border-red-200'
-                                            }`}>
-                                            {target.scouting?.status || 'No contactado'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                            <button className="w-9 h-9 rounded-xl bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all">
-                                                <MessageSquare className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleSignPlayer(target);
-                                                }}
-                                                className="flex items-center gap-2 bg-proneo-green text-white px-5 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-proneo-green/20 transition-all shadow-md group-hover:scale-105"
-                                            >
-                                                <UserPlus className="w-3.5 h-3.5" />
-                                                Fichar
-                                            </button>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-black text-zinc-700 uppercase tracking-tighter">{target.scouting?.currentAgent || 'Sin Agente'}</p>
+                                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>EXP: {target.scouting?.agentEndDate || 'N/A'}</span>
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <span className="text-xs font-bold text-zinc-600 bg-zinc-100 px-3 py-1 rounded-lg">
+                                        {target.scouting?.contactPerson || '—'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <span className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${target.scouting?.status === 'Negociando'
+                                        ? 'bg-proneo-green/10 text-proneo-green border-proneo-green/20'
+                                        : target.scouting?.status === 'Contactado'
+                                            ? 'bg-blue-50 text-blue-600 border-blue-200'
+                                            : 'bg-red-50 text-red-600 border-red-200'
+                                        }`}>
+                                        {target.scouting?.status || 'No contactado'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                        <button className="w-9 h-9 rounded-xl bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all">
+                                            <MessageSquare className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSignPlayer(target);
+                                            }}
+                                            className="flex items-center gap-2 bg-proneo-green text-white px-5 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-proneo-green/20 transition-all shadow-md group-hover:scale-105"
+                                        >
+                                            <UserPlus className="w-3.5 h-3.5" />
+                                            Fichar
+                                        </button>
+                                    </div>
+                                </td>
+                            </>
+                        )}
+                        components={{
+                            TableRow: (props) => {
+                                const index = props['data-index'];
+                                const target = scoutingPlayers[index];
+                                return (
+                                    <tr
+                                        {...props}
+                                        onClick={() => setEditingScouting(target)}
+                                        className="group cursor-pointer"
+                                    />
+                                );
+                            }
+                        }}
+                    />
                 </div>
 
                 {scoutingPlayers.length === 0 && (
