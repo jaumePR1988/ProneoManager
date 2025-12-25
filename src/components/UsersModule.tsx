@@ -88,6 +88,7 @@ const UsersModule: React.FC = () => {
                                         >
                                             <option value="director">Director</option>
                                             <option value="admin">Admin</option>
+                                            <option value="tesorero">Tesorero/a</option>
                                             <option value="agent">Agente</option>
                                             <option value="scout">Scout</option>
                                             <option value="guest">Invitado</option>

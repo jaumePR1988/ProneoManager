@@ -19,9 +19,10 @@ import { usePlayers } from '../hooks/usePlayers';
 
 interface DashboardProps {
     setActiveTab: (tab: string) => void;
+    userRole?: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
+const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
     const { players: allPlayers, loading } = usePlayers(false);
     const { players: scoutingPlayers } = usePlayers(true);
 
@@ -106,7 +107,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
         },
         {
             label: 'Comisiones Totales',
-            value: formattedCommission,
+            value: (userRole?.toLowerCase() === 'admin' || userRole?.toLowerCase() === 'director') ? formattedCommission : '***',
             trend: 'Valor estimado',
             icon: TrendingUp,
             color: 'bg-orange-500',

@@ -34,6 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     const userRole = (user?.role || 'guest').toLowerCase();
     const isAdmin = ['admin', 'director'].includes(userRole);
     const isScout = userRole === 'scout';
+    const isTreasurer = userRole === 'tesorero' || userRole === 'treasurer';
 
     React.useEffect(() => {
         if (!isAdmin) return;
@@ -47,13 +48,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     const tabs = [
         { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
         { id: 'players', label: 'Futbolistas/Entrenadores', icon: Users },
-        { id: 'scouting', label: 'Scouting', icon: Search },
-        { id: 'reports', label: 'Reportes', icon: FileText },
-        { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin },
+        { id: 'scouting', label: 'Scouting', icon: Search, hidden: isTreasurer },
+        { id: 'reports', label: 'Reportes', icon: FileText, hidden: isTreasurer },
+        { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin && !isTreasurer },
         { id: 'users', label: 'Usuarios', icon: UserCog, hidden: !isAdmin },
         { id: 'profile', label: 'Mi Perfil', icon: UserCircle },
-        { id: 'avisos', label: 'Avisos', icon: Bell }, // Agent sees only own alerts (logic inside module)
-        { id: 'settings', label: 'Ajustes', icon: Settings, hidden: isScout }, // Scouts don't need settings
+        { id: 'avisos', label: 'Avisos', icon: Bell },
+        { id: 'settings', label: 'Ajustes', icon: Settings, hidden: isScout },
     ].filter(tab => !tab.hidden);
 
     return (
@@ -67,7 +68,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                         className="w-48 h-auto object-contain mb-2"
                     />
                     <div className="h-1 w-12 bg-proneo-green rounded-full opacity-20" />
-                    <p className="text-[8px] font-bold text-zinc-300 uppercase tracking-widest mt-1">v1.0.3</p>
+                    <p className="text-[8px] font-bold text-zinc-300 uppercase tracking-widest mt-1">v1.0.6</p>
                 </div>
 
                 <nav className="flex-1 space-y-2">
@@ -103,8 +104,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                             <p className="text-sm font-black text-zinc-900 truncate">{user?.displayName || 'Usuario'}</p>
                             <p className="text-[10px] font-bold text-proneo-green uppercase tracking-widest truncate">
                                 {isAdmin ? 'Director / Admin' :
-                                    userRole === 'agent' ? 'Agente Proneo' :
-                                        userRole === 'scout' ? 'Scouting' : 'Invitado'}
+                                    isTreasurer ? 'Tesorero/a' :
+                                        userRole === 'agent' ? 'Agente Proneo' :
+                                            userRole === 'scout' ? 'Scouting' : 'Invitado'}
                             </p>
                         </div>
                     </div>

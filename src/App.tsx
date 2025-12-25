@@ -123,9 +123,9 @@ function App() {
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
-                return <Dashboard setActiveTab={setActiveTab} />;
+                return <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
             case 'players':
-                return <PlayerModule />;
+                return <PlayerModule userRole={userRole} />;
             case 'scouting':
                 return <ScoutingModule />;
             case 'reports':
@@ -139,9 +139,9 @@ function App() {
             case 'users':
                 return <UsersModule />;
             case 'profile':
-                return user ? <ProfileModule user={user} /> : <Dashboard setActiveTab={setActiveTab} />;
+                return user ? <ProfileModule user={user} /> : <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
             default:
-                return <Dashboard setActiveTab={setActiveTab} />;
+                return <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
         }
     };
 

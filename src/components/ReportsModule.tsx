@@ -24,7 +24,8 @@ interface ReportsModuleProps {
 }
 
 const ReportsModule: React.FC<ReportsModuleProps> = ({ userRole }) => {
-    const isAdmin = userRole === 'admin' || userRole === 'director';
+    const role = (userRole || 'guest').toLowerCase();
+    const isAdmin = role === 'admin' || role === 'director';
     const { players: databasePlayers } = usePlayers(false); // Fetch database players for the report
     const { players: scoutingPlayers } = usePlayers(true); // Fetch scouting players for the report
     const { history: reports, addReport } = useReportHistory();

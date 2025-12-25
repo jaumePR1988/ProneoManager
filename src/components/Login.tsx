@@ -167,7 +167,7 @@ const Login: React.FC = () => {
                             © 2024 Proneo Sports Management • Central Hub
                         </p>
                         <p className="text-[9px] font-bold text-proneo-green/50 uppercase tracking-widest bg-proneo-green/5 px-2 py-1 rounded">
-                            v1.0.3 - Sistema de Gestión
+                            v1.0.6 - Sistema de Gestión
                         </p>
                     </div>
                 </div>

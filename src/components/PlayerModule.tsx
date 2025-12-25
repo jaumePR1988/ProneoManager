@@ -79,7 +79,13 @@ interface ColumnConfig {
     sortable?: boolean;
 }
 
-const PlayerModule: React.FC = () => {
+interface PlayerModuleProps {
+    userRole?: string;
+}
+
+const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
+    const role = (userRole || 'guest').toLowerCase();
+    const isAdmin = role === 'admin' || role === 'director';
     const [selectedCategory, setSelectedCategory] = useState<Category | 'All'>('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortField, setSortField] = useState<string>('lastName1');
@@ -570,56 +576,60 @@ const PlayerModule: React.FC = () => {
                         )}
                     </div>
 
-                    <ExcelImport
-                        onImport={async (importedPlayers) => {
-                            for (const p of importedPlayers) {
-                                await addPlayer(p);
-                            }
-                        }}
-                        category={selectedCategory === 'All' ? 'Fútbol' : selectedCategory}
-                        schema={schema}
-                    />
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowExportMenu(!showExportMenu)}
-                            className="h-11 px-6 rounded-xl bg-[#b4c885] text-white hover:shadow-lg hover:shadow-[#b4c885]/20 hover:scale-105 transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest"
-                        >
-                            <Download className="w-4 h-4" />
-                            <span>Exportar</span>
-                        </button>
+                    {isAdmin && (
+                        <>
+                            <ExcelImport
+                                onImport={async (importedPlayers) => {
+                                    for (const p of importedPlayers) {
+                                        await addPlayer(p);
+                                    }
+                                }}
+                                category={selectedCategory === 'All' ? 'Fútbol' : selectedCategory}
+                                schema={schema}
+                            />
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowExportMenu(!showExportMenu)}
+                                    className="h-11 px-6 rounded-xl bg-[#b4c885] text-white hover:shadow-lg hover:shadow-[#b4c885]/20 hover:scale-105 transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    <span>Exportar</span>
+                                </button>
 
-                        {showExportMenu && (
-                            <>
-                                <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
-                                <div className="absolute right-0 mt-2 w-48 bg-white border border-zinc-100 rounded-2xl shadow-2xl z-50 p-2 animate-in zoom-in-95 duration-200">
-                                    <button
-                                        onClick={() => { handleExportExcel(); setShowExportMenu(false); }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-50 transition-colors group text-left"
-                                    >
-                                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-                                            <FileSpreadsheet className="w-4 h-4" />
+                                {showExportMenu && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
+                                        <div className="absolute right-0 mt-2 w-48 bg-white border border-zinc-100 rounded-2xl shadow-2xl z-50 p-2 animate-in zoom-in-95 duration-200">
+                                            <button
+                                                onClick={() => { handleExportExcel(); setShowExportMenu(false); }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-50 transition-colors group text-left"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                                                    <FileSpreadsheet className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-zinc-700 uppercase">Excel</p>
+                                                    <p className="text-[9px] font-medium text-zinc-400">Formato .xlsx</p>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => { handleExportPDF(); setShowExportMenu(false); }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-50 transition-colors group text-left"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                                                    <FileText className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-zinc-700 uppercase">PDF</p>
+                                                    <p className="text-[9px] font-medium text-zinc-400">Documento profesional</p>
+                                                </div>
+                                            </button>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-zinc-700 uppercase">Excel</p>
-                                            <p className="text-[9px] font-medium text-zinc-400">Formato .xlsx</p>
-                                        </div>
-                                    </button>
-                                    <button
-                                        onClick={() => { handleExportPDF(); setShowExportMenu(false); }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-50 transition-colors group text-left"
-                                    >
-                                        <div className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                                            <FileText className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-zinc-700 uppercase">PDF</p>
-                                            <p className="text-[9px] font-medium text-zinc-400">Documento profesional</p>
-                                        </div>
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                                    </>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
