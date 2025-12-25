@@ -1,0 +1,19 @@
+{
+    "indexes": [
+        {
+            "collectionGroup": "players",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isScouting",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        }
+    ],
+    "fieldOverrides": []
+}

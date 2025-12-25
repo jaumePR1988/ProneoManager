@@ -12,8 +12,12 @@ import {
     X,
     Filter,
     Check,
-    Clock4
+    Clock4,
+    UserPlus,
+    UserMinus
 } from 'lucide-react';
+import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase/config';
 import { usePlayers } from '../hooks/usePlayers';
 import { Player } from '../types/player';
 
@@ -22,6 +26,9 @@ const AvisosModule: React.FC = () => {
     const { players: dbPlayers } = usePlayers(false);
     const { players: scoutingPlayers } = usePlayers(true);
     const allPlayers = [...dbPlayers, ...scoutingPlayers];
+
+    // State for Pending Users
+    const [pendingUsers, setPendingUsers] = useState<any[]>([]);
 
     // State for filtering
     const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
@@ -47,6 +54,15 @@ const AvisosModule: React.FC = () => {
         localStorage.setItem('proneo_snoozed_alerts', JSON.stringify(snoozedAlerts));
     }, [snoozedAlerts]);
 
+    // Fetch Pending Users for Admin Alerts
+    useEffect(() => {
+        const q = query(collection(db, 'users'), where('approved', '==', false));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setPendingUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+        return () => unsubscribe();
+    }, []);
+
     // Handlers
     const handleComplete = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -58,6 +74,20 @@ const AvisosModule: React.FC = () => {
         // Snooze for 24 hours
         const snoozeUntil = Date.now() + (24 * 60 * 60 * 1000);
         setSnoozedAlerts(prev => ({ ...prev, [id]: snoozeUntil }));
+    };
+
+    const handleQuickApprove = async (email: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (confirm(`¿Aprobar acceso a ${email}?`)) {
+            await updateDoc(doc(db, 'users', email), { approved: true, role: 'scout' });
+        }
+    };
+
+    const handleQuickReject = async (email: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (confirm(`¿Rechazar y ELIMINAR solicitud de ${email}?`)) {
+            await deleteDoc(doc(db, 'users', email));
+        }
     };
 
     // 2. Alert Generation Logic
@@ -77,6 +107,23 @@ const AvisosModule: React.FC = () => {
         const diff = date.getTime() - today.getTime();
         return Math.ceil(diff / (1000 * 3600 * 24));
     };
+
+    // --- SECURITY ALERTS (Pending Users) ---
+    pendingUsers.forEach(u => {
+        alerts.push({
+            id: `user-req-${u.id}`,
+            type: 'user_approval',
+            priority: 'critical',
+            title: 'Solicitud de Acceso',
+            message: `${u.name} solicita acceso al sistema (${u.email}).`,
+            player: { name: u.name }, // Hack for UI consistency
+            category: 'Seguridad',
+            date: u.createdAt?.split('T')[0],
+            icon: UserPlus,
+            color: 'bg-zinc-900',
+            data: u
+        });
+    });
 
     // --- REAL ALERTS GENERATION ---
 
@@ -445,6 +492,22 @@ const AvisosModule: React.FC = () => {
                                                         <button className="text-[10px] font-black uppercase tracking-widest bg-orange-50 text-orange-600 px-4 py-2 rounded-lg hover:bg-orange-100 transition-colors">
                                                             Registrar Llamada
                                                         </button>
+                                                    )}
+                                                    {alert.type === 'user_approval' && (
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={(e) => handleQuickApprove(alert.data.email, e)}
+                                                                className="text-[10px] font-black uppercase tracking-widest bg-proneo-green text-white px-4 py-2 rounded-lg hover:shadow-lg hover:shadow-proneo-green/20 transition-all shadow-sm"
+                                                            >
+                                                                Aprobar Acceso
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => handleQuickReject(alert.data.email, e)}
+                                                                className="text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors"
+                                                            >
+                                                                Rechazar
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>

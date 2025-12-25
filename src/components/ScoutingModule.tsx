@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import {
-    TrendingUp,
     MessageSquare,
     Calendar,
-    ChevronRight,
     UserPlus,
     Target,
     Search,
-    ArrowUpDown,
     Plus
 } from 'lucide-react';
 import { TableVirtuoso } from 'react-virtuoso';
@@ -19,7 +16,6 @@ import ScoutingPreview from './ScoutingPreview';
 
 const ScoutingModule: React.FC = () => {
     const { players: scoutingPlayers, loading, addPlayer, updatePlayer } = usePlayers(true);
-    const { addPlayer: addFullPlayer } = usePlayers(false); // To sign player
 
     const [isScoutingFormOpen, setIsScoutingFormOpen] = useState(false);
     const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
@@ -122,49 +118,49 @@ const ScoutingModule: React.FC = () => {
             </div>
 
             {/* High-Density Scouting Table */}
-            <div className="bg-white rounded-[40px] border border-zinc-100 shadow-sm overflow-hidden flex flex-col">
+            <div className="bg-white rounded-[40px] border border-zinc-100 shadow-sm overflow-hidden flex flex-col w-full">
                 <div className="flex-1 min-h-[400px]">
                     <TableVirtuoso
                         style={{ height: 'calc(100vh - 400px)', minHeight: '400px' }}
                         data={scoutingPlayers}
                         fixedHeaderContent={() => (
                             <tr className="border-b border-zinc-100 bg-zinc-50/50 text-left">
-                                <th className="px-8 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Objetivo</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente / Fin Contrato</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente Proneo</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Estado</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right bg-white sticky top-0 z-20">Acciones</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20 w-[30%]">Objetivo</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente / Fin Contrato</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente Proneo</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Estado</th>
+                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest text-right bg-white sticky top-0 z-20">Acciones</th>
                             </tr>
                         )}
-                        itemContent={(index, target) => (
+                        itemContent={(_, target) => (
                             <>
-                                <td className="px-8 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shadow-sm">
+                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-zinc-100 border border-zinc-200 overflow-hidden shadow-sm">
                                             <img src={target.photoUrl || 'https://i.pravatar.cc/150'} alt="" className="w-full h-full object-cover" />
                                         </div>
                                         <div>
-                                            <p className="font-black text-zinc-900 uppercase italic tracking-tight group-hover:text-proneo-green transition-colors">{target.name || `${target.firstName} ${target.lastName1}`}</p>
-                                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{target.club} • {target.position}</p>
+                                            <p className="font-black text-zinc-900 uppercase italic tracking-tight text-[11px] group-hover:text-proneo-green transition-colors">{target.name || `${target.firstName} ${target.lastName1}`}</p>
+                                            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{target.club} • {target.position}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-black text-zinc-700 uppercase tracking-tighter">{target.scouting?.currentAgent || 'Sin Agente'}</p>
-                                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400">
-                                            <Calendar className="w-3 h-3" />
+                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <div className="space-y-0.5">
+                                        <p className="text-[10px] font-black text-zinc-700 uppercase tracking-tighter">{target.scouting?.currentAgent || 'Sin Agente'}</p>
+                                        <div className="flex items-center gap-1.5 text-[8px] font-bold text-zinc-400">
+                                            <Calendar className="w-2.5 h-2.5" />
                                             <span>EXP: {target.scouting?.agentEndDate || 'N/A'}</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <span className="text-xs font-bold text-zinc-600 bg-zinc-100 px-3 py-1 rounded-lg">
+                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <span className="text-[10px] font-bold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-md">
                                         {target.scouting?.contactPerson || '—'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <span className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${target.scouting?.status === 'Negociando'
+                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${target.scouting?.status === 'Negociando'
                                         ? 'bg-proneo-green/10 text-proneo-green border-proneo-green/20'
                                         : target.scouting?.status === 'Contactado'
                                             ? 'bg-blue-50 text-blue-600 border-blue-200'
@@ -173,19 +169,19 @@ const ScoutingModule: React.FC = () => {
                                         {target.scouting?.status || 'No contactado'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-5 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
                                     <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                        <button className="w-9 h-9 rounded-xl bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all">
-                                            <MessageSquare className="w-4 h-4" />
+                                        <button className="w-7 h-7 rounded-lg bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all scale-90">
+                                            <MessageSquare className="w-3.5 h-3.5" />
                                         </button>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleSignPlayer(target);
                                             }}
-                                            className="flex items-center gap-2 bg-proneo-green text-white px-5 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-proneo-green/20 transition-all shadow-md group-hover:scale-105"
+                                            className="flex items-center gap-1.5 bg-proneo-green text-white px-3 h-7 rounded-lg text-[9px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-proneo-green/20 transition-all shadow-md group-hover:scale-105"
                                         >
-                                            <UserPlus className="w-3.5 h-3.5" />
+                                            <UserPlus className="w-3 h-3" />
                                             Fichar
                                         </button>
                                     </div>
@@ -200,10 +196,13 @@ const ScoutingModule: React.FC = () => {
                                     <tr
                                         {...props}
                                         onClick={() => setEditingScouting(target)}
-                                        className="group cursor-pointer"
+                                        className="group cursor-pointer hover:bg-zinc-50/30 transition-colors"
                                     />
                                 );
-                            }
+                            },
+                            Table: (props) => (
+                                <table {...props} className="w-full border-collapse" style={{ tableLayout: 'fixed' }} />
+                            )
                         }}
                     />
                 </div>

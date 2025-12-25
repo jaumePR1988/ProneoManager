@@ -17,7 +17,11 @@ import {
 } from 'recharts';
 import { usePlayers } from '../hooks/usePlayers';
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+    setActiveTab: (tab: string) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
     const { players: allPlayers, loading } = usePlayers(false);
     const { players: scoutingPlayers } = usePlayers(true);
 
@@ -230,7 +234,10 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     <div className="flex-1 flex items-end">
-                        <button className="w-full bg-zinc-900 text-white h-16 rounded-3xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-xl hover:shadow-zinc-900/20 transition-all shadow-lg group">
+                        <button
+                            onClick={() => setActiveTab('players')}
+                            className="w-full bg-zinc-900 text-white h-16 rounded-3xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-xl hover:shadow-zinc-900/20 transition-all shadow-lg group"
+                        >
                             Ver Base de Datos
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>

@@ -19,7 +19,12 @@ import EconomicReportPreview from './EconomicReportPreview';
 import AgencyExpiryReportPreview from './AgencyExpiryReportPreview';
 import ScoutingPreview from './ScoutingPreview';
 
-const ReportsModule: React.FC = () => {
+interface ReportsModuleProps {
+    userRole?: string;
+}
+
+const ReportsModule: React.FC<ReportsModuleProps> = ({ userRole }) => {
+    const isAdmin = userRole === 'admin' || userRole === 'director';
     const { players: databasePlayers } = usePlayers(false); // Fetch database players for the report
     const { players: scoutingPlayers } = usePlayers(true); // Fetch scouting players for the report
     const { history: reports, addReport } = useReportHistory();
@@ -83,13 +88,15 @@ const ReportsModule: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleBackup}
-                        className="h-12 px-6 rounded-xl bg-orange-500 text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg hover:shadow-xl"
-                    >
-                        <Download className="w-4 h-4" />
-                        Copia de Seguridad
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={handleBackup}
+                            className="h-12 px-6 rounded-xl bg-orange-500 text-white flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg hover:shadow-xl"
+                        >
+                            <Download className="w-4 h-4" />
+                            Copia de Seguridad
+                        </button>
+                    )}
 
                     <button
                         onClick={openPortfolio}

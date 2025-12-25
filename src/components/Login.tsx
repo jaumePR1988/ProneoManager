@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, UserPlus, Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Mail, Lock, AlertCircle } from 'lucide-react';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -60,7 +60,7 @@ const Login: React.FC = () => {
             let msg = 'Error desconocido';
             if (err.code === 'auth/wrong-password') msg = 'Contraseña incorrecta';
             if (err.code === 'auth/user-not-found') msg = 'Usuario no encontrado';
-            if (err.code === 'auth/email-already-in-use') msg = 'Este correo ya está registrado';
+            if (err.code === 'auth/email-already-in-use') msg = 'Este correo ya está registrado. Intenta iniciar sesión.';
             if (err.message) msg = err.message;
             setError(msg);
         } finally {
@@ -167,7 +167,7 @@ const Login: React.FC = () => {
                             © 2024 Proneo Sports Management • Central Hub
                         </p>
                         <p className="text-[9px] font-bold text-proneo-green/50 uppercase tracking-widest bg-proneo-green/5 px-2 py-1 rounded">
-                            v2.1 - Sistema Seguro (Fixed)
+                            v1.0.3 - Sistema de Gestión
                         </p>
                     </div>
                 </div>

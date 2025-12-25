@@ -68,14 +68,37 @@ function App() {
                                 return;
                             }
 
-                            setUserRole(userData.role || 'guest');
+                            // FORCED ROLE FOR OWNER
+                            let finalRole = userData.role || 'guest';
+                            const userEmail = (firebaseUser.email || '').toLowerCase();
+                            const userName = (firebaseUser.displayName || '').toLowerCase();
+
+                            const isOwnerEmail = userEmail.includes('jaume') || userEmail.includes('jpedragosa');
+                            const isOwnerName = userName.includes('jaume');
+
+                            if (isOwnerEmail || isOwnerName) {
+                                finalRole = 'director';
+                            }
+
+                            setUserRole(finalRole);
                             setUser(firebaseUser);
                             setError(null);
                         } else {
-                            // Should have been created during registration
-                            // If not (e.g. manual creation in console), treat as guest
+                            // SELF-HEALING: Create missing doc
+                            const { setDoc } = await import('firebase/firestore');
+                            const userEmail = firebaseUser.email || 'unknown';
+
+                            await setDoc(userRef, {
+                                email: userEmail,
+                                name: firebaseUser.displayName || userEmail.split('@')[0],
+                                role: 'guest',
+                                approved: false,
+                                createdAt: new Date().toISOString()
+                            });
+
+                            // Now kick them out but with the right message
                             signOut(auth);
-                            setError('Usuario no registrado en la base de datos.');
+                            setError('Perfil registrado. Esperando aprobación del Director.');
                         }
                     } catch (err) {
                         console.error("Error fetching user data:", err);
@@ -100,13 +123,13 @@ function App() {
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
-                return <Dashboard />;
+                return <Dashboard setActiveTab={setActiveTab} />;
             case 'players':
                 return <PlayerModule />;
             case 'scouting':
                 return <ScoutingModule />;
             case 'reports':
-                return <ReportsModule />;
+                return <ReportsModule userRole={userRole} />;
             case 'admin':
                 return <AdministrationModule />;
             case 'avisos':
@@ -116,9 +139,9 @@ function App() {
             case 'users':
                 return <UsersModule />;
             case 'profile':
-                return user ? <ProfileModule user={user} /> : <Dashboard />;
+                return user ? <ProfileModule user={user} /> : <Dashboard setActiveTab={setActiveTab} />;
             default:
-                return <Dashboard />;
+                return <Dashboard setActiveTab={setActiveTab} />;
         }
     };
 

@@ -55,7 +55,7 @@ const UsersModule: React.FC = () => {
                 </div>
             </header>
 
-            <div className="bg-white rounded-3xl shadow-xl shadow-zinc-200/50 border border-zinc-100 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-xl shadow-zinc-200/50 border border-zinc-100 overflow-hidden w-full">
                 <table className="w-full text-left">
                     <thead className="bg-zinc-50 border-b border-zinc-100">
                         <tr>
@@ -109,24 +109,37 @@ const UsersModule: React.FC = () => {
                                     )}
                                 </td>
                                 <td className="px-8 py-6 text-right">
-                                    {!user.approved && (
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => handleApprove(user.email)}
-                                                className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 transition-colors"
-                                                title="Aprobar"
-                                            >
-                                                <Check className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleReject(user.email)}
-                                                className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-colors"
-                                                title="Rechazar"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    )}
+                                    <div className="flex items-center justify-end gap-2">
+                                        {!user.approved ? (
+                                            <>
+                                                <button
+                                                    onClick={() => handleApprove(user.email)}
+                                                    className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 transition-colors"
+                                                    title="Aprobar"
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleReject(user.email)}
+                                                    className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-colors"
+                                                    title="Rechazar"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            // Action for approved users: Permanent Delete (except self/owner)
+                                            user.email !== 'jaume@proneosports.com' && (
+                                                <button
+                                                    onClick={() => handleReject(user.email)}
+                                                    className="w-10 h-10 rounded-xl bg-zinc-50 text-zinc-400 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all border border-zinc-100 hover:border-red-100"
+                                                    title="Eliminar Usuario"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            )
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
