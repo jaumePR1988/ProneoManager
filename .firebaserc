@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "proneomanager"
-  }
+  },
+  "targets": {
+    "proneomanager": {
+      "hosting": {
+        "main": [
+          "proneomanager"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

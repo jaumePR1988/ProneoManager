@@ -17,8 +17,8 @@ import AvisosModule from './components/AvisosModule';
 import SettingsModule from './components/SettingsModule';
 import UsersModule from './components/UsersModule';
 import ProfileModule from './components/ProfileModule';
-
 import PlayerForm from './components/PlayerForm';
+import NotificationCenter from './components/NotificationCenter';
 
 import { usePlayers } from './hooks/usePlayers';
 
@@ -140,6 +140,8 @@ function App() {
                 return <UsersModule />;
             case 'profile':
                 return user ? <ProfileModule user={user} /> : <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
+            case 'comms':
+                return <NotificationCenter />;
             default:
                 return <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
         }
