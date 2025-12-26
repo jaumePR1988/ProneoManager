@@ -16,6 +16,7 @@ const NotificationCenter: React.FC = () => {
     const [usersWithToken, setUsersWithToken] = useState<any[]>([]);
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
+    const [target, setTarget] = useState('Todos');
     const [sending, setSending] = useState(false);
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +46,7 @@ const NotificationCenter: React.FC = () => {
                 title,
                 message,
                 timestamp: serverTimestamp(),
-                target: 'all_scouts',
+                target,
                 sentBy: 'Director',
                 status: 'queued'
             });
@@ -62,10 +63,12 @@ const NotificationCenter: React.FC = () => {
         }
     };
 
-    const filteredUsers = usersWithToken.filter(u =>
-        u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = usersWithToken.filter(u => {
+        const matchesSearch = u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesTarget = target === 'Todos' || u.sport === target;
+        return matchesSearch && matchesTarget;
+    });
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
@@ -111,6 +114,22 @@ const NotificationCenter: React.FC = () => {
                             </div>
 
                             <div className="grid gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">Audiencia Destino</label>
+                                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                        {['Todos', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].map(t => (
+                                            <button
+                                                key={t}
+                                                type="button"
+                                                onClick={() => setTarget(t)}
+                                                className={`px-6 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${target === t ? 'bg-zinc-900 text-white border-zinc-900 shadow-lg' : 'bg-white text-zinc-400 border-zinc-100 hover:bg-zinc-50'}`}
+                                            >
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">Título de la Notificación</label>
                                     <input
