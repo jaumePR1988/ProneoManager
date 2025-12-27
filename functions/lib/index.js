@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onPushMessageCreated = void 0;
+exports.dailyAlertScanner = exports.onPushMessageCreated = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -66,5 +66,80 @@ exports.onPushMessageCreated = functions.firestore
             error: error instanceof Error ? error.message : "Error desconocido",
         });
     }
+});
+/**
+ * Escáner diario que se ejecuta a las 08:00 AM.
+ * Busca cumpleaños y vencimientos de contrato para enviar avisos push automáticos.
+ */
+exports.dailyAlertScanner = functions.pubsub
+    .schedule("0 8 * * *")
+    .timeZone("Europe/Madrid")
+    .onRun(async (context) => {
+    const today = new Date();
+    const playersSnapshot = await admin.firestore().collection("players").get();
+    const alertsToSend = [];
+    playersSnapshot.forEach((doc) => {
+        var _a;
+        const p = doc.data();
+        const category = p.category || "Fútbol";
+        // 1. Verificar Cumpleaños
+        if (p.birthDate) {
+            const [d, m] = p.birthDate.split("/");
+            if (Number(d) === today.getDate() && Number(m) === (today.getMonth() + 1)) {
+                alertsToSend.push({
+                    target: category,
+                    title: "🎂 ¡Cumpleaños Hoy!",
+                    message: `${p.name} cumple años hoy. ¡No olvides felicitarle!`
+                });
+            }
+        }
+        // 2. Verificar Vencimiento de Agencia (Proneo)
+        if ((_a = p.proneo) === null || _a === void 0 ? void 0 : _a.agencyEndDate) {
+            const [d, m, y] = p.proneo.agencyEndDate.split("/");
+            const endDate = new Date(Number(y), Number(m) - 1, Number(d));
+            const diffTime = endDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            // Avisar a los 180 días (6 meses) y 30 días (1 mes)
+            if (diffDays === 180 || diffDays === 30) {
+                alertsToSend.push({
+                    target: category,
+                    title: "⚠️ Vencimiento Próximo",
+                    message: `El contrato de ${p.name} vence en ${diffDays === 180 ? '6 meses' : '1 mes'}.`
+                });
+            }
+        }
+    });
+    // 3. Enviar las notificaciones acumuladas
+    for (const alert of alertsToSend) {
+        const userSnapshot = await admin.firestore()
+            .collection("users")
+            .where("sport", "==", alert.target)
+            .get();
+        const tokens = [];
+        userSnapshot.forEach(uDoc => {
+            const userData = uDoc.data();
+            if (userData.fcmToken)
+                tokens.push(userData.fcmToken);
+        });
+        if (tokens.length > 0) {
+            const payload = {
+                tokens: [...new Set(tokens)],
+                notification: {
+                    title: alert.title,
+                    body: alert.message,
+                },
+                webpush: {
+                    notification: {
+                        icon: "https://proneomanager.web.app/logo-192.png",
+                        badge: "https://proneomanager.web.app/logo-192.png",
+                        click_action: "https://proneomobile-app.web.app",
+                    },
+                },
+            };
+            await admin.messaging().sendEachForMulticast(payload);
+        }
+    }
+    console.log(`Escaneo diario completado. Generadas ${alertsToSend.length} alertas.`);
+    return null;
 });
 //# sourceMappingURL=index.js.map
