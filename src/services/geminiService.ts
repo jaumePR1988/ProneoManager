@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
-const genAI = new GoogleGenerativeAI(API_KEY);
+const genAI = new GoogleGenerativeAI(API_KEY, { apiVersion: "v1" });
 
 /**
  * Convierte un archivo File a Base64 para enviarlo a Gemini
@@ -26,7 +26,10 @@ export const analyzeContractPDF = async (file: File, isNew: boolean = false) => 
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        console.log("--- INTENTO DE ANÁLISIS BUILD_V8 (FLASH-8B + V1) ---");
+        console.log("Clave detectada:", API_KEY.substring(0, 5) + "...");
+        // Usamos el modelo 8B que es el más básico de la familia 1.5
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
 
         const prompt = isNew
             ? "Analiza este contrato de un jugador de fútbol y extrae los siguientes datos en formato JSON: { firstName, lastName1, lastName2, position, birthDate, club, endDate, clause }. Si no encuentras algún dato, deja el campo vacío. IMPORTANTE: Devuelve SOLO el objeto JSON."

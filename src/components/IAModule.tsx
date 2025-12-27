@@ -27,6 +27,8 @@ const IAModule: React.FC = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [analysisResult, setAnalysisResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const emptyFileInputRef = React.useRef<HTMLInputElement>(null);
 
     const filteredPlayers = players.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -34,6 +36,7 @@ const IAModule: React.FC = () => {
     );
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log("File input changed", e.target.files);
         if (e.target.files && e.target.files[0]) {
             setSelectedFile(e.target.files[0]);
             setAnalysisResult(null);
@@ -76,7 +79,7 @@ const IAModule: React.FC = () => {
                     </h1>
                     <p className="text-zinc-400 font-bold uppercase tracking-[0.2em] text-xs mt-3 flex items-center gap-2">
                         <Brain className="w-4 h-4" />
-                        Exclusivo Directores y Administradores
+                        Exclusivo Directores y Administradores <span className="text-proneo-green/30 text-[10px]">v8.0</span>
                     </p>
                 </div>
             </header>
@@ -165,19 +168,26 @@ const IAModule: React.FC = () => {
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
                                         <div className="flex items-center gap-4">
-                                            <label className={`flex items-center gap-3 px-6 h-14 rounded-2xl font-black text-xs uppercase tracking-widest cursor-pointer transition-all border-2 border-dashed ${selectedFile ? 'bg-zinc-50 border-proneo-green text-proneo-green' : 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-proneo-green/50 hover:text-proneo-green'}`}>
+                                            <input
+                                                type="file"
+                                                accept=".pdf"
+                                                className="hidden"
+                                                ref={fileInputRef}
+                                                onChange={handleFileChange}
+                                            />
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className={`flex items-center gap-3 px-6 h-14 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border-2 border-dashed ${selectedFile ? 'bg-zinc-50 border-proneo-green text-proneo-green' : 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:border-proneo-green/50 hover:text-proneo-green'}`}
+                                            >
                                                 <Upload className="w-5 h-5" />
                                                 {selectedFile ? selectedFile.name : 'Subir Contrato PDF'}
-                                                <input
-                                                    type="file"
-                                                    accept=".pdf"
-                                                    className="hidden"
-                                                    onChange={handleFileChange}
-                                                />
-                                            </label>
+                                            </button>
 
                                             <button
-                                                onClick={() => handleAnalyze(selectedPlayer ? false : true)}
+                                                onClick={() => {
+                                                    console.log("Analyze button clicked", { selectedFile, isNew: !selectedPlayer });
+                                                    handleAnalyze(selectedPlayer ? false : true);
+                                                }}
                                                 disabled={isAnalyzing || !selectedFile}
                                                 className="bg-proneo-green text-white px-8 h-14 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-2xl hover:bg-proneo-green/90 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
                                             >
@@ -368,19 +378,26 @@ const IAModule: React.FC = () => {
                             </p>
 
                             <div className="flex flex-col items-center gap-6">
-                                <label className={`flex items-center gap-4 px-10 h-20 rounded-[28px] font-black text-sm uppercase tracking-widest cursor-pointer transition-all border-2 border-dashed ${selectedFile ? 'bg-white border-proneo-green text-proneo-green shadow-xl' : 'bg-white border-zinc-200 text-zinc-400 hover:border-proneo-green/50 hover:text-proneo-green shadow-sm'}`}>
+                                <input
+                                    type="file"
+                                    accept=".pdf"
+                                    className="hidden"
+                                    ref={emptyFileInputRef}
+                                    onChange={handleFileChange}
+                                />
+                                <button
+                                    onClick={() => emptyFileInputRef.current?.click()}
+                                    className={`flex items-center gap-4 px-10 h-20 rounded-[28px] font-black text-sm uppercase tracking-widest transition-all border-2 border-dashed ${selectedFile ? 'bg-white border-proneo-green text-proneo-green shadow-xl' : 'bg-white border-zinc-200 text-zinc-400 hover:border-proneo-green/50 hover:text-proneo-green shadow-sm'}`}
+                                >
                                     <Upload className="w-6 h-6" />
                                     {selectedFile ? selectedFile.name : 'Primero sube el PDF aquí'}
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                    />
-                                </label>
+                                </button>
 
                                 <button
-                                    onClick={() => handleAnalyze(true)}
+                                    onClick={() => {
+                                        console.log("Empty state analyze button clicked", { selectedFile });
+                                        handleAnalyze(true);
+                                    }}
                                     disabled={!selectedFile || isAnalyzing}
                                     className="bg-zinc-900 text-white px-12 h-16 rounded-[24px] font-black text-sm uppercase tracking-widest flex items-center gap-4 hover:shadow-2xl hover:bg-proneo-green transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
                                 >
