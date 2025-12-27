@@ -117,7 +117,7 @@ const NotificationCenter: React.FC = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">Audiencia Destino</label>
                                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                                        {['Todos', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].map(t => (
+                                        {['Todos', 'General', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].map(t => (
                                             <button
                                                 key={t}
                                                 type="button"
