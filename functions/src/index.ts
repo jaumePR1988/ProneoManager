@@ -77,11 +77,11 @@ export const onPushMessageCreated = functions.firestore
     });
 
 /**
- * Escáner diario que se ejecuta a las 08:00 AM.
+ * Escáner diario que se ejecuta a las 10:00 AM.
  * Busca cumpleaños y vencimientos de contrato para enviar avisos push automáticos.
  */
 export const dailyAlertScanner = functions.pubsub
-    .schedule("0 8 * * *")
+    .schedule("0 10 * * *")
     .timeZone("Europe/Madrid")
     .onRun(async (context) => {
         const today = new Date();
@@ -111,12 +111,19 @@ export const dailyAlertScanner = functions.pubsub
                 const diffTime = endDate.getTime() - today.getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                // Avisar a los 180 días (6 meses) y 30 días (1 mes)
-                if (diffDays === 180 || diffDays === 30) {
+                // Avisar a los 180, 90, 30 y 7 días
+                const thresholds = [180, 90, 30, 7];
+                if (thresholds.includes(diffDays)) {
+                    let timeLabel = `${diffDays} días`;
+                    if (diffDays === 180) timeLabel = "6 meses";
+                    if (diffDays === 90) timeLabel = "3 meses";
+                    if (diffDays === 30) timeLabel = "1 mes";
+                    if (diffDays === 7) timeLabel = "1 semana";
+
                     alertsToSend.push({
                         target: category,
                         title: "⚠️ Vencimiento Próximo",
-                        message: `El contrato de ${p.name} vence en ${diffDays === 180 ? '6 meses' : '1 mes'}.`
+                        message: `El contrato de ${p.name} vence en ${timeLabel}.`
                     });
                 }
             }
@@ -157,3 +164,37 @@ export const dailyAlertScanner = functions.pubsub
         console.log(`Escaneo diario completado. Generadas ${alertsToSend.length} alertas.`);
         return null;
     });
+
+/**
+ * Cloud Function que notifica a los administradores cuando hay un nuevo registro.
+ */
+export const onUserCreated = functions.auth.user().onCreate(async (user) => {
+    const adminSnapshot = await admin.firestore()
+        .collection("users")
+        .where("role", "in", ["admin", "director"])
+        .get();
+
+    const tokens: string[] = [];
+    adminSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.fcmToken) tokens.push(data.fcmToken);
+    });
+
+    if (tokens.length > 0) {
+        const payload: admin.messaging.MulticastMessage = {
+            tokens: [...new Set(tokens)],
+            notification: {
+                title: "👤 Nueva Solicitud de Acceso",
+                body: `${user.displayName || user.email} se ha registrado y espera aprobación.`,
+            },
+            webpush: {
+                notification: {
+                    icon: "https://proneomanager.web.app/logo-192.png",
+                    click_action: "https://proneomobile-app.web.app",
+                }
+            }
+        };
+        return admin.messaging().sendEachForMulticast(payload);
+    }
+    return null;
+});
