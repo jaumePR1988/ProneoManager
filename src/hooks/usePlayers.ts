@@ -212,6 +212,23 @@ export const usePlayers = (isScouting: boolean = false) => {
         }
         try {
             const playerRef = doc(db, 'players', id);
+
+            // Logic for automatic contract archiving
+            if (updates.contract) {
+                const currentPlayer = players.find(p => p.id === id);
+                if (currentPlayer && currentPlayer.contract) {
+                    // Only archive if there's a real change in the contract data
+                    const currentContractStr = JSON.stringify(currentPlayer.contract);
+                    const newContractStr = JSON.stringify(updates.contract);
+
+                    if (currentContractStr !== newContractStr) {
+                        const history = currentPlayer.contractHistory || [];
+                        // Limit history to last 10 versions to keep document size reasonable
+                        updates.contractHistory = [currentPlayer.contract, ...history].slice(0, 10);
+                    }
+                }
+            }
+
             await updateDoc(playerRef, {
                 ...updates,
                 updatedAt: Date.now(),

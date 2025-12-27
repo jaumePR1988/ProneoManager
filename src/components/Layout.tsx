@@ -11,7 +11,8 @@ import {
     Briefcase,
     UserCircle,
     UserCog,
-    Send
+    Send,
+    Sparkles
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -26,8 +27,8 @@ interface LayoutProps {
 }
 
 // Define visibility rules for Header elements
-const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'profile', 'settings'];
-const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'profile'];
+const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'profile', 'settings', 'ia'];
+const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'profile', 'ia'];
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer }) => {
     const [pendingCount, setPendingCount] = React.useState(0);
@@ -51,6 +52,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         { id: 'players', label: 'Futbolistas/Entrenadores', icon: Users },
         { id: 'scouting', label: 'Scouting', icon: Search, hidden: isTreasurer },
         { id: 'reports', label: 'Reportes', icon: FileText, hidden: isTreasurer },
+        { id: 'ia', label: 'Laboratorio IA', icon: Sparkles, hidden: !isAdmin },
         { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin && !isTreasurer },
         { id: 'users', label: 'Usuarios', icon: UserCog, hidden: !isAdmin },
         { id: 'profile', label: 'Mi Perfil', icon: UserCircle },

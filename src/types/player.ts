@@ -87,6 +87,7 @@ export interface Player {
     category: Category;
 
     contract: PlayerContract;
+    contractHistory?: PlayerContract[];
     proneo: ProneoLink;
 
     sportsBrand?: string;
