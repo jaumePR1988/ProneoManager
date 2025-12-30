@@ -53,11 +53,12 @@ const ScoutingMatchForm: React.FC<ScoutingMatchFormProps> = ({
     });
 
     const combinedPlayers = useMemo(() => {
+        const sport = (userSport || '').trim().toLowerCase();
         const list = [
             ...scoutingPlayers.map(p => ({ ...p, origin: 'scouting' as const })),
             ...databasePlayers.map(p => ({ ...p, origin: 'database' as const }))
         ];
-        return list.filter(p => p.category === userSport);
+        return list.filter(p => (p.category || '').trim().toLowerCase() === sport);
     }, [scoutingPlayers, databasePlayers, userSport]);
 
     const filteredResults = useMemo(() => {
@@ -89,8 +90,9 @@ const ScoutingMatchForm: React.FC<ScoutingMatchFormProps> = ({
     };
 
     const filteredAgents = useMemo(() => {
+        const sport = (userSport || '').trim().toLowerCase();
         return users.filter(u =>
-            u.sport === userSport ||
+            (u.sport || '').trim().toLowerCase() === sport ||
             u.role?.toLowerCase() === 'admin' ||
             u.role?.toLowerCase() === 'director' ||
             u.role?.toLowerCase() === 'gerente'
@@ -134,7 +136,10 @@ const ScoutingMatchForm: React.FC<ScoutingMatchFormProps> = ({
                             <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight italic">
                                 {match ? 'Editar Partido' : 'Nuevo Seguimiento'}
                             </h3>
-                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-0.5">Planificación de Scouting</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Planificación de Scouting</p>
+                                <span className="px-1.5 py-0.5 bg-zinc-100 text-zinc-500 text-[8px] font-black rounded uppercase">v1.0.0 | {userSport}</span>
+                            </div>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-3 hover:bg-zinc-200 rounded-2xl transition-all">
