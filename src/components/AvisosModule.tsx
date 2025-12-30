@@ -21,17 +21,44 @@ import { auth, db } from '../firebase/config';
 import { usePlayers } from '../hooks/usePlayers';
 import { Player } from '../types/player';
 
-const AvisosModule: React.FC = () => {
+interface AvisosModuleProps {
+    userSport?: string;
+    userName?: string;
+    userRole?: string;
+}
+
+const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', userName, userRole = 'scout' }) => {
     // 1. Fetch ALL players (database + scouting) to generate global alerts
     const { players: dbPlayers } = usePlayers(false);
     const { players: scoutingPlayers } = usePlayers(true);
-    const allPlayers = [...dbPlayers, ...scoutingPlayers];
+
+    // Filter by Assigned Agent Logic
+    const isExternalScout = userRole === 'external_scout';
+
+    const filteredDbPlayers = (isExternalScout && userName)
+        ? dbPlayers.filter(p => p.monitoringAgent?.toLowerCase() === userName.toLowerCase())
+        : dbPlayers;
+
+    const filteredScoutingPlayers = (isExternalScout && userName)
+        ? scoutingPlayers.filter(p => p.monitoringAgent?.toLowerCase() === userName.toLowerCase())
+        : scoutingPlayers;
+
+    const allPlayers = [...filteredDbPlayers, ...filteredScoutingPlayers];
 
     // State for Pending Users
     const [pendingUsers, setPendingUsers] = useState<any[]>([]);
 
     // State for filtering
-    const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+    const [selectedCategory, setSelectedCategory] = useState<string>(
+        (userSport !== 'General' && userSport) ? userSport : 'Todos'
+    );
+
+    // Sync state with prop (for async auth loading)
+    useEffect(() => {
+        if (userSport !== 'General' && userSport) {
+            setSelectedCategory(userSport);
+        }
+    }, [userSport]);
 
     // State for Completed (Permanent deletion)
     const [completedAlerts, setCompletedAlerts] = useState<string[]>(() => {
@@ -363,32 +390,34 @@ const AvisosModule: React.FC = () => {
                     Notificaciones inteligentes y recordatorios críticos
                 </p>
 
-                {/* Categories Filter */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    <button
-                        onClick={() => setSelectedCategory('Todos')}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap
-                            ${selectedCategory === 'Todos'
-                                ? 'bg-zinc-900 text-white shadow-lg shadow-zinc-900/20'
-                                : 'bg-white text-zinc-400 hover:bg-zinc-100 border border-zinc-100'}
-                        `}
-                    >
-                        Todos
-                    </button>
-                    {['Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].map(cat => (
+                {/* Categories Filter - Hide if user has specific sport assigned */}
+                {userSport === 'General' && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
                         <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
+                            onClick={() => setSelectedCategory('Todos')}
                             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap
-                                ${selectedCategory === cat
-                                    ? 'bg-proneo-green text-white shadow-lg shadow-proneo-green/20'
+                            ${selectedCategory === 'Todos'
+                                    ? 'bg-zinc-900 text-white shadow-lg shadow-zinc-900/20'
                                     : 'bg-white text-zinc-400 hover:bg-zinc-100 border border-zinc-100'}
-                            `}
+                        `}
                         >
-                            {cat}
+                            Todos
                         </button>
-                    ))}
-                </div>
+                        {['Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap
+                                ${selectedCategory === cat
+                                        ? 'bg-proneo-green text-white shadow-lg shadow-proneo-green/20'
+                                        : 'bg-white text-zinc-400 hover:bg-zinc-100 border border-zinc-100'}
+                            `}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="space-y-12">

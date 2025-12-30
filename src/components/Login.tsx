@@ -5,7 +5,7 @@ import {
     createUserWithEmailAndPassword,
     updateProfile
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 const Login: React.FC = () => {
@@ -41,15 +41,27 @@ const Login: React.FC = () => {
                     displayName: name
                 });
 
-                // Create User Document in Firestore (Pending Approval)
-                const isOwner = email === 'jaume@proneosports.com';
-                await setDoc(doc(db, 'users', email), {
-                    email,
-                    name,
-                    role: isOwner ? 'admin' : 'guest',
-                    approved: isOwner, // Auto-approve owner
-                    createdAt: new Date().toISOString()
-                });
+                // Check if User Document exists (Pre-approved by Admin)
+                const userDocRef = doc(db, 'users', email);
+                const userDocSnap = await getDoc(userDocRef);
+
+                if (userDocSnap.exists()) {
+                    // If exists, only update Name if needed, preserve Role/Approved
+                    await updateDoc(userDocRef, {
+                        name: name,
+                        // role & approved are preserved from Admin creation
+                    });
+                } else {
+                    // Create New User Document (Pending Approval)
+                    const isOwner = email === 'jaume@proneosports.com';
+                    await setDoc(userDocRef, {
+                        email,
+                        name,
+                        role: isOwner ? 'admin' : 'guest',
+                        approved: isOwner,
+                        createdAt: new Date().toISOString()
+                    });
+                }
 
             } else {
                 // LOGIN FLOW

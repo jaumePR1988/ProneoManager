@@ -18,19 +18,19 @@ const AgencyExpiryReportPreview: React.FC<AgencyExpiryReportPreviewProps> = ({ o
     // - GREEN: > 12 months (HIDDEN)
 
     const now = new Date();
+    const threeMonthsFromNow = new Date();
+    threeMonthsFromNow.setMonth(now.getMonth() + 3);
+
     const sixMonthsFromNow = new Date();
     sixMonthsFromNow.setMonth(now.getMonth() + 6);
-
-    const oneYearFromNow = new Date();
-    oneYearFromNow.setFullYear(now.getFullYear() + 1);
 
     const getStatus = (dateStr?: string) => {
         if (!dateStr) return 'unknown';
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return 'unknown';
 
-        if (date <= sixMonthsFromNow) return 'urgent';
-        if (date <= oneYearFromNow) return 'warning';
+        if (date <= threeMonthsFromNow) return 'urgent';
+        if (date <= sixMonthsFromNow) return 'warning';
         return 'safe';
     };
 

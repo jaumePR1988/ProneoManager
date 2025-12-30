@@ -45,6 +45,13 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
         }
     }, [player.seasons]);
 
+    // Sync other fields when player updates (Fix for "Save not updating view")
+    useEffect(() => {
+        setPalmares(player.customFields?.palmares || '');
+        setClause(player.contract?.clause || '');
+        setInternationalStatus(player.selection || 'No internacional');
+    }, [player]);
+
     const handleQuickSave = async () => {
         setIsSaving(true);
         try {
@@ -162,13 +169,13 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                                 <div className="flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm shadow-sm transition-all hover:bg-white/30">
                                     <img
                                         src={`https://flagcdn.com/24x18/${!player.nationality ? 'es' :
-                                                player.nationality.toLowerCase() === 'españa' ? 'es' :
-                                                    player.nationality.toLowerCase() === 'francia' ? 'fr' :
-                                                        player.nationality.toLowerCase() === 'argentina' ? 'ar' :
-                                                            player.nationality.toLowerCase() === 'brasil' ? 'br' :
-                                                                player.nationality.toLowerCase() === 'inglaterra' ? 'gb-eng' :
-                                                                    player.nationality.toLowerCase() === 'alemania' ? 'de' :
-                                                                        player.nationality.toLowerCase() === 'italia' ? 'it' : 'es'
+                                            player.nationality.toLowerCase() === 'españa' ? 'es' :
+                                                player.nationality.toLowerCase() === 'francia' ? 'fr' :
+                                                    player.nationality.toLowerCase() === 'argentina' ? 'ar' :
+                                                        player.nationality.toLowerCase() === 'brasil' ? 'br' :
+                                                            player.nationality.toLowerCase() === 'inglaterra' ? 'gb-eng' :
+                                                                player.nationality.toLowerCase() === 'alemania' ? 'de' :
+                                                                    player.nationality.toLowerCase() === 'italia' ? 'it' : 'es'
                                             }.png`}
                                         alt={player.nationality || 'España'}
                                         className="h-4 object-contain"

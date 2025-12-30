@@ -13,22 +13,29 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, category = 'Fútbol
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
-        // Define standard columns
+        // Define standard columns - MUST MATCH PARSER KEYS EXACTLY
         const standardColumns = [
-            { id: 'firstName', label: 'Nombre' },
-            { id: 'lastName1', label: 'Apellido 1' },
-            { id: 'lastName2', label: 'Apellido 2' },
-            { id: 'name', label: 'Nombre Deportivo' },
-            { id: 'birthDate', label: 'Fecha Nacimiento (YYYY-MM-DD)' },
-            { id: 'nationality', label: 'Nacionalidad' },
-            { id: 'club', label: 'Club' },
-            { id: 'league', label: 'Liga' },
-            { id: 'position', label: 'Posición' },
-            { id: 'category', label: 'Categoría (Fútbol/F. Sala/Femenino/Entrenadores)' },
-            { id: 'preferredFoot', label: 'Pierna Hábil' },
-            { id: 'endDate', label: 'Fin Contrato' },
-            { id: 'sportsBrand', label: 'Marca Deportiva' },
-            { id: 'monitoringAgent', label: 'Agente Seguimiento' }
+            { id: 'firstName', label: 'NOMBRE' },
+            { id: 'lastName1', label: 'PRIMER APELLIDO' },
+            { id: 'lastName2', label: 'SEGUNDO APELLIDO' },
+            { id: 'name', label: 'NOMBRE DEPORTIVO' },
+            { id: 'birthDate', label: 'FECHA NAC.' },
+            { id: 'nationality', label: 'NACIONALIDAD' },
+            { id: 'club', label: 'EQUIPO' },
+            { id: 'league', label: 'LIGA' },
+            { id: 'position', label: 'POSICIÓN' },
+            { id: 'category', label: 'CATEGORÍA' },
+            { id: 'preferredFoot', label: 'PIERNA HÁBIL' },
+            { id: 'sportsBrand', label: 'MARCA' },
+            { id: 'sportsBrandEndDate', label: 'FIN MARCA' },
+            { id: 'monitoringAgent', label: 'SEGUIMIENTO' },
+            { id: 'contractEndDate', label: 'FECHA FIN CONTRATO' },
+            { id: 'clause', label: 'CLAUSULA' },
+            { id: 'optional', label: 'OPCIONAL' },
+            { id: 'optionalNoticeDate', label: 'FECHA AVISO' },
+            { id: 'conditions', label: 'CONDICIONES' },
+            { id: 'contractDate', label: 'FECHA CONTRATO' },
+            { id: 'agencyEndDate', label: 'FECHA FIN' }
         ];
 
         // Add custom columns from schema
@@ -67,6 +74,13 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, category = 'Fútbol
             const data = XLSX.utils.sheet_to_json(ws);
 
             const importedPlayers: Partial<Player>[] = data.map((row: any) => {
+                // Determine Category: From Prop OR From File (File takes precedence if valid)
+                let rowCategory: Category = category;
+                const fileCat = String(row['CATEGORÍA'] || '').trim();
+                if (fileCat && ['Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].includes(fileCat)) {
+                    rowCategory = fileCat as Category;
+                }
+
                 // Header mapping based on specification
                 const p: Partial<Player> = {
                     firstName: String(row['NOMBRE'] || '').trim(),
@@ -77,7 +91,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, category = 'Fútbol
                     nationality: String(row['NACIONALIDAD'] || 'España').trim(),
                     position: (row['POSICIÓN'] || 'Ala') as Position,
                     preferredFoot: (row['PIERNA HÁBIL'] || 'Derecha') as PreferredFoot,
-                    category: category,
+                    category: rowCategory,
                     birthDate: row['FECHA NAC.'] instanceof Date ? row['FECHA NAC.'].toISOString().split('T')[0] : String(row['FECHA NAC.'] || ''),
                     sportsBrand: String(row['MARCA'] || 'Joma').trim(),
                     sportsBrandEndDate: row['FIN MARCA'] instanceof Date ? row['FIN MARCA'].toISOString().split('T')[0] : String(row['FIN MARCA'] || ''),
@@ -101,7 +115,8 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, category = 'Fútbol
                 };
 
                 // Add display name
-                p.name = `${p.firstName} ${p.lastName1}`.trim();
+                const nickname = String(row['NOMBRE DEPORTIVO'] || '').trim();
+                p.name = nickname || `${p.firstName} ${p.lastName1}`.trim();
 
                 // Add age if birthDate exists
                 if (p.birthDate) {

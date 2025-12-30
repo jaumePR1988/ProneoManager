@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     FileText,
     Download,
@@ -20,14 +20,34 @@ import AgencyExpiryReportPreview from './AgencyExpiryReportPreview';
 import ScoutingPreview from './ScoutingPreview';
 
 interface ReportsModuleProps {
-    userRole?: string;
+    userRole: string;
+    userSport?: string;
+    userName?: string;
 }
 
-const ReportsModule: React.FC<ReportsModuleProps> = ({ userRole }) => {
+const ReportsModule: React.FC<ReportsModuleProps> = ({ userRole, userSport = 'General', userName }) => {
     const role = (userRole || 'guest').toLowerCase();
     const isAdmin = role === 'admin' || role === 'director';
-    const { players: databasePlayers } = usePlayers(false); // Fetch database players for the report
-    const { players: scoutingPlayers } = usePlayers(true); // Fetch scouting players for the report
+    const isExternalScout = role === 'external_scout';
+
+    const { players: allDatabasePlayers } = usePlayers(false);
+    const { players: allScoutingPlayers } = usePlayers(true);
+
+    const databasePlayers = useMemo(() => {
+        let filtered = userSport === 'General' ? allDatabasePlayers : allDatabasePlayers.filter(p => p.category === userSport);
+        if (isExternalScout && userName) {
+            filtered = filtered.filter(p => p.monitoringAgent?.toLowerCase() === userName.toLowerCase());
+        }
+        return filtered;
+    }, [allDatabasePlayers, userSport, isExternalScout, userName]);
+
+    const scoutingPlayers = useMemo(() => {
+        let filtered = userSport === 'General' ? allScoutingPlayers : allScoutingPlayers.filter(p => p.category === userSport);
+        if (isExternalScout && userName) {
+            filtered = filtered.filter(p => p.monitoringAgent?.toLowerCase() === userName.toLowerCase());
+        }
+        return filtered;
+    }, [allScoutingPlayers, userSport, isExternalScout, userName]);
     const { history: reports, addReport } = useReportHistory();
 
     const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);

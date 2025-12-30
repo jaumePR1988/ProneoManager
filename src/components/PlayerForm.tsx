@@ -111,6 +111,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
             <PlayerProfile360
                 player={initialData as Player}
                 onClose={() => setShowProfile360(false)}
+                onSave={onSave}
             />
         );
     }

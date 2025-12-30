@@ -13,7 +13,8 @@ import {
     GripVertical,
     FileText,
     FileSpreadsheet,
-    RefreshCw
+    RefreshCw,
+    Trash2
 } from 'lucide-react';
 import { TableVirtuoso } from 'react-virtuoso';
 import { usePlayers } from '../hooks/usePlayers';
@@ -80,26 +81,71 @@ interface ColumnConfig {
 }
 
 interface PlayerModuleProps {
-    userRole?: string;
+    userRole: string;
+    userSport?: string;
+    userName?: string;
 }
 
-const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
+const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'General', userName }) => {
+    // Determine effective role
     const role = (userRole || 'guest').toLowerCase();
     const isAdmin = role === 'admin' || role === 'director';
-    const [selectedCategory, setSelectedCategory] = useState<Category | 'All'>('All');
+    const isExternalScout = role === 'external_scout';
+
+    const { players: allPlayers, loading, deletePlayer } = usePlayers();
+
+    // Init state
+    const [selectedCategory, setSelectedCategory] = useState<string>(
+        (userSport !== 'General' && userSport) ? userSport : 'Fútbol'
+    );
+
+    // Sync when userSport changes
+    useEffect(() => {
+        if (userSport !== 'General' && userSport) {
+            setSelectedCategory(userSport);
+        }
+    }, [userSport]);
+
+    // Filtering logic
+    const players = useMemo(() => {
+        let filtered = allPlayers;
+
+        // 1. Filter by Sport (Specialty)
+        if (userSport !== 'General') {
+            filtered = filtered.filter(p => p.category === userSport);
+        }
+
+        // 2. Filter by External Scout (Assigned only)
+        if (isExternalScout && userName) {
+            filtered = filtered.filter(p =>
+                p.monitoringAgent?.toLowerCase() === userName.toLowerCase()
+            );
+        }
+
+        return filtered;
+    }, [allPlayers, userSport, isExternalScout, userName]);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortField, setSortField] = useState<string>('lastName1');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
     const [showColumnSelector, setShowColumnSelector] = useState(false);
 
-    const { players, schema, systemLists, loading, addPlayer, updatePlayer, deletePlayer, refresh } = usePlayers(false);
+    const { schema, systemLists, addPlayer, updatePlayer, refresh } = usePlayers(false);
     const [isReducedView, setIsReducedView] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const categories: (Category | 'All')[] = ['All', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'];
 
+    // Enforce userSport if it's provided and not 'General'
+    useEffect(() => {
+        if (userSport !== 'General' && userSport) {
+            setSelectedCategory(userSport as Category);
+        }
+    }, [userSport]);
+
     // Define all available columns with their specific rendering logic
     const allColumns: ColumnConfig[] = useMemo(() => [
+        { id: 'selection', label: 'Sel.' },
         { id: 'firstName', label: 'Nombre', className: "group-hover:text-[#b4c885] italic transition-colors font-black uppercase text-left pl-4" },
         { id: 'lastName1', label: '1er Apellido', className: "font-bold" },
         { id: 'lastName2', label: '2do Apellido', className: "text-zinc-400" },
@@ -115,7 +161,6 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
                 return '-';
             }
         },
-        { id: 'selection', label: 'Sel.' },
         { id: 'league', label: 'Liga' },
         { id: 'club', label: 'Equipo', className: "font-black text-zinc-900" },
         { id: 'endDate', label: 'Fin Contrato', className: "text-red-500", render: (p) => p.contract?.endDate || '' },
@@ -196,18 +241,28 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
                 return allColumns.map(c => c.id);
             }
 
-            // 2. If populated, only append NEW columns that don't exist in prev
+            // 2. Identify new columns
             const currentSet = new Set(prev);
             const newCols = allColumns
                 .filter(c => !currentSet.has(c.id))
                 .map(c => c.id);
 
-            if (newCols.length > 0) {
-                return [...prev, ...newCols];
+            // 3. Logic: If 'selection' is new, verify it is placed at the start
+            // Or if we have new columns, append them, but keep 'selection' at 0 if it exists
+
+            let next = [...prev];
+
+            // If we discovered 'selection' is new (or missing), we want it at the start
+            if (newCols.includes('selection')) {
+                next = ['selection', ...prev.filter(c => c !== 'selection')];
+                // Remove selection from newCols so we don't double add
+                const otherNew = newCols.filter(c => c !== 'selection');
+                next = [...next, ...otherNew];
+            } else if (newCols.length > 0) {
+                next = [...prev, ...newCols];
             }
 
-            // 3. No changes needed
-            return prev;
+            return next;
         });
     }, [allColumns]);
 
@@ -259,10 +314,16 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
 
     const filteredAndSortedPlayers = useMemo(() => {
         let result = players.filter(p => {
-            const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+            // 1. Sport/Category Filter (Strict enforcement if userSport is active)
+            if (userSport !== 'General') {
+                return p.category === userSport;
+            } else {
+                return selectedCategory === 'All' || p.category === selectedCategory;
+            }
+        }).filter(p => {
+            // 2. Search Filter
             const searchStr = `${p.firstName} ${p.lastName1} ${p.lastName2} ${p.club} ${p.name}`.toLowerCase();
-            const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
-            return matchesCategory && matchesSearch;
+            return searchStr.includes(searchTerm.toLowerCase());
         });
 
         result.sort((a: any, b: any) => {
@@ -299,7 +360,46 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
         });
 
         return result;
-    }, [players, selectedCategory, searchTerm, sortField, sortDirection]);
+    }, [players, selectedCategory, searchTerm, sortField, sortDirection, userSport]);
+
+    const toggleSelectAll = () => {
+        const allIds = filteredAndSortedPlayers.map(p => p.id);
+        const allSelected = allIds.every(id => selectedIds.has(id));
+
+        if (allSelected) {
+            const newSet = new Set(selectedIds);
+            allIds.forEach(id => newSet.delete(id));
+            setSelectedIds(newSet);
+        } else {
+            const newSet = new Set(selectedIds);
+            allIds.forEach(id => newSet.add(id));
+            setSelectedIds(newSet);
+        }
+    };
+
+    const toggleSelectOne = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setSelectedIds(newSet);
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+
+        if (window.confirm(`¿Estás seguro de eliminar ${selectedIds.size} perfiles seleccionados? Esta acción no se puede deshacer.`)) {
+            for (const id of selectedIds) {
+                await deletePlayer(id);
+            }
+            setSelectedIds(new Set());
+            if (refresh) refresh();
+        }
+    };
+
 
     const handleSort = (field: string) => {
         if (sortField === field) {
@@ -488,18 +588,35 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[32px] border border-zinc-100 shadow-sm relative">
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 md:pb-0 text-left">
-                    {categories.map(cat => (
+                    {selectedIds.size > 0 && (
                         <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-5 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${selectedCategory === cat
-                                ? 'bg-[#b4c885] text-white border-[#b4c885] shadow-lg shadow-[#b4c885]/20'
-                                : 'bg-zinc-50 text-zinc-400 border-zinc-100 hover:border-zinc-300 hover:text-zinc-600'
-                                }`}
+                            onClick={handleBulkDelete}
+                            className="px-4 h-10 rounded-xl bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest mr-2 transition-all animate-in fade-in zoom-in-50"
                         >
-                            {cat === 'All' ? 'Todos' : cat}
+                            <Trash2 className="w-4 h-4" />
+                            <span>Eliminar ({selectedIds.size})</span>
                         </button>
-                    ))}
+                    )}
+                    {/* Categorías Tabs - Hide if user has specific sport assigned */}
+                    {userSport === 'General' && (
+                        <nav className="flex space-x-1 p-1 bg-zinc-100/50 rounded-xl w-fit">
+                            {(['All', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'] as (Category | 'All')[]).map((cat) => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setSelectedCategory(cat)}
+                                    className={`
+                                    px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all
+                                    ${selectedCategory === cat
+                                            ? 'bg-white text-[#b4c885] shadow-sm ring-1 ring-black/5'
+                                            : 'text-zinc-400 hover:text-zinc-600 hover:bg-white/50'
+                                        }
+                                `}
+                                >
+                                    {cat === 'All' ? 'Todos' : cat}
+                                </button>
+                            ))}
+                        </nav>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -661,6 +778,20 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
                             <tr className="text-left bg-zinc-50">
                                 <th className="px-2 py-3 text-[9px] font-black text-zinc-900 uppercase tracking-tighter border border-zinc-200 bg-[#e1e9cc] whitespace-nowrap sticky top-0 z-20">Nº</th>
                                 {visibleColumns.map((colId, index) => {
+                                    if (colId === 'selection') {
+                                        const allVisibleSelected = filteredAndSortedPlayers.length > 0 && filteredAndSortedPlayers.every(p => selectedIds.has(p.id));
+                                        return (
+                                            <th key="selection" className="px-2 py-3 border border-zinc-200 bg-[#e1e9cc] sticky top-0 z-20 w-10 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={allVisibleSelected}
+                                                    onChange={toggleSelectAll}
+                                                    className="w-4 h-4 rounded border-zinc-300 text-[#b4c885] focus:ring-[#b4c885]"
+                                                />
+                                            </th>
+                                        );
+                                    }
+
                                     const config = allColumns.find(c => c.id === colId);
                                     if (!config) return null;
 
@@ -694,6 +825,21 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole }) => {
                                     if (!config) return null;
 
                                     if (isReducedView && systemLists.reducedColumns && !systemLists.reducedColumns.includes(colId)) return null;
+
+                                    if (colId === 'selection') {
+                                        return (
+                                            <TableCell key={colId} className="">
+                                                <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(player.id)}
+                                                        onChange={(e) => toggleSelectOne(player.id, e)}
+                                                        className="w-4 h-4 rounded border-zinc-300 text-[#b4c885] focus:ring-[#b4c885]"
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                        );
+                                    }
 
                                     let content: React.ReactNode = (player as any)[colId];
                                     if (config.render) {

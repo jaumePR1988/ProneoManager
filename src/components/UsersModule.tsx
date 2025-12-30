@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Shield } from 'lucide-react';
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { Check, X, Shield, Plus, Save, AlertCircle } from 'lucide-react';
+import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 interface UserData {
@@ -15,6 +15,14 @@ interface UserData {
 const UsersModule: React.FC = () => {
     const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newUser, setNewUser] = useState({
+        email: '',
+        name: '',
+        role: 'scout',
+        sport: 'General'
+    });
+    const [createError, setCreateError] = useState('');
 
     useEffect(() => {
         const q = query(collection(db, 'users'));
@@ -51,6 +59,37 @@ const UsersModule: React.FC = () => {
         await updateDoc(doc(db, 'users', email), { sport: newSport });
     };
 
+    const handleCreateUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCreateError('');
+
+        if (!newUser.email || !newUser.name) {
+            setCreateError('Todos los campos son obligatorios');
+            return;
+        }
+
+        if (!newUser.email.endsWith('@proneosports.com')) {
+            setCreateError('Debe ser un correo @proneosports.com');
+            return;
+        }
+
+        try {
+            await setDoc(doc(db, 'users', newUser.email), {
+                email: newUser.email,
+                name: newUser.name,
+                role: newUser.role,
+                sport: newUser.sport,
+                approved: true,
+                createdAt: new Date().toISOString()
+            });
+            setShowCreateModal(false);
+            setNewUser({ email: '', name: '', role: 'scout', sport: 'General' });
+        } catch (err: any) {
+            console.error("Error creating user:", err);
+            setCreateError('Error al crear usuario. Verifica que no exista.');
+        }
+    };
+
     return (
         <div className="space-y-6">
             <header className="flex items-center justify-between">
@@ -58,6 +97,13 @@ const UsersModule: React.FC = () => {
                     <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase italic">Gestión de Usuarios</h1>
                     <p className="text-zinc-500 font-medium">Control de acceso y roles del sistema</p>
                 </div>
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-2 bg-zinc-900 text-white px-5 py-3 rounded-2xl hover:bg-[#b4c885] transition-all font-black uppercase tracking-widest text-xs shadow-lg shadow-zinc-200"
+                >
+                    <Plus className="w-4 h-4" />
+                    Crear Usuario
+                </button>
             </header>
 
             <div className="bg-white rounded-3xl shadow-xl shadow-zinc-200/50 border border-zinc-100 overflow-hidden w-full">
@@ -97,6 +143,7 @@ const UsersModule: React.FC = () => {
                                             <option value="tesorero">Tesorero/a</option>
                                             <option value="agent">Agente</option>
                                             <option value="scout">Scout</option>
+                                            <option value="external_scout">Scout Externo</option>
                                             <option value="guest">Invitado</option>
                                         </select>
                                     </div>
@@ -167,6 +214,96 @@ const UsersModule: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {showCreateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-[32px] p-8 w-full max-w-md shadow-2xl space-y-6 relative">
+                        <button
+                            onClick={() => setShowCreateModal(false)}
+                            className="absolute top-6 right-6 text-zinc-400 hover:text-zinc-600 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="space-y-1">
+                            <h2 className="text-xl font-black text-zinc-900 uppercase">Nuevo Usuario</h2>
+                            <p className="text-xs font-bold text-zinc-400">Pre-vincular cuenta para acceso inmediato</p>
+                        </div>
+
+                        <form onSubmit={handleCreateUser} className="space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest pl-2">Nombre Completo</label>
+                                <input
+                                    type="text"
+                                    value={newUser.name}
+                                    onChange={e => setNewUser({ ...newUser, name: e.target.value })}
+                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl h-11 px-4 font-bold text-zinc-700 focus:bg-white focus:ring-4 focus:ring-[#b4c885]/10 focus:border-[#b4c885]/50 outline-none transition-all"
+                                    placeholder="Ej. Pepito Pérez"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest pl-2">Email Corporativo</label>
+                                <input
+                                    type="email"
+                                    value={newUser.email}
+                                    onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl h-11 px-4 font-bold text-zinc-700 focus:bg-white focus:ring-4 focus:ring-[#b4c885]/10 focus:border-[#b4c885]/50 outline-none transition-all"
+                                    placeholder="usuario@proneosports.com"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest pl-2">Rol</label>
+                                    <select
+                                        value={newUser.role}
+                                        onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                                        className="w-full bg-zinc-50 border border-zinc-200 rounded-xl h-11 px-4 font-bold text-zinc-700 focus:bg-white focus:ring-4 focus:ring-[#b4c885]/10 focus:border-[#b4c885]/50 outline-none transition-all appearance-none"
+                                    >
+                                        <option value="director">Director</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="tesorero">Tesorero/a</option>
+                                        <option value="agent">Agente</option>
+                                        <option value="scout">Scout</option>
+                                        <option value="external_scout">Scout Externo</option>
+                                        <option value="guest">Invitado</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest pl-2">Especialidad</label>
+                                    <select
+                                        value={newUser.sport}
+                                        onChange={e => setNewUser({ ...newUser, sport: e.target.value })}
+                                        className="w-full bg-zinc-50 border border-zinc-200 rounded-xl h-11 px-4 font-bold text-zinc-700 focus:bg-white focus:ring-4 focus:ring-[#b4c885]/10 focus:border-[#b4c885]/50 outline-none transition-all appearance-none"
+                                    >
+                                        <option value="General">General</option>
+                                        <option value="Fútbol">Fútbol</option>
+                                        <option value="F. Sala">F. Sala</option>
+                                        <option value="Femenino">Femenino</option>
+                                        <option value="Entrenadores">Entrenadores</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {createError && (
+                                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-500 text-xs font-bold flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {createError}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                className="w-full bg-[#b4c885] text-white h-12 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#a3b675] hover:shadow-lg hover:shadow-[#b4c885]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                            >
+                                <Save className="w-4 h-4" />
+                                Crear Usuario
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

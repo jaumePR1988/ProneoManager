@@ -13,9 +13,14 @@ export interface DynamicField {
 }
 
 export interface PlayerSeason {
+    id?: string;
     season: string;
-    team: string;
-    league: string;
+    club: string;       // Was 'team'
+    division: string;   // Was 'league'
+    matches: number;
+    goals: number;
+    minutes: number;
+    cards: number;
 }
 
 export interface PlayerContract {

@@ -33,6 +33,7 @@ function App() {
     const { addPlayer } = usePlayers();
 
     const [userRole, setUserRole] = useState<string>('guest');
+    const [userSport, setUserSport] = useState<string>('General');
 
     useEffect(() => {
         if (isDemoMode) {
@@ -42,6 +43,7 @@ function App() {
                 photoURL: 'https://i.pravatar.cc/150?u=proneo'
             } as FirebaseUser);
             setUserRole('admin');
+            setUserSport('General');
             setLoading(false);
             return;
         }
@@ -82,6 +84,7 @@ function App() {
                             }
 
                             setUserRole(finalRole);
+                            setUserSport(userData.sport || 'General');
                             setUser(firebaseUser);
                             setError(null);
                         } else {
@@ -93,6 +96,8 @@ function App() {
                                 email: userEmail,
                                 name: firebaseUser.displayName || userEmail.split('@')[0],
                                 role: 'guest',
+                                limitRole: 'guest', // redundancy
+                                sport: 'General',
                                 approved: false,
                                 createdAt: new Date().toISOString()
                             });
@@ -113,6 +118,7 @@ function App() {
             } else {
                 setUser(null);
                 setUserRole('guest');
+                setUserSport('General');
             }
             setLoading(false);
         });
@@ -126,15 +132,15 @@ function App() {
             case 'dashboard':
                 return <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
             case 'players':
-                return <PlayerModule userRole={userRole} />;
+                return <PlayerModule userRole={userRole} userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} />;
             case 'scouting':
-                return <ScoutingModule />;
+                return <ScoutingModule userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} userRole={userRole} />;
             case 'reports':
-                return <ReportsModule userRole={userRole} />;
+                return <ReportsModule userRole={userRole} userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} />;
             case 'admin':
                 return <AdministrationModule />;
             case 'avisos':
-                return <AvisosModule />;
+                return <AvisosModule userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} userRole={userRole} />;
             case 'settings':
                 return <SettingsModule />;
             case 'users':

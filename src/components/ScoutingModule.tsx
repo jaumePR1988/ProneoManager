@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     MessageSquare,
     Calendar,
@@ -14,8 +14,32 @@ import PlayerForm from './PlayerForm';
 import { Player } from '../types/player';
 import ScoutingPreview from './ScoutingPreview';
 
-const ScoutingModule: React.FC = () => {
-    const { players: scoutingPlayers, loading, addPlayer, updatePlayer } = usePlayers(true);
+interface ScoutingModuleProps {
+    userSport?: string;
+    userRole?: string;
+    userName?: string;
+}
+
+const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', userRole = 'scout', userName }) => {
+    const { players: allScoutingPlayers, loading, addPlayer, updatePlayer } = usePlayers(true);
+
+    const scoutingPlayers = useMemo(() => {
+        let filtered = allScoutingPlayers;
+
+        // 1. Sport Filter
+        if (userSport !== 'General') {
+            filtered = filtered.filter(p => p.category === userSport);
+        }
+
+        // 2. External Scout Filter
+        if (userRole === 'external_scout' && userName) {
+            filtered = filtered.filter(p =>
+                p.monitoringAgent?.toLowerCase() === userName.toLowerCase()
+            );
+        }
+
+        return filtered;
+    }, [allScoutingPlayers, userSport, userRole, userName]);
 
     const [isScoutingFormOpen, setIsScoutingFormOpen] = useState(false);
     const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
