@@ -71,7 +71,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                         className="w-48 h-auto object-contain mb-2"
                     />
                     <div className="h-1 w-12 bg-proneo-green rounded-full opacity-20" />
-                    <p className="text-[10px] font-black text-proneo-green bg-proneo-green/10 px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm border border-proneo-green/20 mt-1">v1.0.0</p>
+                    <p className="text-[10px] font-black text-white bg-red-500 px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg shadow-red-500/20 mt-1 animate-pulse">v1.0.2</p>
                 </div>
 
                 <nav className="flex-1 space-y-2">
