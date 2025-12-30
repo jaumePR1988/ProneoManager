@@ -71,7 +71,9 @@ const ReportsModule: React.FC<ReportsModuleProps> = ({ userRole, userSport = 'Ge
     };
 
     const handleBackup = () => {
-        const dataStr = JSON.stringify(databasePlayers, null, 2);
+        // Backup ALL players (Database + Scouting) to ensure full restore capability
+        const fullBackup = [...allDatabasePlayers, ...allScoutingPlayers];
+        const dataStr = JSON.stringify(fullBackup, null, 2);
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
         const exportFileDefaultName = `proneo_backup_${new Date().toISOString().slice(0, 10)}.json`;
         const linkElement = document.createElement('a');
