@@ -5,7 +5,8 @@ import {
     UserPlus,
     Target,
     Search,
-    Plus
+    Plus,
+    Trash2
 } from 'lucide-react';
 import { TableVirtuoso } from 'react-virtuoso';
 import { usePlayers } from '../hooks/usePlayers';
@@ -21,7 +22,7 @@ interface ScoutingModuleProps {
 }
 
 const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', userRole = 'scout', userName }) => {
-    const { players: allScoutingPlayers, loading, addPlayer, updatePlayer } = usePlayers(true);
+    const { players: allScoutingPlayers, loading, addPlayer, updatePlayer, deletePlayer } = usePlayers(true);
 
     const scoutingPlayers = useMemo(() => {
         let filtered = allScoutingPlayers;
@@ -45,6 +46,34 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
     const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
     const [editingScouting, setEditingScouting] = useState<Player | null>(null);
     const [signingPlayer, setSigningPlayer] = useState<Player | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    const toggleSelection = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const toggleAll = () => {
+        if (selectedIds.size === scoutingPlayers.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(scoutingPlayers.map(p => p.id)));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (window.confirm(`¿Estás seguro de eliminar ${selectedIds.size} jugadores? Esta acción no se puede deshacer.`)) {
+            for (const id of selectedIds) {
+                await deletePlayer(id);
+            }
+            setSelectedIds(new Set());
+        }
+    };
 
     const handleSaveScouting = async (data: Partial<Player>) => {
         if (editingScouting) {
@@ -139,6 +168,18 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                         Nuevo Objetivo
                     </button>
                 </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 md:pb-0 text-left">
+                    {selectedIds.size > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            className="px-4 h-10 rounded-xl bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest mr-2 transition-all animate-in fade-in zoom-in-50"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Eliminar ({selectedIds.size})
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* High-Density Scouting Table */}
@@ -149,6 +190,16 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                         data={scoutingPlayers}
                         fixedHeaderContent={() => (
                             <tr className="border-b border-zinc-100 bg-zinc-50/50 text-left">
+                                <th className="px-6 py-4 bg-white sticky top-0 z-20 w-[50px]">
+                                    <div className="flex items-center justify-center">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 rounded-md border-zinc-300 text-proneo-green focus:ring-proneo-green"
+                                            checked={scoutingPlayers.length > 0 && selectedIds.size === scoutingPlayers.length}
+                                            onChange={toggleAll}
+                                        />
+                                    </div>
+                                </th>
                                 <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20 w-[30%]">Objetivo</th>
                                 <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente / Fin Contrato</th>
                                 <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente Proneo</th>
@@ -158,6 +209,19 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                         )}
                         itemContent={(_, target) => (
                             <>
+                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center justify-center">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 rounded-md border-zinc-300 text-proneo-green focus:ring-proneo-green"
+                                            checked={selectedIds.has(target.id)}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                toggleSelection(target.id);
+                                            }}
+                                        />
+                                    </div>
+                                </td>
                                 <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-zinc-100 border border-zinc-200 overflow-hidden shadow-sm">
