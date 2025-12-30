@@ -252,19 +252,11 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                         {/* Column 1: Palmares & Highlights */}
                         <div className="flex flex-col gap-6">
                             <div className="bg-zinc-50 rounded-3xl p-6 border border-zinc-100 flex-1 flex flex-col shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
-                                        <Trophy className="w-4 h-4 text-yellow-500" />
-                                        Palmarés y Logros
-                                    </h3>
-                                    {!isSaving ? (
-                                        <button onClick={handleQuickSave} className="text-xs font-bold text-proneo-green hover:underline uppercase tracking-wide print:hidden">
-                                            Guardar
-                                        </button>
-                                    ) : (
-                                        <span className="text-xs font-bold text-zinc-400 animate-pulse">Guardando...</span>
-                                    )}
-                                </div>
+                                <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <Trophy className="w-4 h-4 text-yellow-500" />
+                                    Palmarés y Logros
+                                </h3>
+
                                 <textarea
                                     value={palmares}
                                     onChange={(e) => setPalmares(e.target.value)}
@@ -384,7 +376,7 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

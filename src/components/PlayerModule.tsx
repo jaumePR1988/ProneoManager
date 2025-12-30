@@ -583,7 +583,10 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                 <PlayerForm
                     initialData={editingPlayer}
                     onClose={() => setEditingPlayer(null)}
-                    onSave={async (data) => { await updatePlayer(editingPlayer.id, data); }}
+                    onSave={async (data) => {
+                        await updatePlayer(editingPlayer.id, data);
+                        setEditingPlayer({ ...editingPlayer, ...data } as Player);
+                    }}
                     onDelete={async (id) => {
                         await deletePlayer(id);
                         if (refresh) refresh();
