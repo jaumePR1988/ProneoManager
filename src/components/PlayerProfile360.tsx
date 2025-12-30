@@ -117,8 +117,22 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                 <button
                     onClick={handlePrint}
                     className="absolute top-6 right-20 z-20 w-10 h-10 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors print:hidden"
+                    title="Imprimir"
                 >
                     <Printer className="w-5 h-5 text-zinc-800" />
+                </button>
+
+                {/* Save Button (Hidden on Print) - ADDED FOR VISIBILITY */}
+                <button
+                    onClick={handleQuickSave}
+                    className="absolute top-6 right-[8.5rem] z-20 w-10 h-10 bg-[#b4c885] hover:bg-[#a3b774] rounded-full flex items-center justify-center transition-colors print:hidden shadow-sm"
+                    title="Guardar Cambios"
+                >
+                    {isSaving ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <Save className="w-5 h-5 text-white" />
+                    )}
                 </button>
 
                 {/* Left Panel: Visual Identity (The "Card") */}
