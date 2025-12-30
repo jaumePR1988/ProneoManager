@@ -68,8 +68,15 @@ export interface ContractYear {
     id: string;
     year: string; // e.g. "2024/2025"
     salary: number; // Net salary
+    currency?: string; // 'EUR', 'USD', 'GBP'
+
+    clubCommissionType: 'percentage' | 'fixed';
     clubCommissionPct: number;
+    clubCommissionFixed?: number;
+
+    playerCommissionType: 'percentage' | 'fixed';
     playerCommissionPct: number;
+    playerCommissionFixed?: number;
 
     // New fields for Administration/Billing
     clubPayment: PaymentInfo;

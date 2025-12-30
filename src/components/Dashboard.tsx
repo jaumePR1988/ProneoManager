@@ -33,8 +33,14 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
     const totalCommission = useMemo(() => {
         return allPlayers.reduce((total, player) => {
             const playerTotal = (player.contractYears || []).reduce((yearTotal, year) => {
-                const clubComm = Number(year.salary) * (Number(year.clubCommissionPct) / 100);
-                const playerComm = Number(year.salary) * (Number(year.playerCommissionPct) / 100);
+                const clubComm = year.clubCommissionType === 'fixed'
+                    ? (Number(year.clubCommissionFixed) || 0)
+                    : (Number(year.salary) * (Number(year.clubCommissionPct) || 0) / 100);
+
+                const playerComm = year.playerCommissionType === 'fixed'
+                    ? (Number(year.playerCommissionFixed) || 0)
+                    : (Number(year.salary) * (Number(year.playerCommissionPct) || 0) / 100);
+
                 return yearTotal + clubComm + playerComm;
             }, 0);
             return total + playerTotal;
@@ -252,7 +258,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
                     <div className="space-y-4">
                         {[
                             { label: 'Fin Contrato Proneo (Año)', value: renovationCount.toString(), color: renovationCount > 0 ? 'text-red-500' : 'text-zinc-600' },
-                            { label: 'Ligas Activas', value: leagueData.length.toString(), color: 'text-blue-500' },
+                            { label: 'Ligas Activas', value: new Set(allPlayers.map(p => p.league).filter(Boolean)).size.toString(), color: 'text-blue-500' },
                             { label: 'Scouting Activo', value: scoutingCount.toString(), color: 'text-proneo-green' },
                         ].map((item, i) => (
                             <div key={i} className="flex items-center justify-between p-5 rounded-3xl bg-zinc-50 border border-zinc-100 group hover:border-proneo-green/20 transition-all">

@@ -184,9 +184,14 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                 ...formData,
                 contractYears: (formData.contractYears || []).map(y => ({
                     ...y,
+                    currency: y.currency || 'EUR',
                     salary: Number(y.salary) || 0,
+                    clubCommissionType: y.clubCommissionType || 'percentage',
                     clubCommissionPct: Number(y.clubCommissionPct) || 0,
-                    playerCommissionPct: Number(y.playerCommissionPct) || 0
+                    clubCommissionFixed: Number(y.clubCommissionFixed) || 0,
+                    playerCommissionType: y.playerCommissionType || 'percentage',
+                    playerCommissionPct: Number(y.playerCommissionPct) || 0,
+                    playerCommissionFixed: Number(y.playerCommissionFixed) || 0,
                 }))
             };
             await onSave(sanitizedData);
@@ -568,7 +573,24 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                             />
                                         </div>
                                         <div className="flex-1 space-y-1">
-                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Salario</span>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Salario</span>
+                                                <select
+                                                    value={year.currency || 'EUR'}
+                                                    onChange={(e) => {
+                                                        const newYears = [...(formData.contractYears || [])];
+                                                        newYears[index] = { ...newYears[index], currency: e.target.value };
+                                                        setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                    }}
+                                                    className="text-[9px] font-bold text-zinc-500 bg-transparent outline-none cursor-pointer hover:text-zinc-800"
+                                                >
+                                                    <option value="EUR">EUR (€)</option>
+                                                    <option value="USD">USD ($)</option>
+                                                    <option value="GBP">GBP (£)</option>
+                                                    <option value="JPY">JPY (¥)</option>
+                                                    <option value="AUD">AUD ($)</option>
+                                                </select>
+                                            </div>
                                             <div className="relative">
                                                 <Input
                                                     type="number"
@@ -579,43 +601,99 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                                         setFormData(prev => ({ ...prev, contractYears: newYears }));
                                                     }}
                                                 />
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">€</span>
                                             </div>
                                         </div>
-                                        <div className="flex-1 space-y-1">
-                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">% Club</span>
+                                        <div className="w-32 space-y-1">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Club</span>
+                                                <button
+                                                    onClick={() => {
+                                                        const newYears = [...(formData.contractYears || [])];
+                                                        const currentType = newYears[index].clubCommissionType || 'percentage';
+                                                        newYears[index] = { ...newYears[index], clubCommissionType: currentType === 'percentage' ? 'fixed' : 'percentage' };
+                                                        setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                    }}
+                                                    className="bg-zinc-200 hover:bg-zinc-300 text-zinc-600 px-2 rounded text-[9px] font-bold uppercase transition-colors"
+                                                >
+                                                    {year.clubCommissionType === 'fixed' ? 'FIJO' : '%'}
+                                                </button>
+                                            </div>
                                             <div className="relative">
                                                 <Input
                                                     type="number"
-                                                    value={year.clubCommissionPct}
+                                                    value={year.clubCommissionType === 'fixed' ? year.clubCommissionFixed : year.clubCommissionPct}
                                                     onChange={(e) => {
                                                         const newYears = [...(formData.contractYears || [])];
-                                                        newYears[index] = { ...newYears[index], clubCommissionPct: e.target.value as any };
+                                                        const val = Number(e.target.value);
+                                                        if (year.clubCommissionType === 'fixed') {
+                                                            newYears[index] = { ...newYears[index], clubCommissionFixed: val };
+                                                        } else {
+                                                            newYears[index] = { ...newYears[index], clubCommissionPct: val };
+                                                        }
                                                         setFormData(prev => ({ ...prev, contractYears: newYears }));
                                                     }}
                                                 />
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">%</span>
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
+                                                    {year.clubCommissionType === 'fixed' ? (year.currency === 'USD' ? '$' : year.currency === 'GBP' ? '£' : '€') : '%'}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="flex-1 space-y-1">
-                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">% Jugador</span>
+                                        <div className="w-32 space-y-1">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Jugador</span>
+                                                <button
+                                                    onClick={() => {
+                                                        const newYears = [...(formData.contractYears || [])];
+                                                        const currentType = newYears[index].playerCommissionType || 'percentage';
+                                                        newYears[index] = { ...newYears[index], playerCommissionType: currentType === 'percentage' ? 'fixed' : 'percentage' };
+                                                        setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                    }}
+                                                    className="bg-zinc-200 hover:bg-zinc-300 text-zinc-600 px-2 rounded text-[9px] font-bold uppercase transition-colors"
+                                                >
+                                                    {year.playerCommissionType === 'fixed' ? 'FIJO' : '%'}
+                                                </button>
+                                            </div>
                                             <div className="relative">
                                                 <Input
                                                     type="number"
-                                                    value={year.playerCommissionPct}
+                                                    value={year.playerCommissionType === 'fixed' ? year.playerCommissionFixed : year.playerCommissionPct}
                                                     onChange={(e) => {
                                                         const newYears = [...(formData.contractYears || [])];
-                                                        newYears[index] = { ...newYears[index], playerCommissionPct: e.target.value as any };
+                                                        const val = Number(e.target.value);
+                                                        if (year.playerCommissionType === 'fixed') {
+                                                            newYears[index] = { ...newYears[index], playerCommissionFixed: val };
+                                                        } else {
+                                                            newYears[index] = { ...newYears[index], playerCommissionPct: val };
+                                                        }
                                                         setFormData(prev => ({ ...prev, contractYears: newYears }));
                                                     }}
                                                 />
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">%</span>
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
+                                                    {year.playerCommissionType === 'fixed' ? (year.currency === 'USD' ? '$' : year.currency === 'GBP' ? '£' : '€') : '%'}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="w-28 flex flex-col items-end justify-center pb-2">
-                                            <span className="text-[9px] font-bold text-zinc-400 uppercase">Comisión</span>
+                                            <span className="text-[9px] font-bold text-zinc-400 uppercase">Comisión Total</span>
                                             <span className="text-sm font-black text-[#b4c885]">
-                                                {((Number(year.salary) * (Number(year.clubCommissionPct) / 100)) + (Number(year.salary) * (Number(year.playerCommissionPct) / 100))).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                                                {(() => {
+                                                    const salary = Number(year.salary) || 0;
+                                                    const clubComm = year.clubCommissionType === 'fixed'
+                                                        ? (Number(year.clubCommissionFixed) || 0)
+                                                        : (salary * (Number(year.clubCommissionPct) || 0) / 100);
+
+                                                    const playerComm = year.playerCommissionType === 'fixed'
+                                                        ? (Number(year.playerCommissionFixed) || 0)
+                                                        : (salary * (Number(year.playerCommissionPct) || 0) / 100);
+
+                                                    const total = clubComm + playerComm;
+
+                                                    return total.toLocaleString('es-ES', {
+                                                        style: 'currency',
+                                                        currency: year.currency || 'EUR',
+                                                        maximumFractionDigits: 0
+                                                    });
+                                                })()}
                                             </span>
                                         </div>
                                     </div>
@@ -627,10 +705,15 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                             id: crypto.randomUUID(),
                                             year: '',
                                             salary: 0,
+                                            currency: 'EUR',
+                                            clubCommissionType: 'percentage',
                                             clubCommissionPct: 10,
+                                            clubCommissionFixed: 0,
+                                            playerCommissionType: 'percentage',
                                             playerCommissionPct: 0,
-                                            clubPayment: { status: 'Pendiente', dueDate: '' },
-                                            playerPayment: { status: 'Pendiente', dueDate: '' },
+                                            playerCommissionFixed: 0,
+                                            clubPayment: { status: 'Pendiente', dueDate: '', isPaid: false },
+                                            playerPayment: { status: 'Pendiente', dueDate: '', isPaid: false },
                                             globalStatus: 'Pendiente'
                                         };
                                         setFormData(prev => ({

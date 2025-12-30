@@ -42,15 +42,20 @@ const EconomicReportPreview: React.FC<EconomicReportPreviewProps> = ({ onClose, 
 
         const totalCommission = catPlayers.reduce((sum, p) => {
             const y = getValuesForCurrentSeason(p.contractYears);
-            // Commission calculation: If we have a calculated commission amount use it, otherwise estimate based on %?
-            // The ContractYear has `clubCommissionPct` and `playerCommissionPct`.
-            // Usually Commission = Salary * (ClubPct + PlayerPct) / 100 ? Or just ClubPct?
-            // Let's assume for this report we sum up the TOTAL commission revenue (Club + Player Pct of Salary)
-            // simplified: Commission Revenue = Salary * (clubPct + playerPct) / 100
             if (!y) return sum;
             const salary = Number(y.salary || 0);
-            const pct = Number(y.clubCommissionPct || 0) + Number(y.playerCommissionPct || 0);
-            return sum + (salary * pct / 100);
+
+            // Calculate Club Commission
+            const clubComm = y.clubCommissionType === 'fixed'
+                ? (Number(y.clubCommissionFixed) || 0)
+                : (salary * (Number(y.clubCommissionPct) || 0) / 100);
+
+            // Calculate Player Commission
+            const playerComm = y.playerCommissionType === 'fixed'
+                ? (Number(y.playerCommissionFixed) || 0)
+                : (salary * (Number(y.playerCommissionPct) || 0) / 100);
+
+            return sum + clubComm + playerComm;
         }, 0);
 
         return {
@@ -285,8 +290,29 @@ const EconomicReportPreview: React.FC<EconomicReportPreviewProps> = ({ onClose, 
                                             {stat.items.map(p => {
                                                 const y = getValuesForCurrentSeason(p.contractYears);
                                                 const salary = Number(y?.salary || 0);
-                                                const pct = Number(y?.clubCommissionPct || 0) + Number(y?.playerCommissionPct || 0);
-                                                const comm = salary * pct / 100;
+
+
+                                                // Calculate Club Commission
+                                                const clubComm = y?.clubCommissionType === 'fixed'
+                                                    ? (Number(y?.clubCommissionFixed) || 0)
+                                                    : (salary * (Number(y?.clubCommissionPct) || 0) / 100);
+
+                                                // Calculate Player Commission
+                                                const playerComm = y?.playerCommissionType === 'fixed'
+                                                    ? (Number(y?.playerCommissionFixed) || 0)
+                                                    : (salary * (Number(y?.playerCommissionPct) || 0) / 100);
+
+                                                const comm = clubComm + playerComm;
+
+                                                // Display logic for % column (mix of % and FIX)
+                                                const pctDisplay = [];
+                                                if (y?.clubCommissionType === 'fixed') pctDisplay.push(`C:Fix`);
+                                                else if (y?.clubCommissionPct) pctDisplay.push(`C:${y.clubCommissionPct}%`);
+
+                                                if (y?.playerCommissionType === 'fixed') pctDisplay.push(`P:Fix`);
+                                                else if (y?.playerCommissionPct) pctDisplay.push(`P:${y.playerCommissionPct}%`);
+
+                                                const finalPctDisplay = pctDisplay.length > 0 ? pctDisplay.join(' + ') : '0%';
 
                                                 return (
                                                     <tr key={p.id}>
@@ -301,7 +327,7 @@ const EconomicReportPreview: React.FC<EconomicReportPreviewProps> = ({ onClose, 
                                                             </span>
                                                         </td>
                                                         <td className="py-2 text-right text-[10px] font-mono text-zinc-500">{formatCurrency(salary)}</td>
-                                                        <td className="py-2 text-right text-[10px] font-mono text-zinc-500">{pct}%</td>
+                                                        <td className="py-2 text-right text-[10px] font-mono text-zinc-500">{finalPctDisplay}</td>
                                                         <td className="py-2 text-right pr-2 text-[10px] font-black text-emerald-600">{formatCurrency(comm)}</td>
                                                     </tr>
                                                 );
