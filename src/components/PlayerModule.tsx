@@ -252,7 +252,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
 
             let next = [...prev];
 
-            // If we discovered 'selection' is new (or missing), we want it at the start
+            // If we discovered 'selection' is new (or missing from prev but in allColumns), we want it at the start
             if (newCols.includes('selection')) {
                 next = ['selection', ...prev.filter(c => c !== 'selection')];
                 // Remove selection from newCols so we don't double add
@@ -260,6 +260,11 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                 next = [...next, ...otherNew];
             } else if (newCols.length > 0) {
                 next = [...prev, ...newCols];
+            }
+
+            // Safety fallback: Ensure selection is present if it exists in definitions but somehow lost
+            if (!next.includes('selection') && allColumns.some(c => c.id === 'selection') && prev.length === 0) {
+                next = ['selection', ...next];
             }
 
             return next;
