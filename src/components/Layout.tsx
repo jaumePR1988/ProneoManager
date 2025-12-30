@@ -26,8 +26,8 @@ interface LayoutProps {
 }
 
 // Define visibility rules for Header elements
-const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'profile', 'settings'];
-const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'profile'];
+const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'profile', 'settings', 'calendar'];
+const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'profile', 'calendar'];
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer }) => {
     const [pendingCount, setPendingCount] = React.useState(0);
@@ -50,6 +50,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
         { id: 'players', label: 'Futbolistas/Entrenadores', icon: Users },
         { id: 'scouting', label: 'Scouting', icon: Search, hidden: isTreasurer },
+        { id: 'calendar', label: 'Agenda', icon: Briefcase, hidden: isTreasurer || isScout },
         { id: 'reports', label: 'Reportes', icon: FileText, hidden: isTreasurer },
         { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin && !isTreasurer },
         { id: 'users', label: 'Usuarios', icon: UserCog, hidden: !isAdmin },

@@ -3,6 +3,7 @@ import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export interface UserData {
+    id: string;
     email: string;
     role: string;
     name: string;
@@ -19,6 +20,7 @@ export const useUsers = () => {
         const q = query(collection(db, 'users'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const usersData = snapshot.docs.map(doc => ({
+                id: doc.id,
                 email: doc.id,
                 ...doc.data()
             })) as UserData[];

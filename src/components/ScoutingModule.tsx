@@ -46,8 +46,8 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
 
     const [isScoutingFormOpen, setIsScoutingFormOpen] = useState(false);
     const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
-
-
+    const [editingScouting, setEditingScouting] = useState<Player | null>(null);
+    const [signingPlayer, setSigningPlayer] = useState<Player | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [viewingNote, setViewingNote] = useState<{ content: string; date: string; author: string; player: string } | null>(null);
 
