@@ -11,8 +11,7 @@ import {
     Briefcase,
     UserCircle,
     UserCog,
-    Send,
-    Sparkles
+    Send
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -71,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                         className="w-48 h-auto object-contain mb-2"
                     />
                     <div className="h-1 w-12 bg-proneo-green rounded-full opacity-20" />
-                    <p className="text-[8px] font-bold text-zinc-300 uppercase tracking-widest mt-1">v1.0.8</p>
+                    <p className="text-[8px] font-bold text-zinc-300 uppercase tracking-widest mt-1">v0.1.3</p>
                 </div>
 
                 <nav className="flex-1 space-y-2">

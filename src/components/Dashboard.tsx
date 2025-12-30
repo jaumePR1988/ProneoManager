@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import {
     Users,
     TrendingUp,
-    Calendar,
     AlertCircle,
     ArrowRight,
     Target
@@ -81,12 +80,51 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
             counts[league] = (counts[league] || 0) + 1;
         });
 
-        return Object.entries(counts)
+        // Convert to array and sort
+        const sorted = Object.entries(counts)
             .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value); // Sort max to min
+            .sort((a, b) => b.value - a.value);
+
+        // Group into "Others" if too many
+        if (sorted.length > 5) {
+            const top = sorted.slice(0, 5);
+            const othersList = sorted.slice(5);
+            const othersCount = othersList.reduce((sum, item) => sum + item.value, 0);
+            const breakdown = othersList.map(item => `${item.name} (${item.value})`).join(', ');
+
+            return [...top, { name: 'Otros', value: othersCount, breakdown }];
+        }
+
+        return sorted;
     }, [allPlayers]);
 
     const PIE_COLORS = ['#3bb34a', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'];
+
+    // Custom Tooltip Component
+    const CustomTooltip = ({ active, payload }: any) => {
+        if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            return (
+                <div className="bg-white p-4 rounded-2xl border border-zinc-100 shadow-xl">
+                    <p className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-1">
+                        {data.name}
+                    </p>
+                    <p className="text-sm font-bold text-zinc-600">
+                        {data.value} Jugadores
+                    </p>
+                    {data.breakdown && (
+                        <div className="mt-2 pt-2 border-t border-zinc-100">
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Incluye:</p>
+                            <p className="text-[10px] font-medium text-zinc-500 max-w-[200px] leading-relaxed">
+                                {data.breakdown}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        return null;
+    };
 
     const stats = [
         {
@@ -183,21 +221,11 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
                                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                                         labelLine={false}
                                     >
-                                        {leagueData.map((entry, index) => (
+                                        {leagueData.map((_, index) => (
                                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} strokeWidth={0} />
                                         ))}
                                     </Pie>
-                                    <RechartsTooltip
-                                        contentStyle={{
-                                            backgroundColor: '#ffffff',
-                                            borderRadius: '20px',
-                                            border: '1px solid #f4f4f5',
-                                            boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)',
-                                            fontWeight: 900,
-                                            fontSize: '12px'
-                                        }}
-                                        formatter={(value: number) => [`${value} Jugadores`, 'Cantidad']}
-                                    />
+                                    <RechartsTooltip content={<CustomTooltip />} />
                                     <Legend
                                         verticalAlign="bottom"
                                         height={36}

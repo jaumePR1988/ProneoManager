@@ -22,6 +22,7 @@ import NotificationCenter from './components/NotificationCenter';
 // import IAModule from './components/IAModule';
 
 import { usePlayers } from './hooks/usePlayers';
+import { useAutoLogout } from './hooks/useAutoLogout';
 
 function App() {
     const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -34,6 +35,9 @@ function App() {
 
     const [userRole, setUserRole] = useState<string>('guest');
     const [userSport, setUserSport] = useState<string>('General');
+
+    // Auto-logout hook (15 minutes by default)
+    useAutoLogout(user);
 
     useEffect(() => {
         if (isDemoMode) {

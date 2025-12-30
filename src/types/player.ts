@@ -46,7 +46,12 @@ export interface ScoutingData {
     status: ScoutingStatus;
     notes: string;
     lastContactDate: string;
-    contactPerson?: string;
+    contactPerson?: string; // Legacy
+    contactHistory?: {
+        date: string;
+        agent: string;
+        notes?: string;
+    }[];
 }
 
 export type PaymentStatus = 'Pendiente' | 'Pagado' | 'Pospuesto' | 'Cancelado';

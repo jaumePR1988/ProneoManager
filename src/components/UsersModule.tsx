@@ -1,20 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Check, X, Shield, Plus, Save, AlertCircle } from 'lucide-react';
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { useUsers, UserData } from '../hooks/useUsers';
 
-interface UserData {
-    email: string;
-    role: string;
-    name: string;
-    approved: boolean;
-    createdAt: string;
-    sport?: string;
-}
+// Removed duplicate imports
 
 const UsersModule: React.FC = () => {
-    const [users, setUsers] = useState<UserData[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { users, loading } = useUsers();
+    // const [users, setUsers] = useState<UserData[]>([]); // REMOVED
+    // const [loading, setLoading] = useState(true); // REMOVED
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newUser, setNewUser] = useState({
         email: '',
@@ -24,18 +19,9 @@ const UsersModule: React.FC = () => {
     });
     const [createError, setCreateError] = useState('');
 
-    useEffect(() => {
-        const q = query(collection(db, 'users'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const usersData = snapshot.docs.map(doc => ({
-                email: doc.id,
-                ...doc.data()
-            })) as UserData[];
-            setUsers(usersData);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
+    /* REMOVED useEffect and duplicate interface
+    interface UserData { ... } -> Use imported one if needed or keep local if just for view
+    */
 
     if (loading) return <div className="p-10 text-center text-zinc-400 font-bold animate-pulse">Cargando usuarios...</div>;
 

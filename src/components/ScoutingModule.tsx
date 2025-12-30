@@ -6,7 +6,9 @@ import {
     Target,
     Search,
     Plus,
-    Trash2
+    Trash2,
+    X,
+    StickyNote
 } from 'lucide-react';
 import { TableVirtuoso } from 'react-virtuoso';
 import { usePlayers } from '../hooks/usePlayers';
@@ -44,9 +46,38 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
 
     const [isScoutingFormOpen, setIsScoutingFormOpen] = useState(false);
     const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
-    const [editingScouting, setEditingScouting] = useState<Player | null>(null);
-    const [signingPlayer, setSigningPlayer] = useState<Player | null>(null);
+
+
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [viewingNote, setViewingNote] = useState<{ content: string; date: string; author: string; player: string } | null>(null);
+
+    const handleViewNote = (player: Player) => {
+        const history = player.scouting?.contactHistory || [];
+        // Sort by date descending
+        const sorted = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const latest = sorted[0];
+
+        if (latest && latest.notes) {
+            setViewingNote({
+                content: latest.notes,
+                date: latest.date,
+                author: latest.agent,
+                player: player.name || `${player.firstName} ${player.lastName1}`
+            });
+        } else {
+            // Fallback for legacy notes or no notes
+            if (player.scouting?.notes) {
+                setViewingNote({
+                    content: player.scouting.notes,
+                    date: player.scouting.lastContactDate || 'Fecha desconocida',
+                    author: player.scouting.contactPerson || 'Desconocido',
+                    player: player.name || `${player.firstName} ${player.lastName1}`
+                });
+            } else {
+                alert('No hay notas registradas para este jugador.');
+            }
+        }
+    };
 
     const toggleSelection = (id: string) => {
         const newSelected = new Set(selectedIds);
@@ -259,8 +290,15 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                                 </td>
                                 <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
                                     <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                        <button className="w-7 h-7 rounded-lg bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all scale-90">
-                                            <MessageSquare className="w-3.5 h-3.5" />
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleViewNote(target);
+                                            }}
+                                            className="w-7 h-7 rounded-lg bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all scale-90"
+                                            title="Ver última nota"
+                                        >
+                                            <StickyNote className="w-3.5 h-3.5" />
                                         </button>
                                         <button
                                             onClick={(e) => {
@@ -307,6 +345,50 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                     </div>
                 )}
             </div>
+
+            {/* Note Viewer Modal */}
+            {viewingNote && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-proneo-green">
+                                    <StickyNote className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-0.5">Última Nota</p>
+                                    <p className="text-sm font-bold text-white tracking-tight">{viewingNote.player}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setViewingNote(null)}
+                                className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 flex items-center justify-center transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="p-6 bg-zinc-50">
+                            <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                                <p className="text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap font-medium">
+                                    {viewingNote.content}
+                                </p>
+                            </div>
+                            <div className="mt-6 flex items-center justify-between border-t border-zinc-200 pt-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                        <span className="text-[10px] font-black">{viewingNote.author.charAt(0)}</span>
+                                    </div>
+                                    <span className="text-xs font-bold text-zinc-700">{viewingNote.author}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-400">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>{viewingNote.date}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

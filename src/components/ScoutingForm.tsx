@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Save, User, MapPin, Phone, Briefcase, Calendar } from 'lucide-react';
+import { X, Save, User, MapPin, Phone, Briefcase, Calendar, ChevronDown } from 'lucide-react';
 import { Player, Category, Position, PreferredFoot, ScoutingStatus } from '../types/player';
+import { useUsers } from '../hooks/useUsers';
 
 interface ScoutingFormProps {
     initialData?: Player;
@@ -9,12 +10,29 @@ interface ScoutingFormProps {
 }
 
 const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSave }) => {
+    const { users } = useUsers();
+    // Filter for internal agents (scouts, directors, admins)
+    const proneoAgents = users.filter(u => ['scout', 'external_scout', 'admin', 'director', 'agent'].includes(u.role)).map(u => u.name);
+    const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsAgentDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const [formData, setFormData] = useState<Partial<Player>>(() => {
-        const base = initialData || {
+        const base: Partial<Player> = initialData || {
             firstName: '',
             lastName1: '',
             lastName2: '',
-            displayName: '',
+
             birthDate: '',
             nationality: 'España',
             position: 'Ala',
@@ -35,6 +53,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                 status: 'No contactado',
                 notes: '',
                 lastContactDate: new Date().toISOString().split('T')[0],
+                contactHistory: [],
                 ...(base.scouting || {})
             }
         };
@@ -71,12 +90,42 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
         }));
     };
 
+    const handleContactHistoryChange = (index: number, field: 'date' | 'agent' | 'notes', value: string) => {
+        setFormData(prev => {
+            const currentHistory = prev.scouting?.contactHistory ? [...prev.scouting.contactHistory] : [];
+            // Ensure we have slots up to index
+            while (currentHistory.length <= index) {
+                currentHistory.push({ date: '', agent: '', notes: '' });
+            }
+
+            currentHistory[index] = {
+                ...currentHistory[index],
+                [field]: value
+            };
+
+            // Sort history by date descending to find the latest
+            const sorted = [...currentHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            const latest = sorted[0];
+
+            return {
+                ...prev,
+                scouting: {
+                    ...prev.scouting,
+                    contactHistory: currentHistory,
+                    // Auto-update latest values
+                    lastContactDate: latest?.date || prev.scouting?.lastContactDate,
+                    contactPerson: latest?.agent || prev.scouting?.contactPerson
+                } as any
+            };
+        });
+    };
+
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-[40px] w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-[40px] w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-200">
 
                 {/* Sidebar */}
-                <div className="w-full md:w-80 bg-zinc-900 text-white p-10 flex flex-col justify-between shrink-0 relative overflow-hidden">
+                <div className="w-full md:w-80 bg-zinc-900 text-white p-10 flex flex-col justify-between shrink-0 relative">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-proneo-green/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
                     <div>
@@ -113,13 +162,40 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                         <div className="bg-zinc-800/50 p-6 rounded-3xl border border-zinc-700/50 backdrop-blur-sm">
                             <User className="w-6 h-6 text-blue-400 mb-3" />
                             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">AGENTE PRONEO</p>
-                            <input
-                                type="text"
-                                value={formData.scouting?.contactPerson || ''}
-                                onChange={(e) => updateScoutingField('contactPerson', e.target.value)}
-                                placeholder="Quién contacta"
-                                className="w-full bg-transparent text-lg font-bold text-white placeholder-zinc-600 outline-none"
-                            />
+                            <div className="relative" ref={dropdownRef}>
+                                <div
+                                    onClick={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
+                                    className="w-full bg-transparent text-lg font-bold text-white outline-none cursor-pointer pr-8 py-1 flex items-center justify-between group"
+                                >
+                                    <span className={!formData.scouting?.contactPerson ? 'text-zinc-500' : ''}>
+                                        {formData.scouting?.contactPerson || 'Seleccionar...'}
+                                    </span>
+                                    <ChevronDown className={`w-5 h-5 text-zinc-500 transition-transform duration-300 ${isAgentDropdownOpen ? 'rotate-180' : ''}`} />
+                                </div>
+
+                                {isAgentDropdownOpen && (
+                                    <div style={{ bottom: '100%' }} className="absolute left-0 w-full mb-2 bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="max-h-60 overflow-y-auto section-scroll">
+                                            {proneoAgents.map(name => (
+                                                <button
+                                                    key={name}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        updateScoutingField('contactPerson', name);
+                                                        setIsAgentDropdownOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-3 text-sm font-bold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors border-b border-zinc-800/50 last:border-0"
+                                                >
+                                                    {name}
+                                                </button>
+                                            ))}
+                                            {proneoAgents.length === 0 && (
+                                                <div className="px-4 py-3 text-sm text-zinc-500 italic">No hay agentes disponibles</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -304,25 +380,45 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                 <Phone className="w-4 h-4 text-zinc-400" />
                                 Registro de Contacto
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Último contacto</label>
-                                    <input
-                                        type="date"
-                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
-                                        value={formData.scouting?.lastContactDate || ''}
-                                        onChange={e => updateScoutingField('lastContactDate', e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notas / Quién contactó</label>
-                                    <textarea
-                                        className="w-full h-24 bg-zinc-50 border border-zinc-200 rounded-xl p-4 font-medium text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all resize-none"
-                                        value={formData.scouting?.notes || ''}
-                                        onChange={e => updateScoutingField('notes', e.target.value)}
-                                        placeholder="Detalles sobre el contacto..."
-                                    />
-                                </div>
+                            <div className="space-y-4">
+                                {[0, 1, 2].map((index) => {
+                                    const entry = formData.scouting?.contactHistory?.[index] || { date: '', agent: '', notes: '' };
+                                    return (
+                                        <div key={index} className="grid grid-cols-12 gap-3 p-3 bg-zinc-50 border border-zinc-100 rounded-xl items-start">
+                                            <div className="col-span-3 space-y-1">
+                                                <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest pl-1">Fecha ({index + 1})</label>
+                                                <input
+                                                    type="date"
+                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-2 font-bold text-xs text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none"
+                                                    value={entry.date}
+                                                    onChange={e => handleContactHistoryChange(index, 'date', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="col-span-4 space-y-1">
+                                                <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest pl-1">Agente Proneo</label>
+                                                <select
+                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-2 font-bold text-xs text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none appearance-none"
+                                                    value={entry.agent}
+                                                    onChange={e => handleContactHistoryChange(index, 'agent', e.target.value)}
+                                                >
+                                                    <option value="">Seleccionar...</option>
+                                                    {proneoAgents.map(name => (
+                                                        <option key={name} value={name}>{name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="col-span-5 space-y-1">
+                                                <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest pl-1">Notas / Detalles</label>
+                                                <input
+                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-3 font-medium text-xs text-zinc-700 focus:ring-2 focus:ring-proneo-green/20 outline-none"
+                                                    value={entry.notes || ''}
+                                                    onChange={e => handleContactHistoryChange(index, 'notes', e.target.value)}
+                                                    placeholder="Resumen del contacto..."
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
