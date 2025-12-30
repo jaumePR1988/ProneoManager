@@ -91,6 +91,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
     const role = (userRole || 'guest').toLowerCase();
     const isAdmin = role === 'admin' || role === 'director';
     const isExternalScout = role === 'external_scout';
+    const isCommunication = role === 'comunicacion';
 
     const { players: allPlayers, loading, deletePlayer } = usePlayers();
 
@@ -228,7 +229,12 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                     return fieldToString(val);
                 }
             }))
-    ], [schema, selectedCategory]);
+    ].filter(col => {
+        if (isCommunication) {
+            return !['salary', 'clubCommissionPct', 'playerCommissionPct'].includes(col.id);
+        }
+        return true;
+    }), [schema, selectedCategory, isCommunication]);
 
     // Initial load sync - only once to seed
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);

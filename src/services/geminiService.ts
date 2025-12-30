@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
-const genAI = new GoogleGenerativeAI(API_KEY, { apiVersion: "v1" });
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 /**
  * Convierte un archivo File a Base64 para enviarlo a Gemini

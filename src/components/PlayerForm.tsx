@@ -10,7 +10,11 @@ import {
     Trophy,
     Building2,
     Briefcase,
-    Sparkles
+    Sparkles,
+    FileText,
+    UploadCloud,
+    Download,
+    Eye
 } from 'lucide-react';
 import { Player, Category, Position, PreferredFoot, PayerType, ContractYear } from '../types/player';
 import { usePlayers } from '../hooks/usePlayers';
@@ -57,7 +61,8 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
         if (initialData) {
             return {
                 ...initialData,
-                customFields: initialData.customFields || {}
+                customFields: initialData.customFields || {},
+                documents: initialData.documents || []
             };
         }
         return {
@@ -726,6 +731,130 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                     <Plus className="w-4 h-4" />
                                     <span>Añadir Año</span>
                                 </button>
+                            </div>
+                        </div>
+
+
+                        {/* Contract Repository Section */}
+                        <div className="mt-8 pt-8 border-t border-zinc-100">
+                            <h3 className="flex items-center justify-center gap-2 text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-6">
+                                <FileText className="w-4 h-4" />
+                                Repositorio de Contratos
+                            </h3>
+
+                            <div className="bg-zinc-50 rounded-2xl p-6 border border-zinc-100 space-y-6">
+                                {/* Upload Area */}
+                                <div className="flex items-center justify-center w-full">
+                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-zinc-300 border-dashed rounded-2xl cursor-pointer bg-white hover:bg-zinc-50 transition-colors group">
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <UploadCloud className="w-8 h-8 mb-3 text-zinc-400 group-hover:text-[#b4c885] transition-colors" />
+                                            <p className="mb-1 text-xs font-bold text-zinc-500">
+                                                <span className="text-zinc-800">Click para subir</span> o arrastra el archivo
+                                            </p>
+                                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">PDF (Máx. 5MB)</p>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            accept=".pdf"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+
+                                                if (file.type !== 'application/pdf') {
+                                                    alert("Solo se permiten archivos PDF para contratos.");
+                                                    return;
+                                                }
+
+                                                if (file.size > 5 * 1024 * 1024) {
+                                                    alert("El archivo excede los 5MB.");
+                                                    return;
+                                                }
+
+                                                // Upload Logic
+                                                const { isDemoMode } = await import('../firebase/config');
+                                                let downloadUrl = '';
+
+                                                if (isDemoMode) {
+                                                    // In demo mode, we fake it
+                                                    downloadUrl = URL.createObjectURL(file);
+                                                } else {
+                                                    try {
+                                                        const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                                                        const { storage } = await import('../firebase/config');
+                                                        const storageRef = ref(storage, `contracts/${crypto.randomUUID()}_${file.name}`);
+                                                        const snapshot = await uploadBytes(storageRef, file);
+                                                        downloadUrl = await getDownloadURL(snapshot.ref);
+                                                    } catch (error) {
+                                                        console.error("Upload error:", error);
+                                                        alert("Error al subir el archivo.");
+                                                        return;
+                                                    }
+                                                }
+
+                                                const newDoc = {
+                                                    id: crypto.randomUUID(),
+                                                    name: file.name,
+                                                    url: downloadUrl,
+                                                    type: 'contract' as const,
+                                                    date: new Date().toISOString()
+                                                };
+
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    documents: [...(prev.documents || []), newDoc]
+                                                }));
+                                            }}
+                                        />
+                                    </label>
+                                </div>
+
+                                {/* File List */}
+                                <div className="space-y-3">
+                                    {(formData.documents || []).filter(d => d.type === 'contract').length === 0 && (
+                                        <p className="text-center text-xs text-zinc-400 font-medium py-4">No hay contratos adjuntos.</p>
+                                    )}
+                                    {(formData.documents || [])
+                                        .filter(d => d.type === 'contract') // Only show contracts
+                                        .map((doc) => (
+                                            <div key={doc.id} className="flex items-center justify-between p-3 bg-white border border-zinc-200 rounded-xl group hover:border-[#b4c885] transition-all">
+                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                    <div className="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center shrink-0">
+                                                        <FileText className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold text-zinc-800 truncate">{doc.name}</p>
+                                                        <p className="text-[9px] font-bold text-zinc-400 uppercase">{new Date(doc.date).toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <a
+                                                        href={doc.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="w-8 h-8 rounded-full bg-zinc-50 hover:bg-[#b4c885] hover:text-white text-zinc-400 flex items-center justify-center transition-all"
+                                                        title="Ver / Descargar Contrato"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </a>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm("¿Eliminar este contrato?")) {
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    documents: prev.documents?.filter(d => d.id !== doc.id)
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="w-8 h-8 rounded-full bg-zinc-50 hover:bg-red-500 hover:text-white text-zinc-400 flex items-center justify-center transition-all"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
                             </div>
                         </div>
 

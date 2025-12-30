@@ -42,7 +42,7 @@ const MOCK_PLAYERS_INITIAL: Player[] = [
             payerType: 'Jugador'
         },
         seasons: [
-            { season: '2023/24', team: 'FC Barcelona', league: 'España' }
+            { season: '2023/24', club: 'FC Barcelona', division: 'España', matches: 30, goals: 5, minutes: 2400, cards: 2 }
         ],
         salaries: { year1: 5000000, year2: 6000000, year3: 7000000, year4: 8000000 },
         customFields: {},
@@ -87,7 +87,7 @@ const MOCK_PLAYERS_INITIAL: Player[] = [
             payerType: 'Jugador'
         },
         seasons: [
-            { season: '2023/24', team: 'FC Barcelona', league: 'España' }
+            { season: '2023/24', club: 'FC Barcelona', division: 'España', matches: 30, goals: 5, minutes: 2400, cards: 2 }
         ],
         salaries: { year1: 1000000, year2: 2000000, year3: 3000000, year4: 4000000 },
         customFields: {},

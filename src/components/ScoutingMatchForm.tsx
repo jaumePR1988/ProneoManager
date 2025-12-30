@@ -144,7 +144,7 @@ const ScoutingMatchForm: React.FC<ScoutingMatchFormProps> = ({
                             </h3>
                             <div className="flex items-center gap-2 mt-0.5">
                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Planificación de Scouting</p>
-                                <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[8px] font-black rounded uppercase animate-pulse">v1.0.2 | {userSport}</span>
+                                <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[8px] font-black rounded uppercase animate-pulse">v1.0.3 | {userSport}</span>
                             </div>
                         </div>
                     </div>

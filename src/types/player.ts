@@ -130,7 +130,7 @@ export interface Player {
     customFields: Record<string, any>;
 
     photoUrl?: string;
-    documents: { id: string; name: string; url: string }[];
+    documents: { id: string; name: string; url: string; type: 'contract' | 'other'; date: string }[];
 
     createdAt: number;
     updatedAt: number;

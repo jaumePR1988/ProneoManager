@@ -36,6 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     const isAdmin = ['admin', 'director'].includes(userRole);
     const isScout = userRole === 'scout';
     const isTreasurer = userRole === 'tesorero' || userRole === 'treasurer';
+    const isCommunication = userRole === 'comunicacion';
 
     React.useEffect(() => {
         if (!isAdmin) return;
@@ -55,7 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin && !isTreasurer },
         { id: 'users', label: 'Usuarios', icon: UserCog, hidden: !isAdmin },
         { id: 'profile', label: 'Mi Perfil', icon: UserCircle },
-        { id: 'comms', label: 'Comunicaciones', icon: Send, hidden: !isAdmin },
+        { id: 'comms', label: 'Comunicaciones', icon: Send, hidden: !isAdmin && !isCommunication },
         { id: 'avisos', label: 'Avisos', icon: Bell },
         { id: 'settings', label: 'Ajustes', icon: Settings, hidden: isScout },
     ].filter(tab => !tab.hidden);
@@ -71,7 +72,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                         className="w-48 h-auto object-contain mb-2"
                     />
                     <div className="h-1 w-12 bg-proneo-green rounded-full opacity-20" />
-                    <p className="text-[10px] font-black text-white bg-red-500 px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg shadow-red-500/20 mt-1 animate-pulse">v1.0.2</p>
+                    <p className="text-[10px] font-black text-white bg-red-500 px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg shadow-red-500/20 mt-1 animate-pulse">v1.0.3</p>
                 </div>
 
                 <nav className="flex-1 space-y-2">
@@ -106,13 +107,14 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                         <div className="overflow-hidden">
                             <p className="text-sm font-black text-zinc-900 truncate">{user?.displayName || 'Usuario'}</p>
                             <p className="text-[9px] font-bold text-proneo-green/50 uppercase tracking-widest bg-proneo-green/5 px-2 py-1 rounded">
-                                v1.0.8 - Sistema de Gestión
+                                v1.0.4 - Sistema de Gestión
                             </p>
                             <p className="text-[10px] font-bold text-proneo-green uppercase tracking-widest truncate">
                                 {isAdmin ? 'Director / Admin' :
                                     isTreasurer ? 'Tesorero/a' :
                                         userRole === 'agent' ? 'Agente Proneo' :
-                                            userRole === 'scout' ? 'Scouting' : 'Invitado'}
+                                            userRole === 'comunicacion' ? 'Comunicación' :
+                                                userRole === 'scout' ? 'Scouting' : 'Invitado'}
                             </p>
                         </div>
                     </div>

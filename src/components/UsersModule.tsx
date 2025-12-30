@@ -130,6 +130,7 @@ const UsersModule: React.FC = () => {
                                             <option value="agent">Agente</option>
                                             <option value="scout">Scout</option>
                                             <option value="external_scout">Scout Externo</option>
+                                            <option value="comunicacion">Comunicación (Global)</option>
                                             <option value="guest">Invitado</option>
                                         </select>
                                     </div>
@@ -253,6 +254,7 @@ const UsersModule: React.FC = () => {
                                         <option value="agent">Agente</option>
                                         <option value="scout">Scout</option>
                                         <option value="external_scout">Scout Externo</option>
+                                        <option value="comunicacion">Comunicación (Global)</option>
                                         <option value="guest">Invitado</option>
                                     </select>
                                 </div>
