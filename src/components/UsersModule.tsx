@@ -19,14 +19,14 @@ const UsersModule: React.FC = () => {
     });
     const [createError, setCreateError] = useState('');
 
-    /* REMOVED useEffect and duplicate interface
-    interface UserData { ... } -> Use imported one if needed or keep local if just for view
-    */
-
-    if (loading) return <div className="p-10 text-center text-zinc-400 font-bold animate-pulse">Cargando usuarios...</div>;
-
     const [activeTab, setActiveTab] = useState<'users' | 'restore'>('users');
     const [restoreStatus, setRestoreStatus] = useState('');
+
+    if (loading) return (
+        <div className="p-10 text-center text-zinc-400 font-bold animate-pulse bg-white rounded-3xl h-full flex items-center justify-center">
+            Cargando usuarios...
+        </div>
+    );
 
     const handleApprove = async (email: string) => {
         if (confirm(`¿Aprobar acceso a ${email}?`)) {
@@ -135,7 +135,7 @@ const UsersModule: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 bg-slate-50 min-h-screen p-6 -m-6">
+        <div className="space-y-6">
             <header className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase italic">Panel de Control</h1>
