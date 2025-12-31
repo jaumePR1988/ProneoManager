@@ -135,7 +135,7 @@ const UsersModule: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 bg-slate-50 min-h-screen p-6 -m-6">
             <header className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase italic">Panel de Control</h1>

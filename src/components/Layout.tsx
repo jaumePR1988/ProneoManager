@@ -109,7 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                             <p className="text-[9px] font-bold text-proneo-green/50 uppercase tracking-widest bg-proneo-green/5 px-2 py-1 rounded">
                                 Sistema de Gestión
                             </p>
-                            <span className="text-[10px] font-bold text-zinc-400">v1.0.5</span>
+                            <span className="text-[10px] font-bold text-zinc-400">v1.0.6</span>
                             <p className="text-[10px] font-bold text-proneo-green uppercase tracking-widest truncate">
                                 {isAdmin ? 'Director / Admin' :
                                     isTreasurer ? 'Tesorero/a' :
