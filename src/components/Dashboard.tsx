@@ -198,8 +198,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport
 
     return (
         <div className="space-y-10">
-            {/* Filter Chips - Only show if user is General/Global */}
-            {userSport === 'General' && (
+            {/* Filter Chips - Show if General OR Admin/Director */}
+            {(userSport === 'General' || ['admin', 'director'].includes(userRole?.toLowerCase() || '')) && (
                 <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                     <button
                         onClick={() => setSelectedCategory('Todos')}

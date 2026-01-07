@@ -14,7 +14,8 @@ import {
     Check,
     Clock4,
     UserPlus,
-    UserMinus
+    UserMinus,
+    Banknote
 } from 'lucide-react';
 import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
@@ -270,6 +271,106 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
             });
         }
     });
+
+    // --- FINANCIAL ALERTS (Admin/Director/Tesorero ONLY) ---
+    const canViewFinance = ['admin', 'director', 'tesorero'].includes(userRole?.toLowerCase() || '');
+
+    if (canViewFinance) {
+        dbPlayers.forEach(p => {
+            if (!p.contractYears) return;
+
+            p.contractYears.forEach(year => {
+                // Check Club Payment
+                if (year.clubPayment && !year.clubPayment.isPaid && year.clubPayment.dueDate) {
+                    // Try to parse DD/MM/YYYY first, then fallback to standard Date parsing
+                    let safeDueDate = parseDate(year.clubPayment.dueDate);
+                    if (!safeDueDate || isNaN(safeDueDate.getTime())) {
+                        safeDueDate = new Date(year.clubPayment.dueDate);
+                    }
+
+                    if (safeDueDate && !isNaN(safeDueDate.getTime())) {
+                        const daysDiff = getDaysDiff(safeDueDate);
+
+                        // 1. Overdue (Vencido)
+                        if (daysDiff < 0) {
+                            alerts.push({
+                                id: `finance-club-overdue-${p.id}-${year.year}`,
+                                type: 'finance_overdue',
+                                priority: 'critical',
+                                title: 'COBRO CLUB VENCIDO',
+                                message: `Cobro pendiente del club (${year.clubPayment.status}) venció el ${year.clubPayment.dueDate}.`,
+                                player: p,
+                                category: 'Finanzas',
+                                daysRemaining: daysDiff,
+                                icon: Banknote,
+                                color: 'bg-red-600 animate-pulse'
+                            });
+                        }
+                        // 2. Upcoming (Próximo 15 dias)
+                        else if (daysDiff >= 0 && daysDiff <= 15) {
+                            alerts.push({
+                                id: `finance-club-upcoming-${p.id}-${year.year}`,
+                                type: 'finance_upcoming',
+                                priority: 'high',
+                                title: 'Cobro Club Próximo',
+                                message: `Cobro previsto para el ${year.clubPayment.dueDate} (en ${daysDiff} días).`,
+                                player: p,
+                                category: 'Finanzas',
+                                daysRemaining: daysDiff,
+                                icon: Banknote,
+                                color: 'bg-orange-500'
+                            });
+                        }
+                    }
+                }
+
+                // Check Player Payment
+                if (year.playerPayment && !year.playerPayment.isPaid && year.playerPayment.dueDate) {
+                    let safeDueDate = parseDate(year.playerPayment.dueDate);
+                    if (!safeDueDate || isNaN(safeDueDate.getTime())) {
+                        safeDueDate = new Date(year.playerPayment.dueDate);
+                    }
+
+                    if (safeDueDate && !isNaN(safeDueDate.getTime())) {
+                        const daysDiff = getDaysDiff(safeDueDate);
+
+                        // 1. Overdue
+                        if (daysDiff < 0) {
+                            alerts.push({
+                                id: `finance-player-overdue-${p.id}-${year.year}`,
+                                type: 'finance_overdue',
+                                priority: 'critical',
+                                title: 'COBRO JUGADOR VENCIDO',
+                                message: `Comisión jugador pendiente venció el ${year.playerPayment.dueDate}.`,
+                                player: p,
+                                category: 'Finanzas',
+                                daysRemaining: daysDiff,
+                                icon: Banknote,
+                                color: 'bg-red-600 animate-pulse'
+                            });
+                        }
+                        // 2. Upcoming
+                        else if (daysDiff >= 0 && daysDiff <= 15) {
+                            alerts.push({
+                                id: `finance-player-upcoming-${p.id}-${year.year}`,
+                                type: 'finance_upcoming',
+                                priority: 'high',
+                                title: 'Cobro Jugador Próximo',
+                                message: `Comisión prevista para el ${year.playerPayment.dueDate} (en ${daysDiff} días).`,
+                                player: p,
+                                category: 'Finanzas',
+                                daysRemaining: daysDiff,
+                                icon: Banknote,
+                                color: 'bg-orange-500'
+                            });
+                        }
+                    }
+                }
+            });
+        });
+
+
+    }
 
     // --- SIMULATION MODE ---
     // If no alerts found (and not filtered out), inject dummy data for visualization
