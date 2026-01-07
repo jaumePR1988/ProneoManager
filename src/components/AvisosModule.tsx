@@ -372,74 +372,7 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
 
     }
 
-    // --- SIMULATION MODE ---
-    // If no alerts found (and not filtered out), inject dummy data for visualization
-    // Only inject if there are NO real alerts at all (before filtering)
-    const hasRealAlerts = alerts.length > 0;
 
-    if (!hasRealAlerts) {
-        alerts = [
-            {
-                id: 'sim-1',
-                type: 'clause',
-                priority: 'critical',
-                title: '🚨 CLÁUSULA OPCIONAL',
-                message: 'Límite para ejecutar renovación automática (30 días restantes).',
-                player: { name: 'Marc Guiu', category: 'Fútbol' },
-                category: 'Fútbol',
-                daysRemaining: 30,
-                icon: Bell,
-                color: 'bg-red-600 animate-pulse'
-            },
-            {
-                id: 'sim-2',
-                type: 'agency_renewal',
-                priority: 'high',
-                title: 'Renovación Agencia Proneo',
-                message: 'Contrato de representación vence en 3 meses.',
-                player: { name: 'Adolfo Fernández', category: 'F. Sala' },
-                category: 'F. Sala',
-                daysRemaining: 90,
-                icon: AlertTriangle,
-                color: 'bg-red-500'
-            },
-            {
-                id: 'sim-3',
-                type: 'birthday',
-                priority: 'normal',
-                title: '¡Cumpleaños de Alexia!',
-                message: 'Hoy cumple 31 años.',
-                player: { name: 'Alexia Putellas', category: 'Femenino' },
-                category: 'Femenino',
-                date: '04/02/1994',
-                icon: Cake,
-                color: 'bg-purple-500'
-            },
-            {
-                id: 'sim-4',
-                type: 'scouting_opp',
-                priority: 'medium',
-                title: 'Oportunidad de Captación',
-                message: 'Termina contrato con su agente actual en 2 meses.',
-                player: { name: 'Estevao Willian', category: 'Fútbol' },
-                category: 'Fútbol',
-                daysRemaining: 60,
-                icon: Target,
-                color: 'bg-blue-500'
-            },
-            {
-                id: 'sim-5',
-                type: 'scouting_followup',
-                priority: 'low',
-                title: 'Seguimiento Estancado',
-                message: 'Sin contacto desde hace 105 días.',
-                player: { name: 'Pito', category: 'F. Sala' },
-                category: 'F. Sala',
-                icon: MessageSquare,
-                color: 'bg-orange-400'
-            }
-        ];
-    }
 
     // 3. FILTERING LOGIC
 
