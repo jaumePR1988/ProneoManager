@@ -10,6 +10,7 @@ interface ExcelImportProps {
 }
 
 const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, category = 'Fútbol', schema }) => {
+    const [isImporting, setIsImporting] = React.useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDownloadTemplate = () => {
@@ -65,70 +66,88 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, category = 'Fútbol
         const file = e.target.files?.[0];
         if (!file) return;
 
+        setIsImporting(true);
+
         const reader = new FileReader();
         reader.onload = async (evt) => {
-            const bstr = evt.target?.result;
-            const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
-            const wsname = wb.SheetNames[0];
-            const ws = wb.Sheets[wsname];
-            const data = XLSX.utils.sheet_to_json(ws);
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary', cellDates: true });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
 
-            const importedPlayers: Partial<Player>[] = data.map((row: any) => {
-                // Determine Category: From Prop OR From File (File takes precedence if valid)
-                let rowCategory: Category = category;
-                const fileCat = String(row['CATEGORÍA'] || '').trim();
-                if (fileCat && ['Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].includes(fileCat)) {
-                    rowCategory = fileCat as Category;
+                if (!data || data.length === 0) {
+                    alert("El archivo parece estar vacío o no tiene datos reconocibles.");
+                    return;
                 }
 
-                // Header mapping based on specification
-                const p: Partial<Player> = {
-                    firstName: String(row['NOMBRE'] || '').trim(),
-                    lastName1: String(row['PRIMER APELLIDO'] || '').trim(),
-                    lastName2: String(row['SEGUNDO APELLIDO'] || '').trim(),
-                    league: String(row['LIGA'] || 'España').trim(),
-                    club: String(row['EQUIPO'] || '').trim(),
-                    nationality: String(row['NACIONALIDAD'] || 'España').trim(),
-                    position: (row['POSICIÓN'] || 'Ala') as Position,
-                    preferredFoot: (row['PIERNA HÁBIL'] || 'Derecha') as PreferredFoot,
-                    category: rowCategory,
-                    birthDate: row['FECHA NAC.'] instanceof Date ? row['FECHA NAC.'].toISOString().split('T')[0] : String(row['FECHA NAC.'] || ''),
-                    sportsBrand: String(row['MARCA'] || 'Joma').trim(),
-                    sportsBrandEndDate: row['FIN MARCA'] instanceof Date ? row['FIN MARCA'].toISOString().split('T')[0] : String(row['FIN MARCA'] || ''),
-                    monitoringAgent: String(row['SEGUIMIENTO'] || 'Jaume').trim(),
-                    contract: {
-                        endDate: row['FECHA FIN CONTRATO'] instanceof Date ? row['FECHA FIN CONTRATO'].toISOString().split('T')[0] : String(row['FECHA FIN CONTRATO'] || ''),
-                        clause: String(row['CLAUSULA'] || '0').trim(),
-                        optional: String(row['OPCIONAL'] || 'No').trim(),
-                        optionalNoticeDate: row['FECHA AVISO'] instanceof Date ? row['FECHA AVISO'].toISOString().split('T')[0] : String(row['FECHA AVISO'] || ''),
-                        conditions: String(row['CONDICIONES'] || '').trim(),
-                    },
-                    proneo: {
-                        contractDate: row['FECHA CONTRATO'] instanceof Date ? row['FECHA CONTRATO'].toISOString().split('T')[0] : String(row['FECHA CONTRATO'] || ''),
-                        agencyEndDate: row['FECHA FIN'] instanceof Date ? row['FECHA FIN'].toISOString().split('T')[0] : String(row['FECHA FIN'] || ''),
-                        commissionPct: 10,
-                        payerType: 'Club' as PayerType
-                    },
-                    isScouting: false,
-                    seasons: [],
-                    documents: []
-                };
+                const importedPlayers: Partial<Player>[] = data.map((row: any) => {
+                    // Determine Category: From Prop OR From File (File takes precedence if valid)
+                    let rowCategory: Category = category;
+                    const fileCat = String(row['CATEGORÍA'] || '').trim();
+                    if (fileCat && ['Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].includes(fileCat)) {
+                        rowCategory = fileCat as Category;
+                    }
 
-                // Add display name
-                const nickname = String(row['NOMBRE DEPORTIVO'] || '').trim();
-                p.name = nickname || `${p.firstName} ${p.lastName1}`.trim();
+                    // Header mapping based on specification
+                    const p: Partial<Player> = {
+                        firstName: String(row['NOMBRE'] || '').trim(),
+                        lastName1: String(row['PRIMER APELLIDO'] || '').trim(),
+                        lastName2: String(row['SEGUNDO APELLIDO'] || '').trim(),
+                        league: String(row['LIGA'] || 'España').trim(),
+                        club: String(row['EQUIPO'] || '').trim(),
+                        nationality: String(row['NACIONALIDAD'] || 'España').trim(),
+                        position: (row['POSICIÓN'] || 'Ala') as Position,
+                        preferredFoot: (row['PIERNA HÁBIL'] || 'Derecha') as PreferredFoot,
+                        category: rowCategory,
+                        birthDate: row['FECHA NAC.'] instanceof Date ? row['FECHA NAC.'].toISOString().split('T')[0] : String(row['FECHA NAC.'] || ''),
+                        sportsBrand: String(row['MARCA'] || 'Joma').trim(),
+                        sportsBrandEndDate: row['FIN MARCA'] instanceof Date ? row['FIN MARCA'].toISOString().split('T')[0] : String(row['FIN MARCA'] || ''),
+                        monitoringAgent: String(row['SEGUIMIENTO'] || 'Jaume').trim(),
+                        contract: {
+                            endDate: row['FECHA FIN CONTRATO'] instanceof Date ? row['FECHA FIN CONTRATO'].toISOString().split('T')[0] : String(row['FECHA FIN CONTRATO'] || ''),
+                            clause: String(row['CLAUSULA'] || '0').trim(),
+                            optional: String(row['OPCIONAL'] || 'No').trim(),
+                            optionalNoticeDate: row['FECHA AVISO'] instanceof Date ? row['FECHA AVISO'].toISOString().split('T')[0] : String(row['FECHA AVISO'] || ''),
+                            conditions: String(row['CONDICIONES'] || '').trim(),
+                        },
+                        proneo: {
+                            contractDate: row['FECHA CONTRATO'] instanceof Date ? row['FECHA CONTRATO'].toISOString().split('T')[0] : String(row['FECHA CONTRATO'] || ''),
+                            agencyEndDate: row['FECHA FIN'] instanceof Date ? row['FECHA FIN'].toISOString().split('T')[0] : String(row['FECHA FIN'] || ''),
+                            commissionPct: 10,
+                            payerType: 'Club' as PayerType
+                        },
+                        isScouting: false,
+                        seasons: [],
+                        documents: []
+                    };
 
-                // Add age if birthDate exists
-                if (p.birthDate) {
-                    const birthYear = new Date(p.birthDate).getFullYear();
-                    p.age = new Date().getFullYear() - birthYear;
+                    // Add display name
+                    const nickname = String(row['NOMBRE DEPORTIVO'] || '').trim();
+                    p.name = nickname || `${p.firstName} ${p.lastName1}`.trim();
+
+                    // Add age if birthDate exists
+                    if (p.birthDate) {
+                        const birthYear = new Date(p.birthDate).getFullYear();
+                        p.age = new Date().getFullYear() - birthYear;
+                    }
+
+                    return p;
+                });
+
+                if (importedPlayers.length > 0) {
+                    await onImport(importedPlayers);
+                    alert(`Se han importado ${importedPlayers.length} registros correctamente.`);
+                } else {
+                    alert("No se encontraron registros válidos para importar. Revisa las cabeceras.");
                 }
 
-                return p;
-            });
-
-            if (importedPlayers.length > 0) {
-                await onImport(importedPlayers);
+            } catch (error) {
+                console.error("Error importing Excel:", error);
+                alert("Ocurrió un error al procesar el archivo. Asegúrate de que es un Excel válido.");
+            } finally {
+                setIsImporting(false);
                 if (fileInputRef.current) fileInputRef.current.value = '';
             }
         };
@@ -139,7 +158,8 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, category = 'Fútbol
         <div className="flex items-center gap-2">
             <button
                 onClick={handleDownloadTemplate}
-                className="h-11 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 transition-all flex items-center gap-2 group"
+                disabled={isImporting}
+                className="h-11 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 transition-all flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Descargar Plantilla CSV"
             >
                 <Download className="w-4 h-4 text-zinc-300 group-hover:text-zinc-500 transition-colors" />
@@ -155,10 +175,17 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, category = 'Fútbol
             />
             <button
                 onClick={() => fileInputRef.current?.click()}
-                className="h-11 px-6 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 transition-all flex items-center gap-2 group shadow-sm hover:shadow"
+                disabled={isImporting}
+                className="h-11 px-6 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 transition-all flex items-center gap-2 group shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <Upload className="w-4 h-4 text-zinc-400 group-hover:text-[#b4c885] transition-colors" />
-                <span className="text-[10px] font-black uppercase">Importar Excel</span>
+                {isImporting ? (
+                    <div className="w-4 h-4 border-2 border-zinc-300 border-t-[#b4c885] rounded-full animate-spin" />
+                ) : (
+                    <Upload className="w-4 h-4 text-zinc-400 group-hover:text-[#b4c885] transition-colors" />
+                )}
+                <span className="text-[10px] font-black uppercase">
+                    {isImporting ? 'Importando...' : 'Importar Excel'}
+                </span>
             </button>
         </div>
     );

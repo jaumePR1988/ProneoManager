@@ -19,19 +19,40 @@ import { usePlayers } from '../hooks/usePlayers';
 interface DashboardProps {
     setActiveTab: (tab: string) => void;
     userRole?: string;
+    userSport?: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
-    const { players: allPlayers, loading } = usePlayers(false);
-    const { players: scoutingPlayers } = usePlayers(true);
+const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport = 'General' }) => {
+    const { players: allDbPlayers, loading } = usePlayers(false);
+    const { players: allScoutingPlayers } = usePlayers(true);
 
-    const activeCount = allPlayers.length;
-    const scoutingCount = scoutingPlayers.length;
+    const [selectedCategory, setSelectedCategory] = React.useState<string>(userSport !== 'General' ? userSport : 'Todos');
+
+    // Effect to sync prop change (e.g. on login/logout or profile load)
+    React.useEffect(() => {
+        if (userSport && userSport !== 'General') {
+            setSelectedCategory(userSport);
+        }
+    }, [userSport]);
+
+    // FILTER LOGIC
+    const filteredPlayers = useMemo(() => {
+        if (selectedCategory === 'Todos') return allDbPlayers;
+        return allDbPlayers.filter(p => p.category === selectedCategory);
+    }, [allDbPlayers, selectedCategory]);
+
+    const filteredScouting = useMemo(() => {
+        if (selectedCategory === 'Todos') return allScoutingPlayers;
+        return allScoutingPlayers.filter(p => p.category === selectedCategory);
+    }, [allScoutingPlayers, selectedCategory]);
+
+    const activeCount = filteredPlayers.length;
+    const scoutingCount = filteredScouting.length;
 
     // --- Statistics Calculations ---
 
     const totalCommission = useMemo(() => {
-        return allPlayers.reduce((total, player) => {
+        return filteredPlayers.reduce((total, player) => {
             const playerTotal = (player.contractYears || []).reduce((yearTotal, year) => {
                 const clubComm = year.clubCommissionType === 'fixed'
                     ? (Number(year.clubCommissionFixed) || 0)
@@ -45,7 +66,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
             }, 0);
             return total + playerTotal;
         }, 0);
-    }, [allPlayers]);
+    }, [filteredPlayers]);
 
     const formattedCommission = totalCommission >= 1000000
         ? `${(totalCommission / 1000000).toFixed(1)}M€`
@@ -55,33 +76,33 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
 
     // Expiring Contracts Logic (Next 6 months)
     const expiringCount = useMemo(() => {
-        if (!allPlayers.length) return 0;
+        if (!filteredPlayers.length) return 0;
         const now = new Date();
         const sixMonthsFromNow = new Date();
         sixMonthsFromNow.setMonth(now.getMonth() + 6);
 
-        return allPlayers.filter(p => {
+        return filteredPlayers.filter(p => {
             if (!p.contract?.endDate) return false;
             const end = new Date(p.contract.endDate);
             return end > now && end <= sixMonthsFromNow;
         }).length;
-    }, [allPlayers]);
+    }, [filteredPlayers]);
 
     // Pending Renovations (Active players with AGENCY contract ending this year)
     const renovationCount = useMemo(() => {
-        if (!allPlayers.length) return 0;
+        if (!filteredPlayers.length) return 0;
         const currentYear = new Date().getFullYear();
-        return allPlayers.filter(p => {
+        return filteredPlayers.filter(p => {
             if (!p.proneo?.agencyEndDate) return false;
             const end = new Date(p.proneo.agencyEndDate);
             return end.getFullYear() === currentYear;
         }).length;
-    }, [allPlayers]);
+    }, [filteredPlayers]);
 
     // League Distribution for Pie Chart
     const leagueData = useMemo(() => {
         const counts: Record<string, number> = {};
-        allPlayers.forEach(p => {
+        filteredPlayers.forEach(p => {
             const league = p.league || 'Sin Liga';
             counts[league] = (counts[league] || 0) + 1;
         });
@@ -102,7 +123,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
         }
 
         return sorted;
-    }, [allPlayers]);
+    }, [filteredPlayers]);
 
     const PIE_COLORS = ['#3bb34a', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'];
 
@@ -177,6 +198,35 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
 
     return (
         <div className="space-y-10">
+            {/* Filter Chips - Only show if user is General/Global */}
+            {userSport === 'General' && (
+                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    <button
+                        onClick={() => setSelectedCategory('Todos')}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap
+                            ${selectedCategory === 'Todos'
+                                ? 'bg-zinc-900 text-white shadow-lg shadow-zinc-900/20'
+                                : 'bg-white text-zinc-400 hover:bg-zinc-100 border border-zinc-100'}
+                        `}
+                    >
+                        Todos
+                    </button>
+                    {['Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'].map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap
+                                ${selectedCategory === cat
+                                    ? 'bg-proneo-green text-white shadow-lg shadow-proneo-green/20'
+                                    : 'bg-white text-zinc-400 hover:bg-zinc-100 border border-zinc-100'}
+                            `}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* KPI Row: High Level Summary */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, i) => (
@@ -204,7 +254,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
                     <div className="flex items-center justify-between mb-10">
                         <div>
                             <h3 className="text-xl font-black text-zinc-900 tracking-tight italic uppercase">Distribución por Ligas</h3>
-                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Presencia de la agencia global (Datos Reales)</p>
+                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Presencia de la agencia: <span className="text-proneo-green">{selectedCategory}</span></p>
                         </div>
                         <div className="flex items-center gap-2 px-4 py-2 bg-zinc-50 rounded-full border border-zinc-100">
                             <div className="w-2 h-2 rounded-full bg-proneo-green animate-pulse" />
@@ -258,7 +308,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole }) => {
                     <div className="space-y-4">
                         {[
                             { label: 'Fin Contrato Proneo (Año)', value: renovationCount.toString(), color: renovationCount > 0 ? 'text-red-500' : 'text-zinc-600' },
-                            { label: 'Ligas Activas', value: new Set(allPlayers.map(p => p.league).filter(Boolean)).size.toString(), color: 'text-blue-500' },
+                            { label: 'Ligas Activas', value: new Set(filteredPlayers.map(p => p.league).filter(Boolean)).size.toString(), color: 'text-blue-500' },
                             { label: 'Scouting Activo', value: scoutingCount.toString(), color: 'text-proneo-green' },
                         ].map((item, i) => (
                             <div key={i} className="flex items-center justify-between p-5 rounded-3xl bg-zinc-50 border border-zinc-100 group hover:border-proneo-green/20 transition-all">

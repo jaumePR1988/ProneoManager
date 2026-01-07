@@ -135,7 +135,7 @@ function App() {
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
-                return <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
+                return <Dashboard setActiveTab={setActiveTab} userRole={userRole} userSport={userSport} />;
             case 'players':
                 return <PlayerModule userRole={userRole} userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} />;
             case 'scouting':
@@ -157,7 +157,7 @@ function App() {
             case 'comms':
                 return <NotificationCenter />;
             default:
-                return <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
+                return <Dashboard setActiveTab={setActiveTab} userRole={userRole} userSport={userSport} />;
         }
     };
 
