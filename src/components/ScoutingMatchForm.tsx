@@ -12,6 +12,7 @@ interface ScoutingMatchFormProps {
     onClose: () => void;
     onSave: (data: Partial<ScoutingMatch>) => Promise<string | void>;
     onDelete?: (id: string) => Promise<void>;
+    isAdmin?: boolean;
 }
 
 const ScoutingMatchForm: React.FC<ScoutingMatchFormProps> = ({
@@ -20,7 +21,8 @@ const ScoutingMatchForm: React.FC<ScoutingMatchFormProps> = ({
     userSport,
     onClose,
     onSave,
-    onDelete
+    onDelete,
+    isAdmin = false
 }) => {
     const { players: scoutingPlayers } = usePlayers(true);
     const { players: databasePlayers } = usePlayers(false);
@@ -259,6 +261,26 @@ const ScoutingMatchForm: React.FC<ScoutingMatchFormProps> = ({
                                 />
                             </div>
                         </div>
+
+                        {/* Admin Sport Selection Override */}
+                        {isAdmin && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Visible en Agenda de</label>
+                                <div className="relative">
+                                    <select
+                                        value={formData.sport || userSport}
+                                        onChange={(e) => setFormData({ ...formData, sport: e.target.value as Category })}
+                                        className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 h-14 font-bold text-zinc-900 focus:bg-white focus:ring-4 focus:ring-proneo-green/10 transition-all outline-none appearance-none"
+                                    >
+                                        <option value="General">Global / General</option>
+                                        <option value="Fútbol">Fútbol</option>
+                                        <option value="F. Sala">Fútbol Sala</option>
+                                        <option value="Femenino">Femenino</option>
+                                        <option value="Entrenadores">Entrenadores</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Hora */}
                         <div className="space-y-2">

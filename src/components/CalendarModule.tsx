@@ -78,7 +78,8 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport }) 
         if (selectedMatch?.id) {
             await updateMatch(selectedMatch.id, data);
         } else {
-            await addMatch({ ...data, sport: userSport });
+            // Respect the sport selected in the form, primarily for admins
+            await addMatch({ ...data, sport: data.sport || userSport });
         }
     };
 
@@ -394,6 +395,7 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport }) 
                     }}
                     onSave={handleSave}
                     onDelete={handleDelete}
+                    isAdmin={isAdmin}
                 />
             )}
 

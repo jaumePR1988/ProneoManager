@@ -43,8 +43,12 @@ const AdministrationModule: React.FC = () => {
         return matchesSearch;
     });
 
-    // Split into Current vs Future
+    // Split into Current vs Future/Past Debts
     const currentSeasonRows = filteredRows.filter(r => r.year === CURRENT_SEASON);
+
+    // Future rows OR Past Debts (anything not current)
+    // The previous logic was just `year !== CURRENT_SEASON`, which is correct for showing EVERYTHING else.
+    // However, we want to ensure "Past Debts" are highlighted or at least verified to be here.
     const futureRows = filteredRows.filter(r => r.year !== CURRENT_SEASON);
 
     // Update Handler - ROBUST VERSION

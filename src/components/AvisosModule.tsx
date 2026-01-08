@@ -278,19 +278,74 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
             alerts.push({
                 id: `scout-opp-${p.id}`,
                 type: 'scouting_opp',
-                priority: isExpired ? 'high' : 'medium',
-                title: isExpired ? 'Oportunidad (Contrato Vencido)' : 'Oportunidad de Captación',
+                priority: isExpired ? 'critical' : 'high',
+                title: isExpired ? 'CONTRATO VENCIDO (Scout)' : 'OPORTUNIDAD SCOUTING',
                 message: isExpired
-                    ? `Su contrato con agente anterior VENCIÓ hace ${Math.abs(days)} días.`
-                    : `Termina contrato con su agente actual en ${Math.floor(days / 30)} meses.`,
+                    ? `Contrato con agencia anterior vencido hace ${Math.abs(days)} días.`
+                    : `Contrato de agencia termina en ${days} días.`,
                 player: p,
                 category: p.category || 'General',
                 daysRemaining: days,
-                icon: Target,
-                color: 'bg-blue-500'
+                icon: FileText,
+                color: isExpired ? 'bg-red-600' : 'bg-purple-600'
             });
         }
     });
+
+    // 5. Payment Alerts (Only Admin/Director/Tesorero)
+    // Only show if user has permission
+    if (userRole === 'admin' || userRole === 'director' || userRole === 'tesorero') {
+        dbPlayers.forEach(p => {
+            if (!p.contractYears) return;
+
+            p.contractYears.forEach(year => {
+                // Club Payment
+                if (year.clubPayment?.status === 'Pendiente' && year.clubPayment.alertDate) {
+                    const alertDate = parseDate(year.clubPayment.alertDate);
+                    if (alertDate) {
+                        const days = getDaysDiff(alertDate);
+                        if (days <= 0) { // Alert date reached
+                            alerts.push({
+                                id: `pay-club-${p.id}-${year.id}`,
+                                type: 'payment',
+                                priority: 'critical',
+                                title: 'COBRO PENDIENTE (CLUB)',
+                                message: `${p.name} (${year.year}) - Retraso: ${Math.abs(days)} días`,
+                                player: p,
+                                category: p.category || 'General',
+                                daysRemaining: days,
+                                icon: Banknote,
+                                color: 'bg-emerald-600'
+                            });
+                        }
+                    }
+                }
+
+                // Player Payment
+                if (year.playerPayment?.status === 'Pendiente' && year.playerPayment.alertDate) {
+                    const alertDate = parseDate(year.playerPayment.alertDate);
+                    if (alertDate) {
+                        const days = getDaysDiff(alertDate);
+                        if (days <= 0) { // Alert date reached
+                            alerts.push({
+                                id: `pay-player-${p.id}-${year.id}`,
+                                type: 'payment',
+                                priority: 'critical',
+                                title: 'COBRO PENDIENTE (JUGADOR)',
+                                message: `${p.name} (${year.year}) - Retraso: ${Math.abs(days)} días`,
+                                player: p,
+                                category: p.category || 'General',
+                                daysRemaining: days,
+                                icon: Banknote,
+                                color: 'bg-emerald-600'
+                            });
+                        }
+                    }
+                }
+            });
+        });
+    }
+
 
     // E. Scouting Follow-up (> 3 months without contact)
     scoutingPlayers.forEach(p => {

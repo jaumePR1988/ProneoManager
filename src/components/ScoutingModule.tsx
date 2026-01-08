@@ -26,12 +26,26 @@ interface ScoutingModuleProps {
 const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', userRole = 'scout', userName }) => {
     const { players: allScoutingPlayers, loading, addPlayer, updatePlayer, deletePlayer } = usePlayers(true);
 
+    const isAdmin = userRole === 'admin' || userRole === 'director';
+    const [selectedSport, setSelectedSport] = useState<string>(userSport);
+
+    // Sync selectedSport if userSport prop changes (initial load or role switch)
+    // but only if not already changed by admin
+    React.useEffect(() => {
+        if (!isAdmin) {
+            setSelectedSport(userSport);
+        }
+    }, [userSport, isAdmin]);
+
     const scoutingPlayers = useMemo(() => {
-        let filtered = allScoutingPlayers;
+        let filtered = allScoutingPlayers || [];
 
         // 1. Sport Filter
-        if (userSport !== 'General') {
-            filtered = filtered.filter(p => p.category === userSport);
+        // Use selectedSport (which defaults to userSport)
+        const filterSport = selectedSport === 'Global' ? 'General' : selectedSport;
+
+        if (filterSport !== 'General') {
+            filtered = filtered.filter(p => p.category === filterSport);
         }
 
         // 2. External Scout Filter
@@ -42,7 +56,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
         }
 
         return filtered;
-    }, [allScoutingPlayers, userSport, userRole, userName]);
+    }, [allScoutingPlayers, selectedSport, userRole, userName]);
 
     const [isScoutingFormOpen, setIsScoutingFormOpen] = useState(false);
     const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
@@ -51,32 +65,18 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [viewingNote, setViewingNote] = useState<{ content: string; date: string; author: string; player: string } | null>(null);
 
-    const handleViewNote = (player: Player) => {
-        const history = player.scouting?.contactHistory || [];
-        // Sort by date descending
-        const sorted = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        const latest = sorted[0];
-
-        if (latest && latest.notes) {
-            setViewingNote({
-                content: latest.notes,
-                date: latest.date,
-                author: latest.agent,
-                player: player.name || `${player.firstName} ${player.lastName1}`
-            });
+    const handleSaveScouting = async (data: Partial<Player>) => {
+        if (editingScouting) {
+            await updatePlayer(editingScouting.id, data);
+            setEditingScouting(null);
         } else {
-            // Fallback for legacy notes or no notes
-            if (player.scouting?.notes) {
-                setViewingNote({
-                    content: player.scouting.notes,
-                    date: player.scouting.lastContactDate || 'Fecha desconocida',
-                    author: player.scouting.contactPerson || 'Desconocido',
-                    player: player.name || `${player.firstName} ${player.lastName1}`
-                });
-            } else {
-                alert('No hay notas registradas para este jugador.');
-            }
+            await addPlayer({
+                ...data,
+                isScouting: true,
+                category: data.category || (selectedSport !== 'General' && selectedSport !== 'Global' ? selectedSport : 'Fútbol')
+            });
         }
+        setIsScoutingFormOpen(false);
     };
 
     const toggleSelection = (id: string) => {
@@ -98,7 +98,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
     };
 
     const handleBulkDelete = async () => {
-        if (window.confirm(`¿Estás seguro de eliminar ${selectedIds.size} jugadores? Esta acción no se puede deshacer.`)) {
+        if (window.confirm(`¿Estás seguro de eliminar ${selectedIds.size} jugadores?`)) {
             for (const id of selectedIds) {
                 await deletePlayer(id);
             }
@@ -106,27 +106,41 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
         }
     };
 
-    const handleSaveScouting = async (data: Partial<Player>) => {
-        if (editingScouting) {
-            await updatePlayer(editingScouting.id, data);
-        } else {
-            // New scouting target
-            // Ensure ID is handled by hook/firebase, but here we pass data
-            await addPlayer(data as any);
-        }
-        setIsScoutingFormOpen(false);
-        setEditingScouting(null);
-    };
-
-    const handleSignPlayer = async (player: Player) => {
-        // Open PlayerForm with this player's data to complete the signing
+    const handleSignPlayer = (player: Player) => {
         setSigningPlayer(player);
     };
 
+    const handleViewNote = (player: Player) => {
+        // 1. Try to find from Contact History
+        let noteContent = player.scouting?.notes;
+        let noteDate = player.scouting?.lastContactDate;
+        let noteAuthor = player.scouting?.contactPerson;
+
+        if (player.scouting?.contactHistory && player.scouting.contactHistory.length > 0) {
+            // Sort by date desc
+            const sorted = [...player.scouting.contactHistory]
+                .filter(h => h.notes) // Only those with notes
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+            if (sorted.length > 0) {
+                noteContent = sorted[0].notes;
+                noteDate = sorted[0].date;
+                noteAuthor = sorted[0].agent;
+            }
+        }
+
+        if (noteContent) {
+            setViewingNote({
+                content: noteContent,
+                date: noteDate || 'Fecha desconocida',
+                author: noteAuthor || 'Sistema',
+                player: player.name || `${player.firstName} ${player.lastName1}`
+            });
+        }
+    };
+
     const handleConfirmSign = async (data: Partial<Player>) => {
-        // When signing, we are effectively updating this player to be NOT scouting anymore
-        // or creating a new entry if we want to keep history? 
-        // Usually, we just 'promote' the record.
+        // ... (existing code)
         if (signingPlayer) {
             // We update the existing record to remove isScouting flag and save full data
             const promotedData = { ...data, isScouting: false };
@@ -145,6 +159,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
 
     return (
         <div className="space-y-6">
+            {/* ... (Modals) ... */}
             {isScoutingPreviewOpen && (
                 <ScoutingPreview
                     players={scoutingPlayers}
@@ -152,7 +167,6 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                 />
             )}
 
-            {/* Forms */}
             {(isScoutingFormOpen || editingScouting) && (
                 <ScoutingForm
                     initialData={editingScouting || undefined}
@@ -177,7 +191,30 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                             <Target className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-0.5">En Seguimiento</p>
+                            <div className="mb-1">
+                                {isAdmin ? (
+                                    <div className="relative inline-flex items-center">
+                                        <select
+                                            value={selectedSport}
+                                            onChange={(e) => setSelectedSport(e.target.value)}
+                                            className="appearance-none bg-white/50 border border-orange-200 text-orange-700 pl-3 pr-8 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer hover:bg-white transition-colors outline-none"
+                                        >
+                                            <option value="General">Global (Todos)</option>
+                                            <option value="Fútbol">Fútbol</option>
+                                            <option value="F. Sala">Fútbol Sala</option>
+                                            <option value="Femenino">Femenino</option>
+                                            <option value="Entrenadores">Entrenadores</option>
+                                        </select>
+                                        <div className="absolute right-2 pointer-events-none text-orange-600">
+                                            <svg className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest">En Seguimiento</span>
+                                )}
+                            </div>
                             <h4 className="text-2xl font-black text-zinc-900 tracking-tighter italic">{scoutingPlayers.length} Objetivos</h4>
                         </div>
                     </div>

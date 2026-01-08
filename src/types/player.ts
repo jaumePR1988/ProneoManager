@@ -59,7 +59,8 @@ export type PaymentStatus = 'Pendiente' | 'Pagado' | 'Pospuesto' | 'Cancelado';
 export interface PaymentInfo {
     status: PaymentStatus;
     paymentDate?: string; // Cuando se pagó
-    dueDate?: string;     // Fecha prevista de pago
+    dueDate?: string;     // Fecha prevista de pago (Texto libre: "Enero 2024")
+    alertDate?: string;   // Fecha exacta para el aviso (YYYY-MM-DD or DD/MM/YYYY)
     isPaid: boolean;
     notes?: string;
 }
