@@ -16,6 +16,7 @@ import ScoutingForm from './ScoutingForm';
 import PlayerForm from './PlayerForm';
 import { Player } from '../types/player';
 import ScoutingPreview from './ScoutingPreview';
+import ContactsView from './ContactsView';
 
 interface ScoutingModuleProps {
     userSport?: string;
@@ -64,6 +65,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
     const [signingPlayer, setSigningPlayer] = useState<Player | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [viewingNote, setViewingNote] = useState<{ content: string; date: string; author: string; player: string } | null>(null);
+    const [activeView, setActiveView] = useState<'players' | 'contacts'>('players');
 
     const handleSaveScouting = async (data: Partial<Player>) => {
         if (editingScouting) {
@@ -73,7 +75,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
             await addPlayer({
                 ...data,
                 isScouting: true,
-                category: data.category || (selectedSport !== 'General' && selectedSport !== 'Global' ? selectedSport : 'Fútbol')
+                category: data.category || (selectedSport !== 'General' && selectedSport !== 'Global' ? selectedSport : 'Fútbol') as any
             });
         }
         setIsScoutingFormOpen(false);
@@ -184,7 +186,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
             )}
 
             {/* Marketplace Overview Bar */}
-            <div className="flex flex-col md:flex-row gap-6">
+            <div className="relative flex flex-col md:flex-row gap-6">
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="bg-orange-50 p-6 rounded-[32px] border border-orange-100 flex items-center gap-5 group hover:shadow-xl hover:shadow-orange-200/20 transition-all">
                         <div className="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 group-hover:rotate-6 transition-transform">
@@ -220,23 +222,57 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsScoutingPreviewOpen(true)}
-                        className="h-14 px-6 bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-lg hover:shadow-xl"
-                    >
-                        <Target className="w-5 h-5" />
-                        Ver Dosier Scouting
-                    </button>
-                    <button
-                        onClick={() => setIsScoutingFormOpen(true)}
-                        className="h-14 px-8 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Nuevo Objetivo
-                    </button>
+                {/* View Toggle - Centered & Minimalist (Absolute) */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:flex">
+                    <div className="bg-white border border-zinc-200 p-0.5 rounded-full flex shadow-sm scale-90">
+                        <button
+                            onClick={() => setActiveView('players')}
+                            className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${activeView === 'players'
+                                ? 'bg-zinc-900 text-white shadow-md'
+                                : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50'
+                                }`}
+                        >
+                            Jugadores
+                        </button>
+                        <button
+                            onClick={() => setActiveView('contacts')}
+                            className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${activeView === 'contacts'
+                                ? 'bg-zinc-900 text-white shadow-md'
+                                : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50'
+                                }`}
+                        >
+                            Agenda
+                        </button>
+                    </div>
                 </div>
 
+                {/* Right Actions */}
+                <div className="flex justify-end flex-1">
+                    {activeView === 'players' ? (
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setIsScoutingPreviewOpen(true)}
+                                className="h-10 px-4 bg-blue-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-md"
+                            >
+                                <Target className="w-4 h-4" />
+                                Dosier
+                            </button>
+                            <button
+                                onClick={() => setIsScoutingFormOpen(true)}
+                                className="h-10 px-6 bg-zinc-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-zinc-800 transition-all shadow-md"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Nuevo
+                            </button>
+                        </div>
+                    ) : (
+                        // Spacer
+                        <div className="h-10"></div>
+                    )}
+                </div>
+            </div>
+
+            {activeView === 'players' && (
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 md:pb-0 text-left">
                     {selectedIds.size > 0 && (
                         <button
@@ -248,140 +284,147 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                         </button>
                     )}
                 </div>
-            </div>
+            )}
 
-            {/* High-Density Scouting Table */}
-            <div className="bg-white rounded-[40px] border border-zinc-100 shadow-sm overflow-hidden flex flex-col w-full">
-                <div className="flex-1 min-h-[400px]">
-                    <TableVirtuoso
-                        style={{ height: 'calc(100vh - 400px)', minHeight: '400px' }}
-                        data={scoutingPlayers}
-                        fixedHeaderContent={() => (
-                            <tr className="border-b border-zinc-100 bg-zinc-50/50 text-left">
-                                <th className="px-6 py-4 bg-white sticky top-0 z-20 w-[50px]">
-                                    <div className="flex items-center justify-center">
-                                        <input
-                                            type="checkbox"
-                                            className="w-4 h-4 rounded-md border-zinc-300 text-proneo-green focus:ring-proneo-green"
-                                            checked={scoutingPlayers.length > 0 && selectedIds.size === scoutingPlayers.length}
-                                            onChange={toggleAll}
-                                        />
-                                    </div>
-                                </th>
-                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20 w-[30%]">Objetivo</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente / Fin Contrato</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente Proneo</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Estado</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest text-right bg-white sticky top-0 z-20">Acciones</th>
-                            </tr>
-                        )}
-                        itemContent={(_, target) => (
-                            <>
-                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex items-center justify-center">
-                                        <input
-                                            type="checkbox"
-                                            className="w-4 h-4 rounded-md border-zinc-300 text-proneo-green focus:ring-proneo-green"
-                                            checked={selectedIds.has(target.id)}
-                                            onChange={(e) => {
-                                                e.stopPropagation();
-                                                toggleSelection(target.id);
-                                            }}
-                                        />
-                                    </div>
-                                </td>
-                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-zinc-100 border border-zinc-200 overflow-hidden shadow-sm">
-                                            <img src={target.photoUrl || 'https://i.pravatar.cc/150'} alt="" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div>
-                                            <p className="font-black text-zinc-900 uppercase italic tracking-tight text-[11px] group-hover:text-proneo-green transition-colors">{target.name || `${target.firstName} ${target.lastName1}`}</p>
-                                            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{target.club} • {target.position}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <div className="space-y-0.5">
-                                        <p className="text-[10px] font-black text-zinc-700 uppercase tracking-tighter">{target.scouting?.currentAgent || 'Sin Agente'}</p>
-                                        <div className="flex items-center gap-1.5 text-[8px] font-bold text-zinc-400">
-                                            <Calendar className="w-2.5 h-2.5" />
-                                            <span>EXP: {target.scouting?.agentEndDate || 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <span className="text-[10px] font-bold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-md">
-                                        {target.scouting?.contactPerson || '—'}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${target.scouting?.status === 'Negociando'
-                                        ? 'bg-proneo-green/10 text-proneo-green border-proneo-green/20'
-                                        : target.scouting?.status === 'Contactado'
-                                            ? 'bg-blue-50 text-blue-600 border-blue-200'
-                                            : 'bg-red-50 text-red-600 border-red-200'
-                                        }`}>
-                                        {target.scouting?.status || 'No contactado'}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
-                                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleViewNote(target);
-                                            }}
-                                            className="w-7 h-7 rounded-lg bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all scale-90"
-                                            title="Ver última nota"
-                                        >
-                                            <StickyNote className="w-3.5 h-3.5" />
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleSignPlayer(target);
-                                            }}
-                                            className="flex items-center gap-1.5 bg-proneo-green text-white px-3 h-7 rounded-lg text-[9px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-proneo-green/20 transition-all shadow-md group-hover:scale-105"
-                                        >
-                                            <UserPlus className="w-3 h-3" />
-                                            Fichar
-                                        </button>
-                                    </div>
-                                </td>
-                            </>
-                        )}
-                        components={{
-                            TableRow: (props) => {
-                                const index = props['data-index'];
-                                const target = scoutingPlayers[index];
-                                return (
-                                    <tr
-                                        {...props}
-                                        onClick={() => setEditingScouting(target)}
-                                        className="group cursor-pointer hover:bg-zinc-50/30 transition-colors"
-                                    />
-                                );
-                            },
-                            Table: (props) => (
-                                <table {...props} className="w-full border-collapse" style={{ tableLayout: 'fixed' }} />
-                            )
-                        }}
-                    />
+            {/* Content Rendering */}
+            {activeView === 'contacts' ? (
+                <div className="bg-white rounded-[40px] border border-zinc-100 shadow-sm p-8 min-h-[600px]">
+                    <ContactsView userSport={selectedSport} />
                 </div>
-
-                {scoutingPlayers.length === 0 && (
-                    <div className="p-20 text-center space-y-4">
-                        <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center mx-auto text-zinc-300">
-                            <Search className="w-10 h-10" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-black text-zinc-900 uppercase tracking-tight italic">No hay objetivos en scouting</p>
-                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Empieza añadiendo uno nuevo</p>
-                        </div>
+            ) : (
+                /* High-Density Scouting Table */
+                <div className="bg-white rounded-[40px] border border-zinc-100 shadow-sm overflow-hidden flex flex-col w-full">
+                    <div className="flex-1 min-h-[400px]">
+                        <TableVirtuoso
+                            style={{ height: 'calc(100vh - 400px)', minHeight: '400px' }}
+                            data={scoutingPlayers}
+                            fixedHeaderContent={() => (
+                                <tr className="border-b border-zinc-100 bg-zinc-50/50 text-left">
+                                    <th className="px-6 py-4 bg-white sticky top-0 z-20 w-[50px]">
+                                        <div className="flex items-center justify-center">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded-md border-zinc-300 text-proneo-green focus:ring-proneo-green"
+                                                checked={scoutingPlayers.length > 0 && selectedIds.size === scoutingPlayers.length}
+                                                onChange={toggleAll}
+                                            />
+                                        </div>
+                                    </th>
+                                    <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20 w-[30%]">Objetivo</th>
+                                    <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente / Fin Contrato</th>
+                                    <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente Proneo</th>
+                                    <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Estado</th>
+                                    <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest text-right bg-white sticky top-0 z-20">Acciones</th>
+                                </tr>
+                            )}
+                            itemContent={(_, target) => (
+                                <>
+                                    <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-center">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded-md border-zinc-300 text-proneo-green focus:ring-proneo-green"
+                                                checked={selectedIds.has(target.id)}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleSelection(target.id);
+                                                }}
+                                            />
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-zinc-100 border border-zinc-200 overflow-hidden shadow-sm">
+                                                <img src={target.photoUrl || 'https://i.pravatar.cc/150'} alt="" className="w-full h-full object-cover" />
+                                            </div>
+                                            <div>
+                                                <p className="font-black text-zinc-900 uppercase italic tracking-tight text-[11px] group-hover:text-proneo-green transition-colors">{target.name || `${target.firstName} ${target.lastName1}`}</p>
+                                                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{target.club} • {target.position}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                        <div className="space-y-0.5">
+                                            <p className="text-[10px] font-black text-zinc-700 uppercase tracking-tighter">{target.scouting?.currentAgent || 'Sin Agente'}</p>
+                                            <div className="flex items-center gap-1.5 text-[8px] font-bold text-zinc-400">
+                                                <Calendar className="w-2.5 h-2.5" />
+                                                <span>EXP: {target.scouting?.agentEndDate || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                        <span className="text-[10px] font-bold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-md">
+                                            {target.scouting?.contactPerson || '—'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${target.scouting?.status === 'Negociando'
+                                            ? 'bg-proneo-green/10 text-proneo-green border-proneo-green/20'
+                                            : target.scouting?.status === 'Contactado'
+                                                ? 'bg-blue-50 text-blue-600 border-blue-200'
+                                                : 'bg-red-50 text-red-600 border-red-200'
+                                            }`}>
+                                            {target.scouting?.status || 'No contactado'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleViewNote(target);
+                                                }}
+                                                className="w-7 h-7 rounded-lg bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all scale-90"
+                                                title="Ver última nota"
+                                            >
+                                                <StickyNote className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSignPlayer(target);
+                                                }}
+                                                className="flex items-center gap-1.5 bg-proneo-green text-white px-3 h-7 rounded-lg text-[9px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-proneo-green/20 transition-all shadow-md group-hover:scale-105"
+                                            >
+                                                <UserPlus className="w-3 h-3" />
+                                                Fichar
+                                            </button>
+                                        </div>
+                                    </td>
+                                </>
+                            )}
+                            components={{
+                                TableRow: (props) => {
+                                    const index = props['data-index'];
+                                    const target = scoutingPlayers[index];
+                                    return (
+                                        <tr
+                                            {...props}
+                                            onClick={() => setEditingScouting(target)}
+                                            className="group cursor-pointer hover:bg-zinc-50/30 transition-colors"
+                                        />
+                                    );
+                                },
+                                Table: (props) => (
+                                    <table {...props} className="w-full border-collapse" style={{ tableLayout: 'fixed' }} />
+                                )
+                            }}
+                        />
                     </div>
-                )}
-            </div>
+
+                    {scoutingPlayers.length === 0 && (
+                        <div className="p-20 text-center space-y-4">
+                            <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center mx-auto text-zinc-300">
+                                <Search className="w-10 h-10" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-black text-zinc-900 uppercase tracking-tight italic">No hay objetivos en scouting</p>
+                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Empieza añadiendo uno nuevo</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Note Viewer Modal */}
             {viewingNote && (
