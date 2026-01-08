@@ -122,11 +122,23 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
     let alerts: any[] = [];
     const today = new Date();
 
-    // Helper: Parse DD/MM/YYYY
+    // Helper: Parse Date (Robust: supports YYYY-MM-DD and DD/MM/YYYY)
     const parseDate = (dateStr?: string) => {
         if (!dateStr) return null;
-        const [d, m, y] = dateStr.split('/');
-        return new Date(Number(y), Number(m) - 1, Number(d));
+
+        // Handle ISO format (YYYY-MM-DD) - Standard for type="date" inputs
+        if (dateStr.includes('-')) {
+            const [y, m, d] = dateStr.split('-');
+            return new Date(Number(y), Number(m) - 1, Number(d));
+        }
+
+        // Handle Legacy/Excel format (DD/MM/YYYY)
+        if (dateStr.includes('/')) {
+            const [d, m, y] = dateStr.split('/');
+            return new Date(Number(y), Number(m) - 1, Number(d));
+        }
+
+        return new Date(dateStr);
     };
 
     // Helper: Days diff
@@ -156,68 +168,96 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
     // --- REAL ALERTS GENERATION ---
 
     // A. Birthdays (Today or Tomorrow)
+    // A. Birthdays (Yesterday, Today or Tomorrow)
     allPlayers.forEach(p => {
         if (!p.birthDate) return;
         const dob = parseDate(p.birthDate);
         if (!dob) return;
 
         const isToday = dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth();
+
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const isTomorrow = dob.getDate() === tomorrow.getDate() && dob.getMonth() === tomorrow.getMonth();
 
-        if (isToday || isTomorrow) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const isYesterday = dob.getDate() === yesterday.getDate() && dob.getMonth() === yesterday.getMonth();
+
+        if (isToday || isTomorrow || isYesterday) {
+            let title = '';
+            let msg = '';
+
+            if (isToday) {
+                title = `¡Cumpleaños de ${p.name}!`;
+                msg = `Hoy cumple ${new Date().getFullYear() - dob.getFullYear()} años.`;
+            } else if (isTomorrow) {
+                title = `Cumpleaños de ${p.name} (Mañana)`;
+                msg = `Mañana cumplirá ${new Date().getFullYear() - dob.getFullYear()} años.`;
+            } else {
+                title = `Cumpleaños de ${p.name} (Ayer)`;
+                msg = `Ayer cumplió ${new Date().getFullYear() - dob.getFullYear()} años.`;
+            }
+
             alerts.push({
                 id: `bday-${p.id}`,
                 type: 'birthday',
-                priority: 'normal',
-                title: isToday ? `¡Cumpleaños de ${p.name}!` : `Cumpleaños de ${p.name} (Mañana)`,
-                message: isToday ? `Hoy cumple ${new Date().getFullYear() - dob.getFullYear()} años.` : `Mañana cumplirá ${new Date().getFullYear() - dob.getFullYear()} años.`,
+                priority: isYesterday ? 'low' : 'normal',
+                title: title,
+                message: msg,
                 player: p,
                 category: p.category || 'General',
                 date: p.birthDate,
                 icon: Cake,
-                color: 'bg-purple-500'
+                color: isYesterday ? 'bg-purple-300' : 'bg-purple-500'
             });
         }
     });
 
     // B. Agency Contract End (< 6 months)
+    // B. Agency Contract End (Within last 30 days OR next 6 months)
     dbPlayers.forEach(p => {
         const endDate = parseDate(p.proneo?.agencyEndDate);
         if (!endDate) return;
         const days = getDaysDiff(endDate);
 
-        if (days >= 0 && days < 180) { // Less than 6 months
+        if (days >= -30 && days < 180) { // Last 30 days to next 6 months
+            const isExpired = days < 0;
             alerts.push({
                 id: `agency-end-${p.id}`,
                 type: 'agency_renewal',
-                priority: 'high',
-                title: 'Renovación Agencia Proneo',
-                message: `El contrato de representación vence en ${Math.floor(days / 30)} meses (${p.proneo.agencyEndDate}).`,
+                priority: isExpired ? 'critical' : 'high',
+                title: isExpired ? 'RENOVACIÓN VENCIDA' : 'Renovación Agencia Proneo',
+                message: isExpired
+                    ? `El contrato VENCIÓ hace ${Math.abs(days)} días (${p.proneo.agencyEndDate}).`
+                    : `El contrato de representación vence en ${Math.floor(days / 30)} meses (${p.proneo.agencyEndDate}).`,
                 player: p,
                 category: p.category || 'General',
                 daysRemaining: days,
                 icon: AlertTriangle,
-                color: 'bg-red-500'
+                color: isExpired ? 'bg-red-700 animate-pulse' : 'bg-red-500'
             });
         }
     });
 
+    // C. Optional Clauses (Critical)
     // C. Optional Clauses (Critical)
     dbPlayers.forEach(p => {
         const noticeDate = parseDate(p.contract?.optionalNoticeDate);
         if (!noticeDate) return;
         const days = getDaysDiff(noticeDate);
 
-        // Alert if within 60 days
-        if (days >= 0 && days < 60) {
+        // Alert if within 60 days OR expired in last 15 days
+        if (days >= -15 && days < 60) {
+            const isExpired = days < 0;
             alerts.push({
                 id: `clause-${p.id}`,
                 type: 'clause',
                 priority: 'critical',
-                title: '🚨 CLÁUSULA OPCIONAL',
-                message: `Límite para ejecutar/cancelar año opcional: ${p.contract.optionalNoticeDate} (${days} días).`,
+                title: isExpired ? '🚨 CLÁUSULA VENCIDA' : '🚨 CLÁUSULA OPCIONAL',
+                message: isExpired
+                    ? `Se pasó el límite hace ${Math.abs(days)} días (${p.contract.optionalNoticeDate}).`
+                    : `Límite para ejecutar/cancelar año opcional: ${p.contract.optionalNoticeDate} (${days} días).`,
                 player: p,
                 category: p.category || 'General',
                 daysRemaining: days,
@@ -233,13 +273,16 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
         if (!agentEnd) return;
         const days = getDaysDiff(agentEnd);
 
-        if (days >= 0 && days < 180) { // Less than 6 months
+        if (days >= -30 && days < 180) { // Last 30 days or Next 6 months
+            const isExpired = days < 0;
             alerts.push({
                 id: `scout-opp-${p.id}`,
                 type: 'scouting_opp',
-                priority: 'medium',
-                title: 'Oportunidad de Captación',
-                message: `Termina contrato con su agente actual en ${Math.floor(days / 30)} meses.`,
+                priority: isExpired ? 'high' : 'medium',
+                title: isExpired ? 'Oportunidad (Contrato Vencido)' : 'Oportunidad de Captación',
+                message: isExpired
+                    ? `Su contrato con agente anterior VENCIÓ hace ${Math.abs(days)} días.`
+                    : `Termina contrato con su agente actual en ${Math.floor(days / 30)} meses.`,
                 player: p,
                 category: p.category || 'General',
                 daysRemaining: days,
