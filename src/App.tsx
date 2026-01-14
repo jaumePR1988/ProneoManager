@@ -149,11 +149,9 @@ function App() {
             case 'avisos':
                 return <AvisosModule userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} userRole={userRole} />;
             case 'settings':
-                return <SettingsModule />;
+                return user ? <SettingsModule user={user} /> : <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
             case 'users':
                 return <UsersModule />;
-            case 'profile':
-                return user ? <ProfileModule user={user} /> : <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
             case 'comms':
                 return <NotificationCenter />;
             default:

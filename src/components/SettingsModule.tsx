@@ -17,12 +17,18 @@ import {
     Tag,
     Users as UsersIcon
 } from 'lucide-react';
-import { usePlayers } from '../hooks/usePlayers';
 import { DynamicField, Category } from '../types/player';
+import ProfileModule from './ProfileModule';
+import { User as FirebaseUser } from 'firebase/auth';
+import { usePlayers } from '../hooks/usePlayers';
 
-const SettingsModule: React.FC = () => {
+interface SettingsModuleProps {
+    user: FirebaseUser;
+}
+
+const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
     const { schema, systemLists, updateSchema, updateSystemLists } = usePlayers(false);
-    const [activeTab, setActiveTab] = useState<'columns' | 'lists' | 'reduced'>('columns');
+    const [activeTab, setActiveTab] = useState<'profile' | 'columns' | 'lists' | 'reduced'>('profile');
     const [isAdding, setIsAdding] = useState(false);
     const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
 
@@ -126,20 +132,26 @@ const SettingsModule: React.FC = () => {
                     <h1 className="text-3xl font-black text-zinc-900 tracking-tight italic uppercase">Ajustes del Sistema</h1>
                     <div className="flex items-center gap-2 mt-4 p-1 bg-zinc-100 rounded-2xl w-fit">
                         <button
+                            onClick={() => setActiveTab('profile')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'profile' ? 'bg-white text-proneo-green shadow-sm' : 'text-zinc-400 hover:text-zinc-600'}`}
+                        >
+                            Mi Perfil
+                        </button>
+                        <button
                             onClick={() => setActiveTab('columns')}
-                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'columns' ? 'bg-white text-[#b4c885] shadow-sm' : 'text-zinc-400 hover:text-zinc-600'}`}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'columns' ? 'bg-white text-proneo-green shadow-sm' : 'text-zinc-400 hover:text-zinc-600'}`}
                         >
                             Columnas Dinámicas
                         </button>
                         <button
                             onClick={() => setActiveTab('lists')}
-                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'lists' ? 'bg-white text-[#b4c885] shadow-sm' : 'text-zinc-400 hover:text-zinc-600'}`}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'lists' ? 'bg-white text-proneo-green shadow-sm' : 'text-zinc-400 hover:text-zinc-600'}`}
                         >
                             Listas Desplegables
                         </button>
                         <button
                             onClick={() => setActiveTab('reduced')}
-                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'reduced' ? 'bg-white text-[#b4c885] shadow-sm' : 'text-zinc-400 hover:text-zinc-600'}`}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'reduced' ? 'bg-white text-proneo-green shadow-sm' : 'text-zinc-400 hover:text-zinc-600'}`}
                         >
                             Vista Reducida
                         </button>
@@ -150,37 +162,41 @@ const SettingsModule: React.FC = () => {
                     {activeTab === 'columns' ? (
                         <button
                             onClick={() => setIsAdding(true)}
-                            className="bg-[#b4c885] text-white px-6 h-12 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-[#b4c885]/20 transition-all active:scale-95 shadow-lg"
+                            className="bg-proneo-green text-white px-6 h-12 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-proneo-green/20 transition-all active:scale-95 shadow-lg"
                         >
                             <Plus className="w-4 h-4" />
                             Añadir Columna
                         </button>
-                    ) : (
+                    ) : activeTab === 'lists' || activeTab === 'reduced' ? (
                         <button
                             onClick={handleSaveLists}
-                            className="bg-[#b4c885] text-white px-6 h-12 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-[#b4c885]/20 transition-all active:scale-95 shadow-lg"
+                            className="bg-proneo-green text-white px-6 h-12 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-proneo-green/20 transition-all active:scale-95 shadow-lg"
                         >
                             <Save className="w-4 h-4" />
                             Guardar Cambios
                         </button>
-                    )}
+                    ) : null}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {activeTab === 'columns' ? (
+                {activeTab === 'profile' ? (
+                    <div className="lg:col-span-2">
+                        <ProfileModule user={user} hideHeader />
+                    </div>
+                ) : activeTab === 'columns' ? (
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-[40px] border border-zinc-100 shadow-xl overflow-hidden">
                             <div className="p-6 border-b border-zinc-100 bg-zinc-50/30 flex items-center justify-between">
                                 <h2 className="text-sm font-black text-zinc-800 uppercase tracking-widest flex items-center gap-2">
-                                    <Settings className="w-4 h-4 text-[#b4c885]" />
+                                    <Settings className="w-4 h-4 text-proneo-green" />
                                     Esquema Completo de la Base de Datos
                                 </h2>
                                 <div className="flex items-center gap-2">
                                     <span className="text-[10px] font-black bg-zinc-100 text-zinc-400 px-3 py-1 rounded-full uppercase tracking-widest">
                                         {20} SISTEMA
                                     </span>
-                                    <span className="text-[10px] font-black bg-[#b4c885]/10 text-[#b4c885] px-3 py-1 rounded-full uppercase tracking-widest">
+                                    <span className="text-[10px] font-black bg-proneo-green/10 text-proneo-green px-3 py-1 rounded-full uppercase tracking-widest">
                                         {schema.length} DINÁMICAS
                                     </span>
                                 </div>
@@ -236,7 +252,7 @@ const SettingsModule: React.FC = () => {
                                                 {schema.map(field => (
                                                     <div key={field.id} className="flex items-center justify-between p-4 bg-zinc-50 border border-zinc-100 rounded-2xl hover:bg-white hover:shadow-md transition-all group">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-[#b4c885]">
+                                                            <div className="w-10 h-10 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-proneo-green">
                                                                 {getIcon(field.type)}
                                                             </div>
                                                             <div>
@@ -245,7 +261,7 @@ const SettingsModule: React.FC = () => {
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="text-[9px] font-bold text-zinc-400 uppercase">Tipo: {field.type}</span>
                                                                         <span className="w-1 h-1 rounded-full bg-zinc-300" />
-                                                                        <span className="text-[9px] font-bold text-[#b4c885] uppercase">{field.category}</span>
+                                                                        <span className="text-[9px] font-bold text-proneo-green uppercase">{field.category}</span>
                                                                     </div>
                                                                     {field.type === 'select' && field.options && (
                                                                         <span className="text-[8px] font-medium text-zinc-400 lowercase mt-0.5 truncate max-w-xs">
@@ -258,7 +274,7 @@ const SettingsModule: React.FC = () => {
                                                         <div className="flex items-center gap-2">
                                                             <button
                                                                 onClick={() => handleEditField(field)}
-                                                                className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-[#b4c885] hover:text-white transition-all flex items-center justify-center"
+                                                                className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-proneo-green hover:text-white transition-all flex items-center justify-center"
                                                             >
                                                                 <Pencil className="w-4 h-4" />
                                                             </button>
@@ -283,7 +299,7 @@ const SettingsModule: React.FC = () => {
                         <div className="bg-white rounded-[40px] border border-zinc-100 shadow-xl overflow-hidden">
                             <div className="p-6 border-b border-zinc-100 bg-zinc-50/30">
                                 <h2 className="text-sm font-black text-zinc-800 uppercase tracking-widest flex items-center gap-2">
-                                    <List className="w-4 h-4 text-[#b4c885]" />
+                                    <List className="w-4 h-4 text-proneo-green" />
                                     Listas Desplegables del Sistema
                                 </h2>
                             </div>
@@ -309,7 +325,7 @@ const SettingsModule: React.FC = () => {
                                             <textarea
                                                 value={localLists[list.key]}
                                                 onChange={(e) => setLocalLists({ ...localLists, [list.key]: e.target.value })}
-                                                className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl p-6 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-[#b4c885]/5 focus:border-[#b4c885]/20 outline-none transition-all resize-none min-h-[100px]"
+                                                className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl p-6 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-proneo-green/5 focus:border-proneo-green/20 outline-none transition-all resize-none min-h-[100px]"
                                                 placeholder={`Ej: ${list.label === 'Ligas' ? 'España, Italia, Premier...' : 'Opción 1, Opción 2...'}`}
                                             />
                                         </div>
@@ -323,7 +339,7 @@ const SettingsModule: React.FC = () => {
                         <div className="bg-white rounded-[40px] border border-zinc-100 shadow-xl overflow-hidden">
                             <div className="p-6 border-b border-zinc-100 bg-zinc-50/30">
                                 <h2 className="text-sm font-black text-zinc-800 uppercase tracking-widest flex items-center gap-2">
-                                    <LayoutDashboard className="w-4 h-4 text-[#b4c885]" />
+                                    <LayoutDashboard className="w-4 h-4 text-proneo-green" />
                                     Configuración de Vista Reducida (Base de Datos)
                                 </h2>
                             </div>
@@ -386,7 +402,7 @@ const SettingsModule: React.FC = () => {
                                                     updateSystemLists({ ...systemLists, reducedColumns: newReduced });
                                                 }}
                                                 className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${isSelected
-                                                    ? 'bg-[#b4c885]/10 border-[#b4c885] text-[#b4c885]'
+                                                    ? 'bg-proneo-green/10 border-proneo-green text-proneo-green'
                                                     : 'bg-zinc-50 border-zinc-100 text-zinc-400 hover:border-zinc-200'}`}
                                             >
                                                 <span className="text-[10px] font-black uppercase tracking-widest">{col.label}</span>
@@ -403,18 +419,18 @@ const SettingsModule: React.FC = () => {
                 {/* Info / Tips */}
                 <div className="space-y-6">
                     <div className="bg-zinc-900 rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#b4c885] blur-[80px] opacity-20" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-proneo-green blur-[80px] opacity-20" />
                         <h3 className="text-xl font-black italic uppercase tracking-tighter mb-4">¿Base de Datos Viva?</h3>
                         <p className="text-zinc-400 text-xs font-bold uppercase leading-loose tracking-widest">
                             Esta función te permite adaptar el sistema a nuevas necesidades sin esperar a actualizaciones de software.
                             <br /><br />
                             Al añadir una columna, se creará un nuevo campo en:
                             <br />
-                            <span className="text-[#b4c885] italic">• El Formulario de Jugador</span>
+                            <span className="text-proneo-green italic">• El Formulario de Jugador</span>
                             <br />
-                            <span className="text-[#b4c885] italic">• La Tabla Principal</span>
+                            <span className="text-proneo-green italic">• La Tabla Principal</span>
                             <br />
-                            <span className="text-[#b4c885] italic">• El Sistema de Exportación</span>
+                            <span className="text-proneo-green italic">• El Sistema de Exportación</span>
                         </p>
                     </div>
                 </div>
@@ -440,7 +456,7 @@ const SettingsModule: React.FC = () => {
                                         type="text"
                                         value={newField.label}
                                         onChange={(e) => setNewField({ ...newField, label: e.target.value })}
-                                        className="w-full h-14 bg-zinc-50 border border-zinc-100 rounded-2xl pl-12 pr-6 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-[#b4c885]/5 focus:border-[#b4c885]/20 outline-none transition-all placeholder:text-zinc-300"
+                                        className="w-full h-14 bg-zinc-50 border border-zinc-100 rounded-2xl pl-12 pr-6 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-proneo-green/5 focus:border-proneo-green/20 outline-none transition-all placeholder:text-zinc-300"
                                         placeholder="Ej: Talla Botas"
                                     />
                                 </div>
@@ -487,7 +503,7 @@ const SettingsModule: React.FC = () => {
                                                 const opts = e.target.value.split(',').map(o => o.trim()).filter(o => o);
                                                 setNewField({ ...newField, options: opts });
                                             }}
-                                            className="w-full h-14 bg-zinc-50 border border-zinc-100 rounded-2xl pl-12 pr-6 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-[#b4c885]/5 focus:border-[#b4c885]/20 outline-none transition-all placeholder:text-zinc-300"
+                                            className="w-full h-14 bg-zinc-50 border border-zinc-100 rounded-2xl pl-12 pr-6 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-proneo-green/5 focus:border-proneo-green/20 outline-none transition-all placeholder:text-zinc-300"
                                             placeholder="Ej: Puma, Mizuno, Nike"
                                         />
                                     </div>
@@ -505,7 +521,7 @@ const SettingsModule: React.FC = () => {
                             </button>
                             <button
                                 onClick={handleAddField}
-                                className="flex-1 h-14 rounded-2xl bg-[#b4c885] text-white font-black text-xs uppercase tracking-widest hover:shadow-xl hover:shadow-[#b4c885]/20 transition-all flex items-center justify-center gap-2"
+                                className="flex-1 h-14 rounded-2xl bg-proneo-green text-white font-black text-xs uppercase tracking-widest hover:shadow-xl hover:shadow-proneo-green/20 transition-all flex items-center justify-center gap-2"
                             >
                                 <Save className="w-4 h-4" />
                                 {editingFieldId ? 'Guardar Cambios' : 'Crear Columna'}

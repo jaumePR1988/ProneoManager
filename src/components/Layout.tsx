@@ -9,7 +9,6 @@ import {
     Bell,
     FileText,
     Briefcase,
-    UserCircle,
     UserCog,
     Send
 } from 'lucide-react';
@@ -26,8 +25,8 @@ interface LayoutProps {
 }
 
 // Define visibility rules for Header elements
-const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'profile', 'settings', 'calendar', 'scouting'];
-const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'profile', 'calendar'];
+const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'settings', 'calendar', 'scouting'];
+const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'calendar'];
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer }) => {
     const [pendingCount, setPendingCount] = React.useState(0);
@@ -55,7 +54,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         { id: 'reports', label: 'Reportes', icon: FileText, hidden: isTreasurer },
         { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin && !isTreasurer },
         { id: 'users', label: 'Usuarios', icon: UserCog, hidden: !isAdmin },
-        { id: 'profile', label: 'Mi Perfil', icon: UserCircle },
         { id: 'comms', label: 'Comunicaciones', icon: Send, hidden: !isAdmin && !isCommunication },
         { id: 'avisos', label: 'Avisos', icon: Bell },
         { id: 'settings', label: 'Ajustes', icon: Settings, hidden: isScout },

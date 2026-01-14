@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { Camera, Lock, User, Save } from 'lucide-react';
 import { updateProfile, updatePassword, User as FirebaseUser } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '../firebase/config';
+import { storage } from '../firebase/config';
 
 interface ProfileModuleProps {
     user: FirebaseUser;
+    hideHeader?: boolean;
 }
 
-const ProfileModule: React.FC<ProfileModuleProps> = ({ user }) => {
+const ProfileModule: React.FC<ProfileModuleProps> = ({ user, hideHeader = false }) => {
     const [name, setName] = useState(user.displayName || '');
+    const [photoURL, setPhotoURL] = useState(user.photoURL || '');
     const [newPassword, setNewPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -40,8 +42,9 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ user }) => {
             await uploadBytes(storageRef, file);
             const url = await getDownloadURL(storageRef);
             await updateProfile(user, { photoURL: url });
-            // Force refresh usually required or state update
-            window.location.reload();
+            setPhotoURL(url);
+            setMessage({ type: 'success', text: 'Imagen de perfil actualizada. Se verá reflejada totalmente al recargar.' });
+            setLoading(false);
         } catch (error: any) {
             setMessage({ type: 'error', text: 'Error al subir imagen: ' + error.message });
             setLoading(false);
@@ -49,17 +52,19 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ user }) => {
     };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8">
-            <header>
-                <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase italic">Mi Perfil</h1>
-                <p className="text-zinc-500 font-medium">Gestiona tu identidad y seguridad</p>
-            </header>
+        <div className={`max-w-2xl mx-auto space-y-8 ${hideHeader ? 'py-4' : ''}`}>
+            {!hideHeader && (
+                <header>
+                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase italic">Mi Perfil</h1>
+                    <p className="text-zinc-500 font-medium">Gestiona tu identidad y seguridad</p>
+                </header>
+            )}
 
             <div className="bg-white rounded-3xl shadow-xl shadow-zinc-200/50 border border-zinc-100 p-10">
                 <div className="flex flex-col items-center mb-10">
                     <div className="relative group">
                         <img
-                            src={user.photoURL || 'https://i.pravatar.cc/150'}
+                            src={photoURL || 'https://i.pravatar.cc/150'}
                             alt="Profile"
                             className="w-32 h-32 rounded-full object-cover border-4 border-zinc-50 shadow-lg"
                         />

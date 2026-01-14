@@ -631,7 +631,7 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                                                         {alert.title}
                                                     </h3>
                                                     <span className="text-[10px] font-bold text-zinc-400 uppercase bg-zinc-100 px-2 py-0.5 rounded-md">
-                                                        {alert.player?.name || 'Sistema'}
+                                                        {alert.player?.name || (alert.player?.firstName ? `${alert.player.firstName} ${alert.player.lastName1 || ''}`.trim() : 'Sistema')}
                                                     </span>
                                                 </div>
                                                 <p className="text-zinc-500 font-medium text-sm leading-relaxed">
