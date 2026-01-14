@@ -204,7 +204,9 @@ const SettingsModule: React.FC = () => {
                                                 { id: 'preferredFoot', label: 'Pierna Hábil', type: 'select' },
                                                 { id: 'birthDate', label: 'Fecha Nacimiento', type: 'date' },
                                                 { id: 'nationality', label: 'Nacionalidad', type: 'text' },
-                                                { id: 'monitoringAgent', label: 'Seguimiento', type: 'select' }
+                                                { id: 'nationality2', label: 'Nacionalidad 2', type: 'text' },
+                                                { id: 'monitoringAgent', label: 'Seguimiento', type: 'select' },
+                                                { id: 'monitoringAgent2', label: 'Seguimiento 2', type: 'select' }
                                             ].map(field => (
                                                 <div key={field.id} className="flex items-center justify-between p-4 bg-zinc-50/50 border border-dashed border-zinc-200 rounded-2xl opacity-60 grayscale-[0.5]">
                                                     <div className="flex items-center gap-4">
@@ -337,9 +339,9 @@ const SettingsModule: React.FC = () => {
                                                 const allIds = [
                                                     'firstName', 'lastName1', 'lastName2', 'category', 'selection',
                                                     'league', 'club', 'position', 'preferredFoot', 'birthDate', 'age',
-                                                    'nationality', 'contract.endDate', 'contract.optional', 'contract.optionalNoticeDate',
+                                                    'nationality', 'nationality2', 'contract.endDate', 'contract.optional', 'contract.optionalNoticeDate',
                                                     'contract.conditions', 'proneo.agencyEndDate', 'proneoStatus', 'sportsBrand',
-                                                    'sportsBrandEndDate', 'monitoringAgent',
+                                                    'sportsBrandEndDate', 'monitoringAgent', 'monitoringAgent2',
                                                     ...schema.map(f => `custom_${f.id}`)
                                                 ];
                                                 updateSystemLists({ ...systemLists, reducedColumns: allIds });
@@ -361,6 +363,7 @@ const SettingsModule: React.FC = () => {
                                         { id: 'preferredFoot', label: 'Pierna Hábil' },
                                         { id: 'birthDate', label: 'F. Nacimiento' },
                                         { id: 'nationality', label: 'Nacionalidad' },
+                                        { id: 'nationality2', label: 'Nacionalidad 2' },
                                         { id: 'endDate', label: 'Fin Contrato' },
                                         { id: 'optional', label: 'Opcional' },
                                         { id: 'optionalNoticeDate', label: 'Fecha Aviso' },
@@ -369,6 +372,7 @@ const SettingsModule: React.FC = () => {
                                         { id: 'sportsBrand', label: 'Marca Dep.' },
                                         { id: 'sportsBrandEndDate', label: 'Fin Marca' },
                                         { id: 'monitoringAgent', label: 'Seguimiento' },
+                                        { id: 'monitoringAgent2', label: 'Seguimiento 2' },
                                         ...schema.map(f => ({ id: `custom_${f.id}`, label: f.label }))
                                     ].map(col => {
                                         const isSelected = systemLists.reducedColumns?.includes(col.id);
