@@ -169,6 +169,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
         { id: 'optionalNoticeDate', label: 'Fecha Aviso', sortable: false, render: (p) => p.contract?.optionalNoticeDate || '' },
         { id: 'conditions', label: 'Condiciones', sortable: false, className: "max-w-[150px] truncate", render: (p) => p.contract?.conditions || '' },
         { id: 'nationality', label: 'Nacionalidad' },
+        { id: 'nationality2', label: 'Nacionalidad 2' },
         { id: 'position', label: 'Posición', className: "bg-zinc-50" },
         { id: 'preferredFoot', label: 'Pierna Hábil' },
         { id: 'birthDate', label: 'Fecha Nac.' },
@@ -192,6 +193,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
         { id: 'sportsBrand', label: 'Marca' },
         { id: 'sportsBrandEndDate', label: 'F. Fin Marca' },
         { id: 'monitoringAgent', label: 'Seguimiento', className: "font-black text-[#b4c885]" },
+        { id: 'monitoringAgent2', label: 'Seguimiento 2', className: "font-bold text-zinc-400" },
         {
             id: 'salary',
             label: 'Salario',

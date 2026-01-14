@@ -1,6 +1,7 @@
 {
   "projects": {
-    "default": "proneomanager"
+    "default": "proneomanager",
+    "proneomanager": "proneomanager"
   },
   "targets": {
     "proneomanager": {

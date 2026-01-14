@@ -93,6 +93,7 @@ export interface Player {
     name: string; // Display name
 
     nationality: string;
+    nationality2?: string;
     birthDate: string;
     age: number;
 
@@ -113,6 +114,7 @@ export interface Player {
     selection?: string;
 
     monitoringAgent?: string; // Seguimiento
+    monitoringAgent2?: string; // Segundo seguimiento
 
     seasons: PlayerSeason[];
 

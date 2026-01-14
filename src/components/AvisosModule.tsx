@@ -15,7 +15,8 @@ import {
     Clock4,
     UserPlus,
     UserMinus,
-    Banknote
+    Banknote,
+    FileText
 } from 'lucide-react';
 import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
@@ -630,7 +631,7 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                                                         {alert.title}
                                                     </h3>
                                                     <span className="text-[10px] font-bold text-zinc-400 uppercase bg-zinc-100 px-2 py-0.5 rounded-md">
-                                                        {alert.player.name}
+                                                        {alert.player?.name || 'Sistema'}
                                                     </span>
                                                 </div>
                                                 <p className="text-zinc-500 font-medium text-sm leading-relaxed">
@@ -676,7 +677,7 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                                             <div className="text-right pl-4 border-l border-zinc-100 hidden md:block">
                                                 <div className="text-[10px] font-black text-zinc-300 uppercase tracking-widest mb-1">Fecha Clave</div>
                                                 <div className="font-mono font-bold text-zinc-600">
-                                                    {alert.date || alert.player.scouting?.lastContactDate || '---'}
+                                                    {alert.date || alert.player?.scouting?.lastContactDate || '---'}
                                                 </div>
                                             </div>
                                         </div>

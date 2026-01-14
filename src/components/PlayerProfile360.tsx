@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
     X,
-    Share2,
     Printer,
     Shield,
-    Activity,
     Zap,
     Trophy,
     Briefcase,
     Save,
-    Flag,
     Plus,
     Trash2,
     Banknote
@@ -179,27 +176,36 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                                         {age} Años
                                     </span>
                                 </div>
-                                {/* Flag Component */}
-                                <div className="flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm shadow-sm transition-all hover:bg-white/30">
-                                    <img
-                                        src={`https://flagcdn.com/24x18/${!player.nationality ? 'es' :
-                                            player.nationality.toLowerCase() === 'españa' ? 'es' :
-                                                player.nationality.toLowerCase() === 'francia' ? 'fr' :
-                                                    player.nationality.toLowerCase() === 'argentina' ? 'ar' :
-                                                        player.nationality.toLowerCase() === 'brasil' ? 'br' :
-                                                            player.nationality.toLowerCase() === 'inglaterra' ? 'gb-eng' :
-                                                                player.nationality.toLowerCase() === 'alemania' ? 'de' :
-                                                                    player.nationality.toLowerCase() === 'italia' ? 'it' : 'es'
-                                            }.png`}
-                                        alt={player.nationality || 'España'}
-                                        className="h-4 object-contain"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = 'https://flagcdn.com/24x18/es.png';
-                                        }}
-                                    />
-                                    <span className="text-xs font-black uppercase tracking-widest text-zinc-900">
-                                        {player.nationality || 'ESPAÑA'}
-                                    </span>
+                                {/* Flag Component(s) */}
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {[player.nationality, player.nationality2].filter(Boolean).map((nat, index) => {
+                                        const countryCode = !nat ? 'es' :
+                                            nat.toLowerCase() === 'españa' ? 'es' :
+                                                nat.toLowerCase() === 'francia' ? 'fr' :
+                                                    nat.toLowerCase() === 'argentina' ? 'ar' :
+                                                        nat.toLowerCase() === 'brasil' ? 'br' :
+                                                            nat.toLowerCase() === 'inglaterra' ? 'gb-eng' :
+                                                                nat.toLowerCase() === 'alemania' ? 'de' :
+                                                                    nat.toLowerCase() === 'italia' ? 'it' :
+                                                                        nat.toLowerCase() === 'portugal' ? 'pt' :
+                                                                            nat.toLowerCase() === 'uruguay' ? 'uy' :
+                                                                                nat.toLowerCase() === 'chile' ? 'cl' : 'es';
+                                        return (
+                                            <div key={index} className="flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm shadow-sm transition-all hover:bg-white/30">
+                                                <img
+                                                    src={`https://flagcdn.com/24x18/${countryCode}.png`}
+                                                    alt={nat}
+                                                    className="h-4 object-contain"
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = 'https://flagcdn.com/24x18/es.png';
+                                                    }}
+                                                />
+                                                <span className="text-xs font-black uppercase tracking-widest text-zinc-900">
+                                                    {nat}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -284,6 +290,24 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                                         />
                                         <Banknote className="w-4 h-4 text-zinc-300" />
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Monitoring Agents Section */}
+                            <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100 shadow-sm mt-2">
+                                <p className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-3 flex items-center gap-2">
+                                    <Shield className="w-3 h-3 text-[#b4c885]" />
+                                    Seguimiento
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {[player.monitoringAgent, player.monitoringAgent2].filter(Boolean).map((agent, index) => (
+                                        <span key={index} className="px-3 py-1 bg-white border border-zinc-200 rounded-lg text-xs font-bold text-zinc-700 shadow-sm italic">
+                                            {agent}
+                                        </span>
+                                    ))}
+                                    {![player.monitoringAgent, player.monitoringAgent2].filter(Boolean).length && (
+                                        <span className="text-xs text-zinc-300 font-medium italic">Sin agente asignado</span>
+                                    )}
                                 </div>
                             </div>
                         </div>

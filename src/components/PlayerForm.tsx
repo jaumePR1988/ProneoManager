@@ -96,10 +96,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
             sportsBrandEndDate: initialData?.sportsBrandEndDate || '',
             selection: initialData?.selection || '',
             monitoringAgent: initialData?.monitoringAgent || 'Jaume',
+            monitoringAgent2: initialData?.monitoringAgent2 || '',
             seasons: initialData?.seasons || [],
             salaries: initialData?.salaries || { year1: 0, year2: 0, year3: 0, year4: 0 },
             contractYears: initialData?.contractYears || [],
             customFields: initialData?.customFields || {},
+            nationality2: initialData?.nationality2 || '',
         } as Partial<Player>;
     });
 
@@ -109,6 +111,10 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
 
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showProfile360, setShowProfile360] = useState(false);
+
+    // States for dual fields visibility
+    const [showNat2, setShowNat2] = useState(!!formData.nationality2);
+    const [showAgent2, setShowAgent2] = useState(!!formData.monitoringAgent2);
 
     // If 360 Mode is active, show only that component
     if (showProfile360 && initialData) {
@@ -405,8 +411,36 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Label>NACIONALIDAD</Label>
-                                        <Input name="nationality" value={formData.nationality} onChange={handleInputChange} />
+                                        <div className="flex-1 flex gap-2">
+                                            <Input name="nationality" value={formData.nationality} onChange={handleInputChange} />
+                                            {!showNat2 && (
+                                                <button
+                                                    onClick={() => setShowNat2(true)}
+                                                    className="w-10 h-10 bg-zinc-100 hover:bg-[#b4c885]/20 text-zinc-400 hover:text-[#b4c885] rounded-sm flex items-center justify-center transition-all"
+                                                    title="Añadir Segunda Nacionalidad"
+                                                >
+                                                    <Plus className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
+                                    {showNat2 && (
+                                        <div className="flex items-center gap-3 animate-in slide-in-from-top-2 duration-200">
+                                            <Label>NACIONALIDAD 2</Label>
+                                            <div className="flex-1 flex gap-2">
+                                                <Input name="nationality2" value={formData.nationality2} onChange={handleInputChange} placeholder="Opcional" />
+                                                <button
+                                                    onClick={() => {
+                                                        setShowNat2(false);
+                                                        setFormData(prev => ({ ...prev, nationality2: '' }));
+                                                    }}
+                                                    className="w-10 h-10 bg-zinc-50 hover:bg-red-50 text-zinc-300 hover:text-red-500 rounded-sm flex items-center justify-center transition-all"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-3">
                                         <Label>FECHA NACIMIENTO</Label>
                                         <Input type="date" name="birthDate" value={formData.birthDate} onChange={handleInputChange} />
@@ -529,13 +563,46 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-3">
                                         <Label>SEGUIMIENTO</Label>
-                                        <Select
-                                            name="monitoringAgent"
-                                            value={formData.monitoringAgent}
-                                            onChange={handleInputChange}
-                                            options={systemLists.agents}
-                                        />
+                                        <div className="flex-1 flex gap-2">
+                                            <Select
+                                                name="monitoringAgent"
+                                                value={formData.monitoringAgent}
+                                                onChange={handleInputChange}
+                                                options={systemLists.agents}
+                                            />
+                                            {!showAgent2 && (
+                                                <button
+                                                    onClick={() => setShowAgent2(true)}
+                                                    className="w-10 h-10 bg-zinc-100 hover:bg-[#b4c885]/20 text-zinc-400 hover:text-[#b4c885] rounded-sm flex items-center justify-center transition-all"
+                                                    title="Añadir Segundo Agente de Seguimiento"
+                                                >
+                                                    <Plus className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
+                                    {showAgent2 && (
+                                        <div className="flex items-center gap-3 animate-in slide-in-from-top-2 duration-200">
+                                            <Label>SEGUIMIENTO 2</Label>
+                                            <div className="flex-1 flex gap-2">
+                                                <Select
+                                                    name="monitoringAgent2"
+                                                    value={formData.monitoringAgent2}
+                                                    onChange={handleInputChange}
+                                                    options={['', ...systemLists.agents]}
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        setShowAgent2(false);
+                                                        setFormData(prev => ({ ...prev, monitoringAgent2: '' }));
+                                                    }}
+                                                    className="w-10 h-10 bg-zinc-50 hover:bg-red-50 text-zinc-300 hover:text-red-500 rounded-sm flex items-center justify-center transition-all"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-3">
                                         <Label>FECHA CONTRATO</Label>
                                         <Input type="date" name="proneo.contractDate" value={formData.proneo?.contractDate} onChange={handleInputChange} />
