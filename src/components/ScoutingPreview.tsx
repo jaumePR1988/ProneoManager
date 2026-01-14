@@ -233,9 +233,17 @@ const ScoutingPreview: React.FC<ScoutingPreviewProps> = ({ onClose, players }) =
                                                 <Shield className="w-3 h-3 text-blue-500 shrink-0" />
                                                 <span className="truncate">{player.club || 'Sin Equipo'}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 truncate">
-                                                <Award className="w-3 h-3 text-blue-500 shrink-0" />
-                                                <span className="truncate">{player.position || 'Jugador'} - {player.nationality}</span>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md">
+                                                    <Award className="w-3 h-3 shrink-0" />
+                                                    <span>{player.position || 'Jugador'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md">
+                                                    <span>{player.preferredFoot || 'Derecha'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                                                {player.nationality}
                                             </div>
                                         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Save, User, MapPin, Phone, Briefcase, Calendar, ChevronDown } from 'lucide-react';
-import { Player, Category, Position, PreferredFoot, ScoutingStatus } from '../types/player';
+import { X, Save, User, Phone, Briefcase, Calendar, ChevronDown } from 'lucide-react';
+import { Player } from '../types/player';
 import { useUsers } from '../hooks/useUsers';
 
 interface ScoutingFormProps {
@@ -126,7 +126,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
 
                 {/* Sidebar */}
                 <div className="w-full md:w-80 bg-zinc-900 text-white p-10 flex flex-col justify-between shrink-0 relative">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-proneo-green/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
                     <div>
                         <h2 className="text-2xl font-black italic tracking-tighter mb-2">NUEVO OBJETIVO</h2>
@@ -137,7 +137,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
 
                     <div className="space-y-6 relative z-10">
                         <div className="bg-zinc-800/50 p-6 rounded-3xl border border-zinc-700/50 backdrop-blur-sm">
-                            <Briefcase className="w-6 h-6 text-proneo-green mb-3" />
+                            <Briefcase className="w-6 h-6 text-blue-500 mb-3" />
                             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">AGENTE ACTUAL</p>
                             <input
                                 type="text"
@@ -251,7 +251,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                                 if (!file) return;
                                                 try {
                                                     const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-                                                    const { db, storage, isDemoMode } = await import('../firebase/config');
+                                                    const { storage } = await import('../firebase/config');
                                                     const storageRef = ref(storage, `scouting/${crypto.randomUUID()}_${file.name}`);
                                                     const snapshot = await uploadBytes(storageRef, file);
                                                     const url = await getDownloadURL(snapshot.ref);
@@ -274,7 +274,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nombre</label>
                                     <input
                                         required
-                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
+                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                         value={formData.firstName || ''}
                                         onChange={e => updateField('firstName', e.target.value)}
                                         placeholder="Nombre"
@@ -285,13 +285,13 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                     <div className="flex gap-2">
                                         <input
                                             required
-                                            className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
+                                            className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                             value={formData.lastName1 || ''}
                                             onChange={e => updateField('lastName1', e.target.value)}
                                             placeholder="1er Apellido"
                                         />
                                         <input
-                                            className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
+                                            className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                             value={formData.lastName2 || ''}
                                             onChange={e => updateField('lastName2', e.target.value)}
                                             placeholder="2do Apellido"
@@ -301,7 +301,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nacionalidad</label>
                                     <input
-                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
+                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                         value={formData.nationality || ''}
                                         onChange={e => updateField('nationality', e.target.value)}
                                     />
@@ -310,7 +310,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Fecha Nacimiento</label>
                                     <input
                                         type="date"
-                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
+                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                         value={formData.birthDate || ''}
                                         onChange={e => updateField('birthDate', e.target.value)}
                                     />
@@ -330,7 +330,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Club Actual</label>
                                     <input
-                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
+                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                         value={formData.club || ''}
                                         onChange={e => updateField('club', e.target.value)}
                                         placeholder="Equipo"
@@ -339,7 +339,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Categoría</label>
                                     <select
-                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
+                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                         value={formData.category || 'Fútbol'}
                                         onChange={e => updateField('category', e.target.value)}
                                     >
@@ -352,7 +352,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Posición</label>
                                     <select
-                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none transition-all"
+                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                         value={formData.position || ''}
                                         onChange={e => updateField('position', e.target.value)}
                                     >
@@ -367,6 +367,18 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                         <option value="Ala/Cierre">Ala/Cierre</option>
                                         <option value="Ala/Pivot">Ala/Pivot</option>
                                         <option value="Entrenador">Entrenador</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Pierna Hábil</label>
+                                    <select
+                                        className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                        value={formData.preferredFoot || 'Derecha'}
+                                        onChange={e => updateField('preferredFoot', e.target.value)}
+                                    >
+                                        <option value="Derecha">Derecha</option>
+                                        <option value="Izquierda">Izquierda</option>
+                                        <option value="Ambidiestro">Ambidiestro</option>
                                     </select>
                                 </div>
                             </div>
@@ -389,7 +401,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest pl-1">Fecha ({index + 1})</label>
                                                 <input
                                                     type="date"
-                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-2 font-bold text-xs text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none"
+                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-2 font-bold text-xs text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                                     value={entry.date}
                                                     onChange={e => handleContactHistoryChange(index, 'date', e.target.value)}
                                                 />
@@ -397,7 +409,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                             <div className="col-span-4 space-y-1">
                                                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest pl-1">Agente Proneo</label>
                                                 <select
-                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-2 font-bold text-xs text-zinc-900 focus:ring-2 focus:ring-proneo-green/20 outline-none appearance-none"
+                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-2 font-bold text-xs text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none"
                                                     value={entry.agent}
                                                     onChange={e => handleContactHistoryChange(index, 'agent', e.target.value)}
                                                 >
@@ -410,7 +422,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                             <div className="col-span-5 space-y-1">
                                                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest pl-1">Notas / Detalles</label>
                                                 <input
-                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-3 font-medium text-xs text-zinc-700 focus:ring-2 focus:ring-proneo-green/20 outline-none"
+                                                    className="w-full h-10 bg-white border border-zinc-200 rounded-lg px-3 font-medium text-xs text-zinc-700 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                                     value={entry.notes || ''}
                                                     onChange={e => handleContactHistoryChange(index, 'notes', e.target.value)}
                                                     placeholder="Resumen del contacto..."

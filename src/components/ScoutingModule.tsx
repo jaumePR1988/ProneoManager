@@ -8,7 +8,8 @@ import {
     Plus,
     Trash2,
     X,
-    StickyNote
+    StickyNote,
+    ChevronDown
 } from 'lucide-react';
 import { TableVirtuoso } from 'react-virtuoso';
 import { usePlayers } from '../hooks/usePlayers';
@@ -38,6 +39,15 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
         }
     }, [userSport, isAdmin]);
 
+    const [isScoutingFormOpen, setIsScoutingFormOpen] = useState(false);
+    const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
+    const [editingScouting, setEditingScouting] = useState<Player | null>(null);
+    const [signingPlayer, setSigningPlayer] = useState<Player | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [viewingNote, setViewingNote] = useState<{ content: string; date: string; author: string; player: string } | null>(null);
+    const [activeView, setActiveView] = useState<'players' | 'contacts'>('players');
+    const [searchTerm, setSearchTerm] = useState('');
+
     const scoutingPlayers = useMemo(() => {
         let filtered = allScoutingPlayers || [];
 
@@ -56,16 +66,19 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
             );
         }
 
-        return filtered;
-    }, [allScoutingPlayers, selectedSport, userRole, userName]);
+        // 3. Search Filter
+        if (searchTerm) {
+            const lowTerm = searchTerm.toLowerCase();
+            filtered = filtered.filter(p =>
+                (p.name || `${p.firstName} ${p.lastName1}`).toLowerCase().includes(lowTerm) ||
+                (p.club || '').toLowerCase().includes(lowTerm) ||
+                (p.position || '').toLowerCase().includes(lowTerm)
+            );
+        }
 
-    const [isScoutingFormOpen, setIsScoutingFormOpen] = useState(false);
-    const [isScoutingPreviewOpen, setIsScoutingPreviewOpen] = useState(false);
-    const [editingScouting, setEditingScouting] = useState<Player | null>(null);
-    const [signingPlayer, setSigningPlayer] = useState<Player | null>(null);
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [viewingNote, setViewingNote] = useState<{ content: string; date: string; author: string; player: string } | null>(null);
-    const [activeView, setActiveView] = useState<'players' | 'contacts'>('players');
+        return filtered;
+    }, [allScoutingPlayers, selectedSport, userRole, userName, searchTerm]);
+
 
     const handleSaveScouting = async (data: Partial<Player>) => {
         if (editingScouting) {
@@ -187,67 +200,81 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
 
             {/* Marketplace Overview Bar */}
             <div className="relative flex flex-col md:flex-row gap-6">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-orange-50 p-6 rounded-[32px] border border-orange-100 flex items-center gap-5 group hover:shadow-xl hover:shadow-orange-200/20 transition-all">
-                        <div className="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 group-hover:rotate-6 transition-transform">
-                            <Target className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <div className="mb-1">
-                                {isAdmin ? (
-                                    <div className="relative inline-flex items-center">
-                                        <select
-                                            value={selectedSport}
-                                            onChange={(e) => setSelectedSport(e.target.value)}
-                                            className="appearance-none bg-white/50 border border-orange-200 text-orange-700 pl-3 pr-8 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer hover:bg-white transition-colors outline-none"
-                                        >
-                                            <option value="General">Global (Todos)</option>
-                                            <option value="Fútbol">Fútbol</option>
-                                            <option value="F. Sala">Fútbol Sala</option>
-                                            <option value="Femenino">Femenino</option>
-                                            <option value="Entrenadores">Entrenadores</option>
-                                        </select>
-                                        <div className="absolute right-2 pointer-events-none text-orange-600">
-                                            <svg className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest">En Seguimiento</span>
-                                )}
+                <div className="flex-1">
+                    <div className="bg-white p-2 rounded-[32px] border border-zinc-100 shadow-xl shadow-zinc-200/20 flex flex-col md:flex-row items-stretch md:items-center gap-2">
+                        {/* Premium Summary Card */}
+                        <div className="bg-zinc-900 rounded-[28px] p-4 flex items-center gap-5 min-w-[280px] relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 blur-[50px] rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20 group-hover:rotate-6 transition-transform relative z-10">
+                                <Target className="w-7 h-7" />
                             </div>
-                            <h4 className="text-2xl font-black text-zinc-900 tracking-tighter italic">{scoutingPlayers.length} Objetivos</h4>
+                            <div className="relative z-10">
+                                <div className="flex flex-col">
+                                    {isAdmin ? (
+                                        <div className="relative inline-flex items-center mb-1">
+                                            <select
+                                                value={selectedSport}
+                                                onChange={(e) => setSelectedSport(e.target.value)}
+                                                className="appearance-none bg-zinc-800 border border-zinc-700 text-zinc-300 pl-3 pr-8 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer hover:bg-zinc-700 transition-colors outline-none"
+                                            >
+                                                <option value="General">Global (Todos)</option>
+                                                <option value="Fútbol">Fútbol</option>
+                                                <option value="F. Sala">Fútbol Sala</option>
+                                                <option value="Femenino">Femenino</option>
+                                                <option value="Entrenadores">Entrenadores</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-2 pointer-events-none text-zinc-500 w-3 h-3" />
+                                        </div>
+                                    ) : (
+                                        <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">Marketplace</span>
+                                    )}
+                                    <h4 className="text-2xl font-black text-white tracking-tighter italic">
+                                        {scoutingPlayers.length} <span className="text-zinc-500 not-italic font-medium text-lg ml-1 uppercase">Objetivos</span>
+                                    </h4>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* View Toggle - Centered & Minimalist (Absolute) */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:flex">
-                    <div className="bg-white border border-zinc-200 p-0.5 rounded-full flex shadow-sm scale-90">
-                        <button
-                            onClick={() => setActiveView('players')}
-                            className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${activeView === 'players'
-                                ? 'bg-zinc-900 text-white shadow-md'
-                                : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50'
-                                }`}
-                        >
-                            Jugadores
-                        </button>
-                        <button
-                            onClick={() => setActiveView('contacts')}
-                            className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${activeView === 'contacts'
-                                ? 'bg-zinc-900 text-white shadow-md'
-                                : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50'
-                                }`}
-                        >
-                            Agenda
-                        </button>
+                        {/* Integrated Search Bar */}
+                        <div className="flex-1 relative group md:ml-2">
+                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="Buscar objetivo..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full h-[60px] bg-zinc-50 border border-zinc-100 rounded-[28px] pl-16 pr-32 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-zinc-100 outline-none transition-all placeholder:text-zinc-400"
+                            />
+
+                            {/* View Toggle - Integrated into Search Bar */}
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden md:flex">
+                                <div className="bg-white border border-zinc-200 p-0.5 rounded-full flex shadow-sm scale-90">
+                                    <button
+                                        onClick={() => setActiveView('players')}
+                                        className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${activeView === 'players'
+                                            ? 'bg-zinc-900 text-white shadow-md'
+                                            : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50'
+                                            }`}
+                                    >
+                                        Jugadores
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveView('contacts')}
+                                        className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${activeView === 'contacts'
+                                            ? 'bg-zinc-900 text-white shadow-md'
+                                            : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50'
+                                            }`}
+                                    >
+                                        Agenda
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Right Actions */}
-                <div className="flex justify-end flex-1">
+                <div className="flex justify-end shrink-0 self-center">
                     {activeView === 'players' ? (
                         <div className="flex items-center gap-3">
                             <button
@@ -304,13 +331,14 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                                         <div className="flex items-center justify-center">
                                             <input
                                                 type="checkbox"
-                                                className="w-4 h-4 rounded-md border-zinc-300 text-proneo-green focus:ring-proneo-green"
+                                                className="w-4 h-4 rounded-md border-zinc-300 text-blue-600 focus:ring-blue-500"
                                                 checked={scoutingPlayers.length > 0 && selectedIds.size === scoutingPlayers.length}
                                                 onChange={toggleAll}
                                             />
                                         </div>
                                     </th>
                                     <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20 w-[30%]">Objetivo</th>
+                                    <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Pierna</th>
                                     <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente / Fin Contrato</th>
                                     <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Agente Proneo</th>
                                     <th className="px-6 py-4 text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white sticky top-0 z-20">Estado</th>
@@ -323,7 +351,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                                         <div className="flex items-center justify-center">
                                             <input
                                                 type="checkbox"
-                                                className="w-4 h-4 rounded-md border-zinc-300 text-proneo-green focus:ring-proneo-green"
+                                                className="w-4 h-4 rounded-md border-zinc-300 text-blue-600 focus:ring-blue-500"
                                                 checked={selectedIds.has(target.id)}
                                                 onChange={(e) => {
                                                     e.stopPropagation();
@@ -338,10 +366,15 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                                                 <img src={target.photoUrl || 'https://i.pravatar.cc/150'} alt="" className="w-full h-full object-cover" />
                                             </div>
                                             <div>
-                                                <p className="font-black text-zinc-900 uppercase italic tracking-tight text-[11px] group-hover:text-proneo-green transition-colors">{target.name || `${target.firstName} ${target.lastName1}`}</p>
+                                                <p className="font-black text-zinc-900 uppercase italic tracking-tight text-[11px] group-hover:text-blue-600 transition-colors">{target.name || `${target.firstName} ${target.lastName1}`}</p>
                                                 <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{target.club} • {target.position}</p>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
+                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${target.preferredFoot === 'Izquierda' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'}`}>
+                                            {target.preferredFoot || '—'}
+                                        </span>
                                     </td>
                                     <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
                                         <div className="space-y-0.5">
@@ -359,9 +392,9 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                                     </td>
                                     <td className="px-4 py-2 border-b border-zinc-50 last:border-0 group-hover:bg-zinc-50 transition-colors">
                                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${target.scouting?.status === 'Negociando'
-                                            ? 'bg-proneo-green/10 text-proneo-green border-proneo-green/20'
+                                            ? 'bg-blue-50 text-blue-600 border-blue-200'
                                             : target.scouting?.status === 'Contactado'
-                                                ? 'bg-blue-50 text-blue-600 border-blue-200'
+                                                ? 'bg-zinc-50 text-zinc-600 border-zinc-200'
                                                 : 'bg-red-50 text-red-600 border-red-200'
                                             }`}>
                                             {target.scouting?.status || 'No contactado'}
@@ -374,7 +407,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                                                     e.stopPropagation();
                                                     handleViewNote(target);
                                                 }}
-                                                className="w-7 h-7 rounded-lg bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-proneo-green hover:text-proneo-green transition-all scale-90"
+                                                className="w-7 h-7 rounded-lg bg-white border border-zinc-200 text-zinc-400 flex items-center justify-center hover:border-blue-500 hover:text-blue-500 transition-all scale-90"
                                                 title="Ver última nota"
                                             >
                                                 <StickyNote className="w-3.5 h-3.5" />
@@ -384,7 +417,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                                                     e.stopPropagation();
                                                     handleSignPlayer(target);
                                                 }}
-                                                className="flex items-center gap-1.5 bg-proneo-green text-white px-3 h-7 rounded-lg text-[9px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-proneo-green/20 transition-all shadow-md group-hover:scale-105"
+                                                className="flex items-center gap-1.5 bg-blue-600 text-white px-3 h-7 rounded-lg text-[9px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-blue-600/20 transition-all shadow-md group-hover:scale-105"
                                             >
                                                 <UserPlus className="w-3 h-3" />
                                                 Fichar
