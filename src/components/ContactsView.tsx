@@ -160,46 +160,49 @@ const ContactsView: React.FC<ContactsViewProps> = ({ userSport }) => {
                                         </button>
                                     </div>
 
-                                    <div className="flex gap-4">
-                                        {/* Avatar */}
-                                        <div className="shrink-0">
-                                            <div className="w-14 h-14 rounded-2xl bg-zinc-50 border border-zinc-100 overflow-hidden shadow-inner">
-                                                {contact.photoUrl ? (
-                                                    <img src={contact.photoUrl} alt="" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-zinc-300 font-black text-lg bg-zinc-50">
-                                                        {contact.name.charAt(0)}
-                                                    </div>
-                                                )}
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex gap-4">
+                                            {/* Avatar */}
+                                            <div className="shrink-0">
+                                                <div className="w-14 h-14 rounded-2xl bg-zinc-50 border border-zinc-100 overflow-hidden shadow-inner">
+                                                    {contact.photoUrl ? (
+                                                        <img src={contact.photoUrl} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-zinc-300 font-black text-lg bg-zinc-50">
+                                                            {contact.name.charAt(0)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0 pt-0.5">
+                                                <h4 className="font-bold text-zinc-900 truncate pr-6">{contact.name}</h4>
+                                                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide truncate">{contact.role}</p>
                                             </div>
                                         </div>
 
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0 pt-0.5">
-                                            <h4 className="font-bold text-zinc-900 truncate pr-6">{contact.name}</h4>
-                                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide truncate mb-3">{contact.role}</p>
-
-                                            {/* Contact Links */}
-                                            <div className="flex gap-2">
-                                                {contact.phone && (
-                                                    <a
-                                                        href={`tel:${contact.phone}`}
-                                                        className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition-colors"
-                                                        title={contact.phone}
-                                                    >
+                                        {/* Direct Contact Details */}
+                                        <div className="space-y-1.5 pt-1 border-t border-zinc-50">
+                                            {contact.phone && (
+                                                <div className="flex items-center gap-2.5 text-xs font-bold text-zinc-600">
+                                                    <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                                                         <Phone className="w-3.5 h-3.5" />
-                                                    </a>
-                                                )}
-                                                {contact.email && (
-                                                    <a
-                                                        href={`mailto:${contact.email}`}
-                                                        className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors"
-                                                        title={contact.email}
-                                                    >
+                                                    </div>
+                                                    <span className="truncate">{contact.phone}</span>
+                                                </div>
+                                            )}
+                                            {contact.email && (
+                                                <div className="flex items-center gap-2.5 text-xs font-bold text-zinc-600">
+                                                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                                                         <Mail className="w-3.5 h-3.5" />
-                                                    </a>
-                                                )}
-                                            </div>
+                                                    </div>
+                                                    <span className="truncate">{contact.email}</span>
+                                                </div>
+                                            )}
+                                            {!contact.phone && !contact.email && (
+                                                <p className="text-[10px] text-zinc-300 italic font-medium py-1">Sin datos de contacto...</p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
