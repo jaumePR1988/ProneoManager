@@ -8,9 +8,17 @@ interface ScoutingMatchReportProps {
     match: ScoutingMatch;
     onClose: () => void;
     onSave: (notes: string) => Promise<void>;
+    onSaveReport?: (playerId: string, playerName: string, notes: string, date: string) => Promise<void>;
+    userName?: string;
 }
 
-const ScoutingMatchReport: React.FC<ScoutingMatchReportProps> = ({ match, onClose, onSave }) => {
+const ScoutingMatchReport: React.FC<ScoutingMatchReportProps> = ({
+    match,
+    onClose,
+    onSave,
+    onSaveReport,
+    userName
+}) => {
     const [notes, setNotes] = useState(match.reportNotes || '');
     const [saving, setSaving] = useState(false);
 
@@ -18,6 +26,12 @@ const ScoutingMatchReport: React.FC<ScoutingMatchReportProps> = ({ match, onClos
         setSaving(true);
         try {
             await onSave(notes);
+
+            // Automatically create player report if callback provided
+            if (onSaveReport && match.playerId && notes.trim()) {
+                await onSaveReport(match.playerId, match.playerName, notes, match.date);
+            }
+
             alert('Notas guardadas correctamente');
         } catch (err) {
             console.error(err);

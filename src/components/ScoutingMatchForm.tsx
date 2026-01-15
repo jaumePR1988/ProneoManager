@@ -88,7 +88,8 @@ const ScoutingMatchForm: React.FC<ScoutingMatchFormProps> = ({
             playerName: player.name || `${player.firstName} ${player.lastName1}`,
             team: player.club || '',
             playerOrigin: player.origin,
-            sport: player.category
+            // Keep current sport if already set, or default to player category
+            sport: prev.sport || player.category
         }));
         setSearchQuery(player.name || `${player.firstName} ${player.lastName1}`);
         setShowResults(false);

@@ -126,6 +126,7 @@ export interface Player {
     };
 
     isScouting: boolean;
+    isNewPlayer?: boolean; // Label for newly detected players
     scouting?: ScoutingData;
 
     contractYears?: ContractYear[];

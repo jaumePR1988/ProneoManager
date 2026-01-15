@@ -19,7 +19,7 @@ import UsersModule from './components/UsersModule';
 import ProfileModule from './components/ProfileModule';
 import PlayerForm from './components/PlayerForm';
 import NotificationCenter from './components/NotificationCenter';
-import CalendarModule from './components/CalendarModule';
+import AgendaInformeModule from './components/AgendaInformeModule';
 // import IAModule from './components/IAModule';
 
 import { usePlayers } from './hooks/usePlayers';
@@ -141,7 +141,7 @@ function App() {
             case 'scouting':
                 return <ScoutingModule userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} userRole={userRole} />;
             case 'calendar':
-                return <CalendarModule userSport={userSport as any} userName={user?.displayName || user?.email?.split('@')[0] || ''} userRole={userRole} />;
+                return <AgendaInformeModule userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0] || ''} userRole={userRole} userId={user?.uid || ''} />;
             case 'reports':
                 return <ReportsModule userRole={userRole} userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} />;
             case 'admin':
