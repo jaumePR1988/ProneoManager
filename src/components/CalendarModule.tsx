@@ -38,6 +38,8 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport, us
     const [viewingReport, setViewingReport] = useState<ScoutingMatch | null>(null);
 
     // Filters
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
     const [filterSport, setFilterSport] = useState<string>(isAdmin ? 'all' : (userSport === 'General' ? 'all' : userSport));
     const [filterAgent, setFilterAgent] = useState<string>('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -63,11 +65,24 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport, us
 
         return matches.filter(m => {
             const matchDate = new Date(m.date);
-            const matchYear = matchDate.getFullYear();
-            const matchMonth = matchDate.getMonth();
 
-            // Month/Year filter
-            if (matchYear !== year || matchMonth !== month) return false;
+            // 1. Date Range Filter (Priority)
+            if (startDate && endDate) {
+                const s = new Date(startDate);
+                const e = new Date(endDate);
+                // Set hours to 0 to compare dates only
+                matchDate.setHours(0, 0, 0, 0);
+                s.setHours(0, 0, 0, 0);
+                e.setHours(0, 0, 0, 0);
+                if (matchDate < s || matchDate > e) return false;
+            } else {
+                // FALLBACK: Month/Year filter
+                const year = currentMonth.getFullYear();
+                const month = currentMonth.getMonth();
+                const matchYear = matchDate.getFullYear();
+                const matchMonth = matchDate.getMonth();
+                if (matchYear !== year || matchMonth !== month) return false;
+            }
 
             // Sport filter
             if (isAdmin) {
@@ -93,7 +108,7 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport, us
             const dateComp = a.date.localeCompare(b.date);
             return dateComp === 0 ? a.time.localeCompare(b.time) : dateComp;
         });
-    }, [matches, currentMonth, filterSport, filterAgent, isAdmin]);
+    }, [matches, currentMonth, filterSport, filterAgent, isAdmin, startDate, endDate]);
 
     // Pagination
     const totalPages = Math.ceil(filteredMatches.length / itemsPerPage);
@@ -125,10 +140,12 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport, us
         }
     };
 
-    const downloadMonthlyPDF = () => {
+    const downloadRangePDF = () => {
         const doc = new jsPDF();
         const logoUrl = '/logo-full.png';
-        const monthYearStr = currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+        const rangeStr = startDate && endDate
+            ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+            : currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
 
         const img = new Image();
         img.src = logoUrl;
@@ -150,7 +167,7 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport, us
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(15, 157, 88);
-            doc.text(monthYearStr, 200, 32, { align: 'right' });
+            doc.text(rangeStr, 200, 32, { align: 'right' });
 
             doc.setDrawColor(15, 157, 88);
             doc.setLineWidth(1.5);
@@ -225,7 +242,7 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport, us
             doc.setTextColor(161, 161, 170);
             doc.text(`Generado el ${new Date().toLocaleDateString()} - PRONEOSPORTS MANAGER`, 105, pageHeight - 10, { align: 'center' });
 
-            doc.save(`Agenda_${monthYearStr}.pdf`);
+            doc.save(`Agenda_${rangeStr.replace(/\//g, '-')}.pdf`);
         };
     };
 
@@ -251,12 +268,12 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport, us
 
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={downloadMonthlyPDF}
+                        onClick={downloadRangePDF}
                         className="h-12 px-6 rounded-2xl bg-white border-2 border-zinc-100 text-zinc-900 flex items-center gap-2 font-black text-xs uppercase tracking-widest hover:border-proneo-green hover:text-proneo-green transition-all shadow-sm"
-                        title="Reporte Mensual"
+                        title="Exportar PDF"
                     >
                         <Download className="w-4 h-4" />
-                        Reporte Mensual
+                        Exportar PDF
                     </button>
 
                     <button
@@ -273,66 +290,95 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ userRole, userSport, us
                 </div>
             </div>
 
-            {/* Filters (Admin Only) */}
-            {isAdmin && (
-                <div className="bg-white rounded-[32px] border border-zinc-100 shadow-sm p-6">
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 text-zinc-400">
-                            <Filter className="w-4 h-4" />
-                            <span className="text-xs font-black uppercase tracking-widest">Filtros</span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <label className="text-xs font-bold text-zinc-500">Especialidad:</label>
-                            <select
-                                value={filterSport}
-                                onChange={(e) => {
-                                    setFilterSport(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                disabled={!isAdmin && userSport !== 'General'}
-                                className={`bg-zinc-50 border border-zinc-100 rounded-xl px-4 h-10 text-xs font-bold text-zinc-900 focus:bg-white focus:border-proneo-green transition-all outline-none ${!isAdmin && userSport !== 'General' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <option value="all">Todas</option>
-                                <option value="Fútbol">Fútbol</option>
-                                <option value="Femenino">Femenino</option>
-                                <option value="F. Sala">Fútbol Sala</option>
-                                <option value="Entrenadores">Entrenadores</option>
-                            </select>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <label className="text-xs font-bold text-zinc-500">Agente:</label>
-                            <select
-                                value={filterAgent}
-                                onChange={(e) => {
-                                    setFilterAgent(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="bg-zinc-50 border border-zinc-100 rounded-xl px-4 h-10 text-xs font-bold text-zinc-900 focus:bg-white focus:border-proneo-green transition-all outline-none"
-                            >
-                                <option value="all">Todos</option>
-                                {agents.map(agent => (
-                                    <option key={agent} value={agent}>{agent}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {(filterSport !== 'all' || filterAgent !== 'all') && (
-                            <button
-                                onClick={() => {
-                                    setFilterSport('all');
-                                    setFilterAgent('all');
-                                    setCurrentPage(1);
-                                }}
-                                className="ml-auto text-xs font-bold text-zinc-400 hover:text-zinc-600 transition-all"
-                            >
-                                Limpiar filtros
-                            </button>
-                        )}
+            {/* Filters */}
+            <div className="bg-white rounded-[32px] border border-zinc-100 shadow-sm p-6">
+                <div className="flex flex-wrap items-center gap-6">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <Filter className="w-4 h-4" />
+                        <span className="text-xs font-black uppercase tracking-widest">Filtros</span>
                     </div>
+
+                    <div className="flex items-center gap-3">
+                        <label className="text-xs font-bold text-zinc-500">Desde:</label>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => {
+                                setStartDate(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="bg-zinc-50 border border-zinc-100 rounded-xl px-4 h-10 text-xs font-bold text-zinc-900 focus:bg-white focus:border-proneo-green transition-all outline-none"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <label className="text-xs font-bold text-zinc-500">Hasta:</label>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => {
+                                setEndDate(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="bg-zinc-50 border border-zinc-100 rounded-xl px-4 h-10 text-xs font-bold text-zinc-900 focus:bg-white focus:border-proneo-green transition-all outline-none"
+                        />
+                    </div>
+
+                    {isAdmin && (
+                        <>
+                            <div className="flex items-center gap-3">
+                                <label className="text-xs font-bold text-zinc-500">Especialidad:</label>
+                                <select
+                                    value={filterSport}
+                                    onChange={(e) => {
+                                        setFilterSport(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="bg-zinc-50 border border-zinc-100 rounded-xl px-4 h-10 text-xs font-bold text-zinc-900 focus:bg-white focus:border-proneo-green transition-all outline-none"
+                                >
+                                    <option value="all">Todas</option>
+                                    <option value="Fútbol">Fútbol</option>
+                                    <option value="Femenino">Femenino</option>
+                                    <option value="F. Sala">Fútbol Sala</option>
+                                    <option value="Entrenadores">Entrenadores</option>
+                                </select>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <label className="text-xs font-bold text-zinc-500">Agente:</label>
+                                <select
+                                    value={filterAgent}
+                                    onChange={(e) => {
+                                        setFilterAgent(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="bg-zinc-50 border border-zinc-100 rounded-xl px-4 h-10 text-xs font-bold text-zinc-900 focus:bg-white focus:border-proneo-green transition-all outline-none"
+                                >
+                                    <option value="all">Todos</option>
+                                    {agents.map(agent => (
+                                        <option key={agent} value={agent}>{agent}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </>
+                    )}
+
+                    {(filterSport !== 'all' || filterAgent !== 'all' || startDate || endDate) && (
+                        <button
+                            onClick={() => {
+                                setFilterSport('all');
+                                setFilterAgent('all');
+                                setStartDate('');
+                                setEndDate('');
+                                setCurrentPage(1);
+                            }}
+                            className="ml-auto text-xs font-bold text-zinc-400 hover:text-zinc-600 transition-all"
+                        >
+                            Limpiar filtros
+                        </button>
+                    )}
                 </div>
-            )}
+            </div>
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

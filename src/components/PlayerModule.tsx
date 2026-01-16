@@ -317,7 +317,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
             if (userSport !== 'General') {
                 return p.category === userSport;
             } else {
-                return selectedCategory === 'All' || p.category === selectedCategory;
+                return selectedCategory === 'Global' || selectedCategory === 'All' || p.category === selectedCategory;
             }
         }).filter(p => {
             // 2. Search Filter
