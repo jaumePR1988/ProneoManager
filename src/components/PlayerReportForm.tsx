@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Save, FileText, User, Calendar, ClipboardList, Search } from 'lucide-react';
+import { X, Save, FileText, User, Calendar, ClipboardList, Search, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { ReportType, PlayerReportFormData } from '../types/playerReport';
 
@@ -35,6 +35,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     // Filtered players discovery
     const filteredPlayers = useMemo(() => {
@@ -70,19 +71,24 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
         return filteredPlayers.find(p => p.id === selectedPlayerId);
     }, [filteredPlayers, selectedPlayerId]);
 
+    const showToast = (message: string, type: 'success' | 'error' = 'error') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
+
     const handleSave = async () => {
         let playerName = '';
         let playerId = '';
 
         if (reportType === 'nuevo') {
             if (!newPlayerName.trim()) {
-                alert('Por favor, introduce el nombre del jugador');
+                showToast('Por favor, introduce el nombre del jugador');
                 return;
             }
             playerName = newPlayerName.trim();
         } else {
             if (!selectedPlayerId) {
-                alert('Por favor, selecciona un jugador');
+                showToast('Por favor, selecciona un jugador');
                 return;
             }
             playerName = selectedPlayer?.name || `${selectedPlayer?.firstName} ${selectedPlayer?.lastName1}` || '';
@@ -90,7 +96,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
         }
 
         if (!notes.trim()) {
-            alert('Por favor, añade observaciones al informe');
+            showToast('Por favor, añade observaciones al informe');
             return;
         }
 
@@ -112,7 +118,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
             onClose();
         } catch (err) {
             console.error(err);
-            alert('Error al guardar el informe');
+            showToast('Error al guardar el informe');
         } finally {
             setSaving(false);
         }
@@ -399,6 +405,23 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
                         <span>Guardar Informe</span>
                     </button>
                 </div>
+
+                {/* Toast Notification */}
+                {toast && (
+                    <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-bottom-4 duration-300">
+                        <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md border ${toast.type === 'error'
+                                ? 'bg-red-500/90 text-white border-red-400'
+                                : 'bg-proneo-green/90 text-zinc-900 border-proneo-green/20'
+                            }`}>
+                            {toast.type === 'error' ? (
+                                <AlertCircle className="w-5 h-5" />
+                            ) : (
+                                <CheckCircle2 className="w-5 h-5" />
+                            )}
+                            <span className="text-sm font-black uppercase tracking-widest">{toast.message}</span>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

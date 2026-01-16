@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, FileText, TrendingUp } from 'lucide-react';
+import { Calendar, FileText, TrendingUp, Check, XCircle, Loader2 } from 'lucide-react';
 import CalendarModule from './CalendarModule';
 import PlayerReportForm from './PlayerReportForm';
 import FollowUpTracker from './FollowUpTracker';
@@ -28,11 +28,15 @@ const AgendaInformeModule: React.FC<AgendaInformeModuleProps> = ({
     const [activeTab, setActiveTab] = useState<TabType>('agenda');
     const [isReportFormOpen, setIsReportFormOpen] = useState(false);
     const [preselectedReportType, setPreselectedReportType] = useState<PlayerReportFormData['reportType'] | undefined>(undefined);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [showError, setShowError] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const { addReport } = usePlayerReports();
     const { addPlayer: addScoutingPlayer } = usePlayers(true);
 
     const handleSaveReport = async (data: PlayerReportFormData) => {
+        setIsSaving(true);
         try {
             // If it's a new player report, add to scouting database first
             if (data.reportType === 'nuevo') {
@@ -70,21 +74,34 @@ const AgendaInformeModule: React.FC<AgendaInformeModuleProps> = ({
             // Save the report with the correct playerId
             await addReport(data, userName, userId);
 
-            // Update lastContactDate for existing players
+            // Update lastContactDate for players (SAFE UPDATE)
             if (data.playerId && data.reportType !== 'nuevo') {
-                if (!isDemoMode) {
-                    const playerDoc = doc(db, 'players', data.playerId);
+                try {
+                    if (!isDemoMode) {
+                        const playerDoc = doc(db, 'players', data.playerId);
 
-                    await updateDoc(playerDoc, {
-                        'scouting.lastContactDate': data.date,
-                    });
+                        // We use a safe update: wrap in try/catch to avoid blocking the whole process
+                        // if the player doc doesn't have the scouting object initialized or other issues
+                        await updateDoc(playerDoc, {
+                            'scouting.lastContactDate': data.date,
+                            updatedAt: Date.now()
+                        });
+                    }
+                } catch (playerUpdateErr) {
+                    console.warn('Could not update player lastContactDate, but report was saved:', playerUpdateErr);
                 }
             }
 
-            alert('Informe guardado correctamente');
+            // Success feedback
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 2000);
         } catch (err) {
             console.error('Error saving report:', err);
+            setShowError(true);
+            setTimeout(() => setShowError(false), 3000);
             throw err;
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -188,6 +205,45 @@ const AgendaInformeModule: React.FC<AgendaInformeModuleProps> = ({
                     <FollowUpTracker userSport={userSport} isAdmin={isAdmin} />
                 )}
             </div>
+
+            {/* Premium Overlays */}
+            {(showSuccess || showError || isSaving) && (
+                <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300">
+                    <div className="bg-white p-10 rounded-[40px] shadow-2xl border border-zinc-100 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300 min-w-[320px]">
+                        {isSaving ? (
+                            <>
+                                <div className="w-20 h-20 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-900">
+                                    <Loader2 className="w-10 h-10 animate-spin" />
+                                </div>
+                                <div className="text-center space-y-1">
+                                    <h3 className="text-xl font-black text-zinc-800 uppercase tracking-widest italic">GUARDANDO...</h3>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Procesando informe</p>
+                                </div>
+                            </>
+                        ) : showSuccess ? (
+                            <>
+                                <div className="w-20 h-20 rounded-full bg-proneo-green flex items-center justify-center text-white shadow-xl shadow-proneo-green/30 animate-in zoom-in duration-300">
+                                    <Check className="w-10 h-10" />
+                                </div>
+                                <div className="text-center space-y-1">
+                                    <h3 className="text-2xl font-black text-zinc-800 uppercase tracking-widest italic">¡GUARDADO!</h3>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Informe registrado correctamente</p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center text-white shadow-xl shadow-red-500/30 animate-in zoom-in duration-300">
+                                    <XCircle className="w-10 h-10" />
+                                </div>
+                                <div className="text-center space-y-1">
+                                    <h3 className="text-2xl font-black text-zinc-800 uppercase tracking-widest italic">ERROR</h3>
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">No se pudo guardar el informe</p>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Report Form Modal */}
             {isReportFormOpen && (
