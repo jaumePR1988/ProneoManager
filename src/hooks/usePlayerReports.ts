@@ -62,7 +62,7 @@ export const usePlayerReports = (playerId?: string) => {
     }, [playerId]);
 
     const addReport = async (reportData: PlayerReportFormData, scoutName: string, scoutId: string) => {
-        const newReport: Omit<PlayerReport, 'id'> = {
+        const newReport: any = {
             ...reportData,
             playerId: reportData.playerId || '',
             scoutName,
@@ -70,6 +70,13 @@ export const usePlayerReports = (playerId?: string) => {
             createdAt: Date.now(),
             updatedAt: Date.now(),
         };
+
+        // Remove undefined fields for Firestore
+        Object.keys(newReport).forEach(key => {
+            if (newReport[key] === undefined) {
+                delete newReport[key];
+            }
+        });
 
         if (isDemoMode) {
             const report = {
