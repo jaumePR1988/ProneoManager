@@ -120,9 +120,13 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
     if (showProfile360 && initialData) {
         return (
             <PlayerProfile360
-                player={initialData as Player}
+                player={{ ...initialData, ...formData } as Player}
                 onClose={() => setShowProfile360(false)}
-                onSave={onSave}
+                onSave={async (updates) => {
+                    await onSave(updates);
+                    // Sync the 360 save back to the main form data to prevent overwriting on main save
+                    setFormData(prev => ({ ...prev, ...updates }));
+                }}
             />
         );
     }
