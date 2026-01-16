@@ -108,11 +108,15 @@ export const usePlayerReports = (playerId?: string) => {
             return;
         }
 
+        const cleanUpdates: any = { ...updates, updatedAt: Date.now() };
+        Object.keys(cleanUpdates).forEach(key => {
+            if (cleanUpdates[key] === undefined) {
+                delete cleanUpdates[key];
+            }
+        });
+
         try {
-            await updateDoc(doc(db, 'player_reports', id), {
-                ...updates,
-                updatedAt: Date.now(),
-            });
+            await updateDoc(doc(db, 'player_reports', id), cleanUpdates);
         } catch (err) {
             console.error("Error updating player report:", err);
             throw err;

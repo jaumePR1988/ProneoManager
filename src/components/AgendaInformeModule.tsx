@@ -4,7 +4,6 @@ import CalendarModule from './CalendarModule';
 import PlayerReportForm from './PlayerReportForm';
 import FollowUpTracker from './FollowUpTracker';
 import { usePlayerReports } from '../hooks/usePlayerReports';
-import { usePlayers } from '../hooks/usePlayers';
 import { PlayerReportFormData } from '../types/playerReport';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db, isDemoMode } from '../firebase/config';
@@ -33,45 +32,20 @@ const AgendaInformeModule: React.FC<AgendaInformeModuleProps> = ({
     const [isSaving, setIsSaving] = useState(false);
 
     const { addReport } = usePlayerReports();
-    const { addPlayer: addScoutingPlayer } = usePlayers(true);
 
     const handleSaveReport = async (data: PlayerReportFormData) => {
         setIsSaving(true);
         try {
-            // If it's a new player report, add to scouting database first
+            // New workflow: Do NOT add to scouting database automatically. 
+            // The data stays in the report so the user can decide later.
+
+            /* 
             if (data.reportType === 'nuevo') {
-                const category = data.category || (userSport === 'General' ? 'Fútbol' : userSport);
-
-                const newPlayer = {
-                    firstName: data.playerName.split(' ')[0] || '',
-                    lastName1: data.playerName.split(' ')[1] || '',
-                    lastName2: data.playerName.split(' ')[2] || '',
-                    name: data.playerName,
-                    category: category as any,
-                    birthDate: data.birthDate || '',
-                    nationality: data.nationality || '',
-                    position: data.position as any,
-                    club: data.club || '',
-                    preferredFoot: data.preferredFoot as any,
-                    monitoringAgent: userName,
-                    isScouting: true,
-                    isNewPlayer: true,
-                    scouting: {
-                        status: 'Seguimiento',
-                        interest: 'Medio',
-                        lastContactDate: data.date,
-                        notes: data.notes,
-                    } as any,
-                };
-
-                // Add player and get the new player ID
-                const newPlayerId = await addScoutingPlayer(newPlayer);
-
-                // Update the data to include the player ID
-                data.playerId = newPlayerId || '';
+                ... automatic addition removed ...
             }
+            */
 
-            // Save the report with the correct playerId
+            // Save the report with the correct data (including the extras for 'nuevo')
             await addReport(data, userName, userId);
 
             // Update lastContactDate for players (SAFE UPDATE)

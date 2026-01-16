@@ -6,34 +6,36 @@ import { ReportType, PlayerReportFormData } from '../types/playerReport';
 interface PlayerReportFormProps {
     onClose: () => void;
     onSave: (data: PlayerReportFormData) => Promise<void>;
-    preselectedType?: ReportType;
     userRole: string;
     userSport: string;
+    initialReport?: PlayerReport;
+    preselectedType?: ReportType;
 }
 
 const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
     onClose,
     onSave,
-    preselectedType,
+    userSport,
     userRole,
-    userSport
+    initialReport,
+    preselectedType
 }) => {
     const { players: databasePlayers } = usePlayers(false);
-    const { players: scoutingPlayers } = usePlayers(true);
+    const { players: scoutingPlayers, updatePlayer } = usePlayers(true);
 
     const isAdmin = userRole.toLowerCase() === 'admin' || userRole.toLowerCase() === 'director' || userSport === 'General';
-    const [reportType, setReportType] = useState<ReportType>(preselectedType || 'seguimiento');
-    const [selectedPlayerId, setSelectedPlayerId] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [newPlayerName, setNewPlayerName] = useState('');
-    const [newPlayerClub, setNewPlayerClub] = useState('');
-    const [newPlayerPosition, setNewPlayerPosition] = useState('');
-    const [newPlayerFoot, setNewPlayerFoot] = useState('');
-    const [newPlayerBirthDate, setNewPlayerBirthDate] = useState('');
-    const [newPlayerNationality, setNewPlayerNationality] = useState('');
-    const [newPlayerCategory, setNewPlayerCategory] = useState(userSport === 'General' ? 'Fútbol' : userSport);
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [notes, setNotes] = useState('');
+    const [reportType, setReportType] = useState<ReportType>(initialReport?.reportType || preselectedType || 'seguimiento');
+    const [selectedPlayerId, setSelectedPlayerId] = useState(initialReport?.playerId || '');
+    const [searchTerm, setSearchTerm] = useState(initialReport?.playerName || '');
+    const [newPlayerName, setNewPlayerName] = useState(initialReport?.reportType === 'nuevo' ? initialReport.playerName : '');
+    const [newPlayerClub, setNewPlayerClub] = useState(initialReport?.club || '');
+    const [newPlayerPosition, setNewPlayerPosition] = useState(initialReport?.position || '');
+    const [newPlayerFoot, setNewPlayerFoot] = useState(initialReport?.preferredFoot || '');
+    const [newPlayerBirthDate, setNewPlayerBirthDate] = useState(initialReport?.birthDate || '');
+    const [newPlayerNationality, setNewPlayerNationality] = useState(initialReport?.nationality || '');
+    const [newPlayerCategory, setNewPlayerCategory] = useState(initialReport?.category || (userSport === 'General' ? 'Fútbol' : userSport));
+    const [date, setDate] = useState(initialReport?.date || new Date().toISOString().split('T')[0]);
+    const [notes, setNotes] = useState(initialReport?.notes || '');
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -68,8 +70,9 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
     }, [reportType, databasePlayers, scoutingPlayers, isAdmin, userSport, searchTerm]);
 
     const selectedPlayer = useMemo(() => {
-        return filteredPlayers.find(p => p.id === selectedPlayerId);
-    }, [filteredPlayers, selectedPlayerId]);
+        const pool = reportType === 'seguimiento' ? databasePlayers : scoutingPlayers;
+        return pool.find(p => p.id === selectedPlayerId);
+    }, [reportType, databasePlayers, scoutingPlayers, selectedPlayerId]);
 
     const showToast = (message: string, type: 'success' | 'error' = 'error') => {
         setToast({ message, type });
@@ -103,6 +106,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
         setSaving(true);
         try {
             await onSave({
+                id: initialReport?.id,
                 playerId,
                 playerName,
                 reportType,
@@ -114,7 +118,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
                 birthDate: reportType === 'nuevo' ? newPlayerBirthDate : '',
                 nationality: reportType === 'nuevo' ? newPlayerNationality : '',
                 category: reportType === 'nuevo' ? newPlayerCategory : undefined,
-            });
+            } as any);
             onClose();
         } catch (err) {
             console.error(err);
@@ -134,7 +138,9 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
                             <FileText className="w-7 h-7" />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black text-zinc-900 uppercase tracking-tight italic">Nuevo Informe</h3>
+                            <h3 className="text-2xl font-black text-zinc-900 uppercase tracking-tight italic">
+                                {initialReport ? 'Editar Informe' : 'Nuevo Informe'}
+                            </h3>
                             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1">
                                 Registro de seguimiento
                             </p>
@@ -349,7 +355,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
 
                             <p className="text-xs text-zinc-400 mt-4 font-medium flex items-center gap-2">
                                 <div className="w-1 h-1 rounded-full bg-proneo-green" />
-                                Este jugador pasará automáticamente a la base de datos de Scouting
+                                Podrás pasar este jugador a Scouting manualmente desde el historial
                             </p>
                         </div>
                     )}
@@ -410,8 +416,8 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
                 {toast && (
                     <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-bottom-4 duration-300">
                         <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md border ${toast.type === 'error'
-                                ? 'bg-red-500/90 text-white border-red-400'
-                                : 'bg-proneo-green/90 text-zinc-900 border-proneo-green/20'
+                            ? 'bg-red-500/90 text-white border-red-400'
+                            : 'bg-proneo-green/90 text-zinc-900 border-proneo-green/20'
                             }`}>
                             {toast.type === 'error' ? (
                                 <AlertCircle className="w-5 h-5" />

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Calendar, TrendingUp, FileText, Eye, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Search, Calendar, TrendingUp, FileText, Eye, ChevronDown, ChevronUp, Trash2, Edit2, UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { usePlayerReports } from '../hooks/usePlayerReports';
+import PlayerReportForm from './PlayerReportForm';
 import { Player } from '../types/player';
 import { PlayerReport } from '../types/playerReport';
 
@@ -12,12 +13,15 @@ interface FollowUpTrackerProps {
 
 const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin }) => {
     const { players: databasePlayers } = usePlayers(false);
-    const { players: scoutingPlayers } = usePlayers(true);
-    const { reports, loading, deleteReport } = usePlayerReports();
+    const { players: scoutingPlayers, addPlayer: addScoutingPlayer } = usePlayers(true);
+    const { reports, loading, deleteReport, updateReport } = usePlayerReports();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
     const [filterType, setFilterType] = useState<'all' | 'cantera' | 'scouting'>('all');
+    const [editingReport, setEditingReport] = useState<PlayerReport | null>(null);
+    const [isConverting, setIsConverting] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     const allPlayers = useMemo(() => {
         const db = databasePlayers.map(p => ({ ...p, origin: 'cantera' as const }));
@@ -29,7 +33,6 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
         if (isAdmin || userSport === 'General') return reports;
 
         return reports.filter(r => {
-            // Find the player in our loaded lists to check their category
             const player = allPlayers.find(p => p.id === r.playerId);
             if (!player) return false;
 
@@ -49,7 +52,6 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
         const counts: Record<string, { count: number; lastDate: number; player: Player & { origin: 'cantera' | 'scouting' } }> = {};
 
         allPlayers.forEach(p => {
-            // Use filteredReports instead of all reports to stay consistent with stats
             const playerReports = filteredReports.filter(r => r.playerId === p.id);
             if (playerReports.length > 0) {
                 counts[p.id] = {
@@ -64,23 +66,18 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
     }, [allPlayers, filteredReports]);
 
     const filteredPlayers = useMemo(() => {
-        // Now filteredPlayers only contains players from playerReportCounts, 
-        // which is already filtered by sport logic in its own hook.
         let filtered = Object.values(playerReportCounts);
 
-        // Filter by origin
         if (filterType !== 'all') {
             filtered = filtered.filter(p => p.player.origin === filterType);
         }
 
-        // Search filter
         if (searchTerm) {
             filtered = filtered.filter(p =>
                 p.player.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
-        // Sort by last contact date (most recent first)
         return filtered.sort((a, b) => b.lastDate - a.lastDate);
     }, [playerReportCounts, filterType, searchTerm]);
 
@@ -101,8 +98,56 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
                 await deleteReport(reportId);
             } catch (err) {
                 console.error('Error deleting report:', err);
-                alert('No se pudo eliminar el informe. Revisa tu conexión.');
+                setToast({ message: 'Error al eliminar el informe', type: 'error' });
+                setTimeout(() => setToast(null), 3000);
             }
+        }
+    };
+
+    const handleConvertToScouting = async (report: PlayerReport) => {
+        setIsConverting(report.id);
+        try {
+            const firstName = report.playerName.split(' ')[0] || '';
+            const lastName1 = report.playerName.split(' ')[1] || '';
+            const lastName2 = report.playerName.split(' ').slice(2).join(' ') || '';
+
+            const newPlayerData = {
+                firstName,
+                lastName1,
+                lastName2,
+                name: report.playerName,
+                category: (report.category || (userSport === 'General' ? 'Fútbol' : userSport)) as any,
+                club: report.club || '',
+                position: (report.position || 'Sin definir') as any,
+                preferredFoot: (report.preferredFoot || 'Derecha') as any,
+                birthDate: report.birthDate || '',
+                nationality: report.nationality || '',
+                isScouting: true,
+                isNewPlayer: true,
+                scouting: {
+                    status: 'Seguimiento',
+                    interest: 'Medio',
+                    lastContactDate: report.date,
+                    notes: report.notes
+                } as any
+            };
+
+            const newPlayerId = await addScoutingPlayer(newPlayerData);
+
+            if (newPlayerId) {
+                await updateReport(report.id, {
+                    playerId: newPlayerId,
+                    reportType: 'scouting'
+                } as any);
+
+                setToast({ message: '¡Jugador pasado a Scouting!', type: 'success' });
+            }
+        } catch (err) {
+            console.error('Error converting to scouting:', err);
+            setToast({ message: 'Error al convertir jugador', type: 'error' });
+        } finally {
+            setIsConverting(null);
+            setTimeout(() => setToast(null), 3000);
         }
     };
 
@@ -278,18 +323,47 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
                                                             </span>
                                                             <span className="text-[10px] font-bold text-zinc-400">• {report.scoutName}</span>
                                                         </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                console.log('Click en borrar reporte:', report.id);
-                                                                handleDeleteReport(report.id);
-                                                            }}
-                                                            className="p-2 -mr-1 hover:bg-red-50 rounded-lg group transition-all cursor-pointer relative z-50"
-                                                            title="Eliminar informe"
-                                                        >
-                                                            <Trash2 className="w-5 h-5 text-zinc-300 group-hover:text-red-500 transition-colors" />
-                                                        </button>
+                                                        <div className="flex items-center gap-1">
+                                                            {report.reportType === 'nuevo' && !report.playerId && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleConvertToScouting(report);
+                                                                    }}
+                                                                    disabled={isConverting === report.id}
+                                                                    className="flex items-center gap-2 px-3 py-1.5 bg-proneo-green/10 hover:bg-proneo-green text-proneo-green hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                                                                >
+                                                                    {isConverting === report.id ? (
+                                                                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                                    ) : (
+                                                                        <UserPlus className="w-3.5 h-3.5" />
+                                                                    )}
+                                                                    <span>Pasar a Scouting</span>
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setEditingReport(report);
+                                                                }}
+                                                                className="p-2 hover:bg-zinc-200 rounded-lg group transition-all"
+                                                                title="Editar informe"
+                                                            >
+                                                                <Edit2 className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 transition-colors" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteReport(report.id);
+                                                                }}
+                                                                className="p-2 hover:bg-red-50 rounded-lg group transition-all"
+                                                                title="Eliminar informe"
+                                                            >
+                                                                <Trash2 className="w-4 h-4 text-zinc-300 group-hover:text-red-500 transition-colors" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                     <p className="text-xs text-zinc-600 leading-relaxed">{report.notes}</p>
                                                 </div>
@@ -302,6 +376,39 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
                     </div>
                 )}
             </div>
+
+            {/* Modals & Overlays */}
+            {editingReport && (
+                <PlayerReportForm
+                    initialReport={editingReport}
+                    userRole={isAdmin ? 'admin' : 'scout'}
+                    userSport={userSport}
+                    onClose={() => setEditingReport(null)}
+                    onSave={async (data) => {
+                        const { id, ...rest } = data as any;
+                        await updateReport(id, rest);
+                        setEditingReport(null);
+                        setToast({ message: 'Informe actualizado correctamente', type: 'success' });
+                        setTimeout(() => setToast(null), 3000);
+                    }}
+                />
+            )}
+
+            {toast && (
+                <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-bottom-4 duration-300">
+                    <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md border ${toast.type === 'error'
+                        ? 'bg-red-500/90 text-white border-red-400'
+                        : 'bg-proneo-green/90 text-zinc-900 border-proneo-green/20'
+                        }`}>
+                        {toast.type === 'error' ? (
+                            <AlertCircle className="w-5 h-5" />
+                        ) : (
+                            <CheckCircle2 className="w-5 h-5" />
+                        )}
+                        <span className="text-sm font-black uppercase tracking-widest">{toast.message}</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

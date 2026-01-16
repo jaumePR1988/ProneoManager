@@ -12,6 +12,13 @@ export interface PlayerReport {
     scoutId: string;
     notes: string;
     matchDetails?: Partial<ScoutingMatch>;
+    // Optional fields for "Nuevo Jugador" reports that aren't in the database yet
+    club?: string;
+    position?: string;
+    preferredFoot?: string;
+    birthDate?: string;
+    nationality?: string;
+    category?: string;
     createdAt: number;
     updatedAt: number;
 }
