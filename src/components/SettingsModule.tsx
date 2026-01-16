@@ -354,10 +354,10 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                                             onClick={() => {
                                                 const allIds = [
                                                     'firstName', 'lastName1', 'lastName2', 'category', 'selection',
-                                                    'league', 'club', 'position', 'preferredFoot', 'birthDate', 'age',
+                                                    'league', 'division', 'club', 'position', 'preferredFoot', 'birthDate', 'age',
                                                     'nationality', 'nationality2', 'contract.endDate', 'contract.optional', 'contract.optionalNoticeDate',
                                                     'contract.conditions', 'proneo.agencyEndDate', 'proneoStatus', 'sportsBrand',
-                                                    'sportsBrandEndDate', 'monitoringAgent', 'monitoringAgent2',
+                                                    'sportsBrandEndDate', 'sportsBrand2', 'sportsBrandEndDate2', 'monitoringAgent', 'monitoringAgent2',
                                                     ...schema.map(f => `custom_${f.id}`)
                                                 ];
                                                 updateSystemLists({ ...systemLists, reducedColumns: allIds });
@@ -374,6 +374,7 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                                         { id: 'category', label: 'Deporte' },
                                         { id: 'selection', label: 'Selección' },
                                         { id: 'league', label: 'Liga' },
+                                        { id: 'division', label: 'División' },
                                         { id: 'club', label: 'Club' },
                                         { id: 'position', label: 'Posición' },
                                         { id: 'preferredFoot', label: 'Pierna Hábil' },
@@ -387,6 +388,8 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                                         { id: 'proneoStatus', label: 'Situación Agencia' },
                                         { id: 'sportsBrand', label: 'Marca Dep.' },
                                         { id: 'sportsBrandEndDate', label: 'Fin Marca' },
+                                        { id: 'sportsBrand2', label: 'Marca 2' },
+                                        { id: 'sportsBrandEndDate2', label: 'Fin Marca 2' },
                                         { id: 'monitoringAgent', label: 'Seguimiento' },
                                         { id: 'monitoringAgent2', label: 'Seguimiento 2' },
                                         ...schema.map(f => ({ id: `custom_${f.id}`, label: f.label }))

@@ -149,6 +149,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
             }
         },
         { id: 'league', label: 'Liga' },
+        { id: 'division', label: 'División' },
         { id: 'club', label: 'Equipo', className: "font-black text-zinc-900" },
         { id: 'endDate', label: 'Fin Contrato', className: "text-red-500", render: (p: Player) => p.contract?.endDate || '' },
         { id: 'optional', label: 'Opcional', sortable: false, render: (p: Player) => p.contract?.optional || '' },
@@ -178,6 +179,8 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
         },
         { id: 'sportsBrand', label: 'Marca' },
         { id: 'sportsBrandEndDate', label: 'F. Fin Marca' },
+        { id: 'sportsBrand2', label: 'Marca 2' },
+        { id: 'sportsBrandEndDate2', label: 'F. Fin Marca 2' },
         { id: 'monitoringAgent', label: 'Seguimiento', className: "font-black text-[#b4c885]" },
         { id: 'monitoringAgent2', label: 'Seguimiento 2', className: "font-bold text-zinc-400" },
         {

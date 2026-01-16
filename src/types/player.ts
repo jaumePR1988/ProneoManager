@@ -111,7 +111,10 @@ export interface Player {
 
     sportsBrand?: string;
     sportsBrandEndDate?: string;
+    sportsBrand2?: string;
+    sportsBrandEndDate2?: string;
     selection?: string;
+    division?: string;
 
     monitoringAgent?: string; // Seguimiento
     monitoringAgent2?: string; // Segundo seguimiento

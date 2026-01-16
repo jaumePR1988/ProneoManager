@@ -102,6 +102,9 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
             contractYears: initialData?.contractYears || [],
             customFields: initialData?.customFields || {},
             nationality2: initialData?.nationality2 || '',
+            sportsBrand2: initialData?.sportsBrand2 || '',
+            sportsBrandEndDate2: initialData?.sportsBrandEndDate2 || '',
+            division: initialData?.division || '',
         } as Partial<Player>;
     });
 
@@ -115,6 +118,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
     // States for dual fields visibility
     const [showNat2, setShowNat2] = useState(!!formData.nationality2);
     const [showAgent2, setShowAgent2] = useState(!!formData.monitoringAgent2);
+    const [showBrand2, setShowBrand2] = useState(!!formData.sportsBrand2);
 
     // If 360 Mode is active, show only that component
     if (showProfile360 && initialData) {
@@ -496,18 +500,62 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                         />
                                     </div>
                                     <div className="flex items-center gap-3">
+                                        <Label>DIVISIÓN</Label>
+                                        <Input name="division" value={formData.division} onChange={handleInputChange} />
+                                    </div>
+                                    <div className="flex items-center gap-3">
                                         <Label>MARCA DEPORTIVA</Label>
-                                        <Select
-                                            name="sportsBrand"
-                                            value={formData.sportsBrand}
-                                            onChange={handleInputChange}
-                                            options={systemLists.brands}
-                                        />
+                                        <div className="flex-1 flex gap-2">
+                                            <Select
+                                                name="sportsBrand"
+                                                value={formData.sportsBrand}
+                                                onChange={handleInputChange}
+                                                options={systemLists.brands}
+                                            />
+                                            {!showBrand2 && (
+                                                <button
+                                                    onClick={() => setShowBrand2(true)}
+                                                    className="w-10 h-10 bg-zinc-100 hover:bg-[#b4c885]/20 text-zinc-400 hover:text-[#b4c885] rounded-sm flex items-center justify-center transition-all"
+                                                    title="Añadir Segunda Marca"
+                                                >
+                                                    <Plus className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Label>FIN MARCA DEPORTIVA</Label>
                                         <Input type="date" name="sportsBrandEndDate" value={formData.sportsBrandEndDate} onChange={handleInputChange} />
                                     </div>
+
+                                    {showBrand2 && (
+                                        <>
+                                            <div className="flex items-center gap-3 animate-in slide-in-from-top-2 duration-200">
+                                                <Label>MARCA DEPORTIVA 2</Label>
+                                                <div className="flex-1 flex gap-2">
+                                                    <Select
+                                                        name="sportsBrand2"
+                                                        value={formData.sportsBrand2}
+                                                        onChange={handleInputChange}
+                                                        options={['', ...systemLists.brands]}
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowBrand2(false);
+                                                            setFormData(prev => ({ ...prev, sportsBrand2: '', sportsBrandEndDate2: '' }));
+                                                        }}
+                                                        className="w-10 h-10 bg-zinc-50 hover:bg-red-50 text-zinc-300 hover:text-red-500 rounded-sm flex items-center justify-center transition-all"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 animate-in slide-in-from-top-2 duration-200">
+                                                <Label>FIN MARCA 2</Label>
+                                                <Input type="date" name="sportsBrandEndDate2" value={formData.sportsBrandEndDate2} onChange={handleInputChange} />
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>

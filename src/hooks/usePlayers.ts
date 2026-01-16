@@ -108,7 +108,7 @@ let SESSION_SYSTEM_LISTS = {
     agents: ['Jaume', 'Joan Francesc', 'Albert Redondo', 'Sistema AI'],
     selections: ['No', 'Si', 'Sub-17', 'Sub-19', 'Sub-21', 'Absoluta'],
     feet: ['Derecha', 'Izquierda', 'Ambas', 'Ambidiestro'],
-    reducedColumns: ['firstName', 'lastName1', 'club', 'league', 'position', 'endDate']
+    reducedColumns: ['firstName', 'lastName1', 'club', 'league', 'division', 'position', 'endDate', 'sportsBrand', 'sportsBrand2']
 };
 
 export const usePlayers = (isScouting: boolean = false) => {
