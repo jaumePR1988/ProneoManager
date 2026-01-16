@@ -23,7 +23,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
     const { players: databasePlayers } = usePlayers(false);
     const { players: scoutingPlayers, updatePlayer } = usePlayers(true);
 
-    const isAdmin = userRole.toLowerCase() === 'admin' || userRole.toLowerCase() === 'director' || userSport === 'General';
+    const isAdmin = (userRole?.toLowerCase() === 'admin' || userRole?.toLowerCase() === 'director' || userSport === 'General');
     const [reportType, setReportType] = useState<ReportType>(initialReport?.reportType || preselectedType || 'seguimiento');
     const [selectedPlayerId, setSelectedPlayerId] = useState(initialReport?.playerId || '');
     const [searchTerm, setSearchTerm] = useState(initialReport?.playerName || '');
@@ -41,6 +41,9 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
 
     // Filtered players discovery
     const filteredPlayers = useMemo(() => {
+        // STRICT POOL SEPARATION:
+        // 'seguimiento' -> databasePlayers
+        // 'scouting' -> scoutingPlayers
         const pool = reportType === 'seguimiento' ? databasePlayers : scoutingPlayers;
 
         return pool.filter(p => {
@@ -70,6 +73,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
     }, [reportType, databasePlayers, scoutingPlayers, isAdmin, userSport, searchTerm]);
 
     const selectedPlayer = useMemo(() => {
+        // Use the SAME pool as the search
         const pool = reportType === 'seguimiento' ? databasePlayers : scoutingPlayers;
         return pool.find(p => p.id === selectedPlayerId);
     }, [reportType, databasePlayers, scoutingPlayers, selectedPlayerId]);

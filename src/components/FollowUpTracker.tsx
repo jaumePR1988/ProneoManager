@@ -49,8 +49,9 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
     }, [reports, allPlayers, isAdmin, userSport]);
 
     const playerReportCounts = useMemo(() => {
-        const counts: Record<string, { count: number; lastDate: number; player: Player & { origin: 'cantera' | 'scouting' } }> = {};
+        const counts: Record<string, { count: number; lastDate: number; player: Player & { origin: 'cantera' | 'scouting' | 'virtual' } }> = {};
 
+        // 1. Process reports with playerId (Real players)
         allPlayers.forEach(p => {
             const playerReports = filteredReports.filter(r => r.playerId === p.id);
             if (playerReports.length > 0) {
@@ -62,6 +63,32 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
             }
         });
 
+        // 2. Process reports WITHOUT playerId (type 'nuevo')
+        filteredReports.forEach(r => {
+            if (!r.playerId && r.playerName) {
+                const virtualId = `virtual-${r.playerName}`;
+                if (counts[virtualId]) {
+                    counts[virtualId].count++;
+                    counts[virtualId].lastDate = Math.max(counts[virtualId].lastDate, r.createdAt);
+                } else {
+                    counts[virtualId] = {
+                        count: 1,
+                        lastDate: r.createdAt,
+                        player: {
+                            id: virtualId,
+                            name: r.playerName,
+                            firstName: r.playerName,
+                            lastName1: '',
+                            lastName2: '',
+                            category: r.category || 'Fútbol',
+                            origin: 'virtual' as any,
+                            club: r.club || '',
+                        } as any
+                    };
+                }
+            }
+        });
+
         return counts;
     }, [allPlayers, filteredReports]);
 
@@ -69,7 +96,7 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
         let filtered = Object.values(playerReportCounts);
 
         if (filterType !== 'all') {
-            filtered = filtered.filter(p => p.player.origin === filterType);
+            filtered = filtered.filter(p => p.player.origin === filterType || (filterType === 'cantera' && p.player.origin === 'virtual'));
         }
 
         if (searchTerm) {
@@ -81,9 +108,14 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
         return filtered.sort((a, b) => b.lastDate - a.lastDate);
     }, [playerReportCounts, filterType, searchTerm]);
 
-    const getPlayerReports = (playerId: string): PlayerReport[] => {
+    const getPlayerReports = (playerId: string, playerName?: string): PlayerReport[] => {
         return reports
-            .filter(r => r.playerId === playerId)
+            .filter(r => {
+                if (playerId.startsWith('virtual-')) {
+                    return r.playerName === playerName && !r.playerId;
+                }
+                return r.playerId === playerId;
+            })
             .sort((a, b) => b.createdAt - a.createdAt);
     };
 
@@ -248,7 +280,7 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
                     <div className="divide-y divide-zinc-50">
                         {filteredPlayers.map(({ player, count, lastDate }) => {
                             const isExpanded = expandedPlayerId === player.id;
-                            const playerReports = getPlayerReports(player.id);
+                            const playerReports = getPlayerReports(player.id, player.name);
                             const daysSince = getDaysSinceLastContact(lastDate);
 
                             return (
