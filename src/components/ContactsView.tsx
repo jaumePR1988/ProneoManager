@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Phone, Mail, Building2, Trash2, Edit2, Users } from 'lucide-react';
+import { Search, Plus, Phone, Mail, Building2, Trash2, Edit2, Users, Mic, Radio } from 'lucide-react';
 import { Contact, ContactCategory } from '../types/contact';
 import { useContacts } from '../hooks/useContacts';
 import ContactForm from './ContactForm';
@@ -164,20 +164,29 @@ const ContactsView: React.FC<ContactsViewProps> = ({ userSport }) => {
                                         <div className="flex gap-4">
                                             {/* Avatar */}
                                             <div className="shrink-0">
-                                                <div className="w-14 h-14 rounded-2xl bg-zinc-50 border border-zinc-100 overflow-hidden shadow-inner">
+                                                <div className={`w-14 h-14 rounded-2xl border overflow-hidden shadow-inner flex items-center justify-center ${contact.type === 'Comunicación'
+                                                        ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                                                        : 'bg-zinc-50 border-zinc-100 text-zinc-400'
+                                                    }`}>
                                                     {contact.photoUrl ? (
                                                         <img src={contact.photoUrl} alt="" className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-zinc-300 font-black text-lg bg-zinc-50">
-                                                            {contact.name.charAt(0)}
-                                                        </div>
+                                                        contact.type === 'Comunicación' ? <Mic className="w-6 h-6" /> : <Building2 className="w-6 h-6" />
                                                     )}
                                                 </div>
                                             </div>
 
                                             {/* Info */}
                                             <div className="flex-1 min-w-0 pt-0.5">
-                                                <h4 className="font-bold text-zinc-900 truncate pr-6">{contact.name}</h4>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-bold text-zinc-900 truncate">{contact.name}</h4>
+                                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter ${contact.type === 'Comunicación'
+                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                            : 'bg-zinc-100 text-zinc-600'
+                                                        }`}>
+                                                        {contact.type === 'Comunicación' ? 'Comms' : 'Club'}
+                                                    </span>
+                                                </div>
                                                 <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide truncate">{contact.role}</p>
                                             </div>
                                         </div>

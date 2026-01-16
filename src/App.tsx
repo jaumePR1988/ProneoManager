@@ -31,6 +31,7 @@ function App() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [error, setError] = useState<string | null>(null);
     const [showPlayerForm, setShowPlayerForm] = useState(false);
+    const [playerView, setPlayerView] = useState<'players' | 'contacts'>('players');
 
     const { addPlayer } = usePlayers();
 
@@ -137,7 +138,12 @@ function App() {
             case 'dashboard':
                 return <Dashboard setActiveTab={setActiveTab} userRole={userRole} userSport={userSport} />;
             case 'players':
-                return <PlayerModule userRole={userRole} userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} />;
+                return <PlayerModule
+                    userRole={userRole}
+                    userSport={userSport}
+                    userName={user?.displayName || user?.email?.split('@')[0]}
+                    activeView={playerView}
+                />;
             case 'scouting':
                 return <ScoutingModule userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} userRole={userRole} />;
             case 'calendar':
@@ -187,6 +193,8 @@ function App() {
                 setActiveTab={setActiveTab}
                 user={{ ...user, role: userRole }}
                 onNewPlayer={() => setShowPlayerForm(true)}
+                playerView={playerView}
+                onPlayerViewChange={setPlayerView}
             >
                 {renderContent()}
             </Layout>

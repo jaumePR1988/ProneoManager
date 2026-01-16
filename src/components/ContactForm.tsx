@@ -17,6 +17,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ initialData, defaultCategory 
         role: '',
         club: '',
         category: (defaultCategory as ContactCategory) || 'Fútbol',
+        type: 'Club',
         phone: '',
         email: '',
         notes: '',
@@ -165,6 +166,25 @@ const ContactForm: React.FC<ContactFormProps> = ({ initialData, defaultCategory 
                                     <option value="Entrenadores">Entrenadores</option>
                                     <option value="General">General</option>
                                 </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-proneo-green">Tipo de Contacto</label>
+                                <div className="flex p-1 bg-zinc-100 rounded-xl">
+                                    {(['Club', 'Comunicación'] as const).map((t) => (
+                                        <button
+                                            key={t}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, type: t })}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${formData.type === t
+                                                    ? 'bg-white text-proneo-green shadow-sm'
+                                                    : 'text-zinc-400 hover:text-zinc-600'
+                                                }`}
+                                        >
+                                            {t}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 

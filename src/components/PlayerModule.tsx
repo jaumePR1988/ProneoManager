@@ -8,8 +8,6 @@ import {
     LayoutGrid,
     Users,
     Check,
-    ArrowUp,
-    ArrowDown,
     GripVertical,
     FileText,
     FileSpreadsheet,
@@ -24,6 +22,7 @@ import PlayerForm from './PlayerForm';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import ContactsView from './ContactsView';
 
 const fieldToString = (val: any): string => {
     if (val === null || val === undefined) return '';
@@ -84,9 +83,10 @@ interface PlayerModuleProps {
     userRole: string;
     userSport?: string;
     userName?: string;
+    activeView: 'players' | 'contacts';
 }
 
-const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'General', userName }) => {
+const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'General', userName, activeView }) => {
     // Determine effective role
     const role = (userRole || 'guest').toLowerCase();
     const isAdmin = role === 'admin' || role === 'director';
@@ -97,15 +97,8 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
 
     // Init state
     const [selectedCategory, setSelectedCategory] = useState<string>(
-        (userSport !== 'General' && userSport) ? userSport : 'Fútbol'
+        userSport !== 'General' ? userSport : 'Global'
     );
-
-    // Sync when userSport changes
-    useEffect(() => {
-        if (userSport !== 'General' && userSport) {
-            setSelectedCategory(userSport);
-        }
-    }, [userSport]);
 
     // Filtering logic
     const players = useMemo(() => {
@@ -135,14 +128,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
     const [isReducedView, setIsReducedView] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    const categories: (Category | 'All')[] = ['All', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'];
 
-    // Enforce userSport if it's provided and not 'General'
-    useEffect(() => {
-        if (userSport !== 'General' && userSport) {
-            setSelectedCategory(userSport as Category);
-        }
-    }, [userSport]);
 
     // Define all available columns with their specific rendering logic
     const allColumns: ColumnConfig[] = useMemo(() => [
@@ -154,7 +140,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
             id: 'category',
             label: 'Dep.',
             className: "bg-[#b4c885]/5 font-black text-[#b4c885]",
-            render: (p) => {
+            render: (p: Player) => {
                 if (p.category === 'Fútbol') return 'F';
                 if (p.category === 'Femenino') return 'FF';
                 if (p.category === 'Entrenadores') return 'E';
@@ -164,10 +150,10 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
         },
         { id: 'league', label: 'Liga' },
         { id: 'club', label: 'Equipo', className: "font-black text-zinc-900" },
-        { id: 'endDate', label: 'Fin Contrato', className: "text-red-500", render: (p) => p.contract?.endDate || '' },
-        { id: 'optional', label: 'Opcional', sortable: false, render: (p) => p.contract?.optional || '' },
-        { id: 'optionalNoticeDate', label: 'Fecha Aviso', sortable: false, render: (p) => p.contract?.optionalNoticeDate || '' },
-        { id: 'conditions', label: 'Condiciones', sortable: false, className: "max-w-[150px] truncate", render: (p) => p.contract?.conditions || '' },
+        { id: 'endDate', label: 'Fin Contrato', className: "text-red-500", render: (p: Player) => p.contract?.endDate || '' },
+        { id: 'optional', label: 'Opcional', sortable: false, render: (p: Player) => p.contract?.optional || '' },
+        { id: 'optionalNoticeDate', label: 'Fecha Aviso', sortable: false, render: (p: Player) => p.contract?.optionalNoticeDate || '' },
+        { id: 'conditions', label: 'Condiciones', sortable: false, className: "max-w-[150px] truncate", render: (p: Player) => p.contract?.conditions || '' },
         { id: 'nationality', label: 'Nacionalidad' },
         { id: 'nationality2', label: 'Nacionalidad 2' },
         { id: 'position', label: 'Posición', className: "bg-zinc-50" },
@@ -176,7 +162,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
         {
             id: 'proneoStatus',
             label: 'Sit. Agencia',
-            render: (p) => {
+            render: (p: Player) => {
                 const now = new Date();
                 const endDate = p.proneo?.agencyEndDate ? new Date(p.proneo.agencyEndDate) : null;
                 const isExpired = !endDate || endDate <= now;
@@ -198,7 +184,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
             id: 'salary',
             label: 'Salario',
             className: "text-right font-mono",
-            render: (p) => {
+            render: (p: Player) => {
                 const y = getValuesForCurrentSeason(p.contractYears);
                 return y ? Number(y.salary).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }) : '-';
             }
@@ -207,7 +193,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
             id: 'clubCommissionPct',
             label: '% Club',
             className: "text-center",
-            render: (p) => {
+            render: (p: Player) => {
                 const y = getValuesForCurrentSeason(p.contractYears);
                 return y ? `${y.clubCommissionPct}%` : '-';
             }
@@ -216,7 +202,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
             id: 'playerCommissionPct',
             label: '% Jug.',
             className: "text-center",
-            render: (p) => {
+            render: (p: Player) => {
                 const y = getValuesForCurrentSeason(p.contractYears);
                 return y ? `${y.playerCommissionPct}%` : '-';
             }
@@ -390,7 +376,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
         }
     };
 
-    const toggleSelectOne = (id: string, e: React.MouseEvent) => {
+    const toggleSelectOne = (id: string, e: React.SyntheticEvent) => {
         e.stopPropagation();
         const newSet = new Set(selectedIds);
         if (newSet.has(id)) {
@@ -613,37 +599,33 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                             <span>Eliminar ({selectedIds.size})</span>
                         </button>
                     )}
-                    {/* Categorías Tabs - Hide if user has specific sport assigned */}
                     {userSport === 'General' && (
                         <nav className="flex space-x-1 p-1 bg-zinc-100/50 rounded-xl w-fit">
-                            {(['All', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'] as (Category | 'All')[]).map((cat) => (
+                            {(['Global', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'] as const).map((cat) => (
                                 <button
                                     key={cat}
-                                    onClick={() => setSelectedCategory(cat)}
-                                    className={`
-                                    px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all
-                                    ${selectedCategory === cat
-                                            ? 'bg-white text-[#b4c885] shadow-sm ring-1 ring-black/5'
-                                            : 'text-zinc-400 hover:text-zinc-600 hover:bg-white/50'
-                                        }
-                                `}
+                                    onClick={() => setSelectedCategory(cat as any)}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${selectedCategory === cat
+                                        ? 'bg-white text-proneo-green shadow-sm'
+                                        : 'text-zinc-400 hover:text-zinc-600'
+                                        }`}
                                 >
-                                    {cat === 'All' ? 'Todos' : cat}
+                                    {cat}
                                 </button>
                             ))}
                         </nav>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="relative w-full md:w-64">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300" />
+                <div className="flex items-center gap-3 flex-1 justify-end">
+                    <div className="relative group min-w-[300px] max-w-md flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-[#b4c885] transition-colors" />
                         <input
                             type="text"
-                            placeholder="Buscar futbolista..."
+                            placeholder={activeView === 'players' ? "Buscar por nombre, club o posición..." : "Buscar contactos..."}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-11 bg-zinc-50 border border-zinc-100 rounded-xl pl-12 pr-4 text-xs font-bold focus:bg-white focus:ring-4 focus:ring-[#b4c885]/5 focus:border-[#b4c885]/20 outline-none transition-all"
+                            className="w-full h-11 bg-zinc-50 border border-zinc-100 rounded-2xl pl-11 pr-6 text-xs font-bold focus:bg-white focus:ring-4 focus:ring-[#b4c885]/5 outline-none transition-all placeholder:text-zinc-400"
                         />
                     </div>
 
@@ -687,7 +669,6 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                                                 </div>
                                             );
                                         })}
-                                        {/* Hidden columns section */}
                                         {allColumns.filter(c => !visibleColumns.includes(c.id)).length > 0 && (
                                             <>
                                                 <div className="h-px bg-zinc-100 my-2" />
@@ -717,7 +698,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                                         await addPlayer(p);
                                     }
                                 }}
-                                category={selectedCategory === 'All' ? 'Fútbol' : selectedCategory}
+                                category={selectedCategory === 'Global' || selectedCategory === 'All' ? 'Fútbol' : selectedCategory as Category}
                                 schema={schema}
                             />
                             <div className="relative">
@@ -766,159 +747,165 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                 </div>
             </div>
 
-            <div className="flex-1 bg-white rounded-[40px] border border-zinc-100 shadow-xl overflow-hidden flex flex-col">
-                <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/30">
-                    <h2 className="text-sm font-black text-zinc-800 uppercase tracking-widest flex items-center gap-2">
-                        <TableIcon className="w-4 h-4 text-[#b4c885]" />
-                        LISTADO JUGADORES / ENTRENADORES PRONEOSPORTS
-                    </h2>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black bg-[#b4c885]/10 text-[#b4c885] px-3 py-1 rounded-full uppercase tracking-widest">
-                            {filteredAndSortedPlayers.length} REGISTROS
-                        </span>
-                        <button
-                            onClick={() => refresh && refresh()}
-                            className="bg-zinc-50 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 p-1.5 rounded-lg transition-all active:rotate-180"
-                            title="Actualizar Tabla"
-                        >
-                            <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
+            {activeView === 'players' ? (
+                <div className="flex-1 bg-white rounded-[40px] border border-zinc-100 shadow-xl overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/30">
+                        <h2 className="text-sm font-black text-zinc-800 uppercase tracking-widest flex items-center gap-2">
+                            <TableIcon className="w-4 h-4 text-[#b4c885]" />
+                            LISTADO JUGADORES / ENTRENADORES PRONEOSPORTS
+                        </h2>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black bg-[#b4c885]/10 text-[#b4c885] px-3 py-1 rounded-full uppercase tracking-widest">
+                                {filteredAndSortedPlayers.length} REGISTROS
+                            </span>
+                            <button
+                                onClick={() => refresh && refresh()}
+                                className="bg-zinc-50 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 p-1.5 rounded-lg transition-all active:rotate-180"
+                                title="Actualizar Tabla"
+                            >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex-1 min-h-[400px]">
-                    <TableVirtuoso
-                        style={{ height: 'calc(100vh - 400px)', minHeight: '400px' }}
-                        data={filteredAndSortedPlayers}
-                        fixedHeaderContent={() => (
-                            <tr className="text-left bg-zinc-50">
-                                <th className="px-2 py-3 text-[9px] font-black text-zinc-900 uppercase tracking-tighter border border-zinc-200 bg-[#e1e9cc] whitespace-nowrap sticky top-0 z-20">Nº</th>
-                                {visibleColumns.map((colId, index) => {
-                                    if (colId === 'selection') {
-                                        const allVisibleSelected = filteredAndSortedPlayers.length > 0 && filteredAndSortedPlayers.every(p => selectedIds.has(p.id));
-                                        return (
-                                            <th key="selection" className="px-2 py-3 border border-zinc-200 bg-[#e1e9cc] sticky top-0 z-20 w-10 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={allVisibleSelected}
-                                                    onChange={toggleSelectAll}
-                                                    className="w-4 h-4 rounded border-zinc-300 text-[#b4c885] focus:ring-[#b4c885]"
-                                                />
-                                            </th>
-                                        );
-                                    }
-
-                                    const config = allColumns.find(c => c.id === colId);
-                                    if (!config) return null;
-
-                                    if (isReducedView && systemLists.reducedColumns && !systemLists.reducedColumns.includes(config.id)) return null;
-
-                                    return (
-                                        <th
-                                            key={colId}
-                                            draggable
-                                            onDragStart={(e) => handleDragStart(e, index)}
-                                            onDragEnd={handleDragEnd}
-                                            onDragOver={(e) => handleDragOver(e, index)}
-                                            onDrop={(e) => handleDrop(e, index)}
-                                            className={`px-2 py-3 text-[9px] font-black text-zinc-900 uppercase tracking-tighter border border-zinc-200 bg-[#e1e9cc] whitespace-nowrap sticky top-0 z-20 ${config.sortable !== false ? 'cursor-pointer hover:bg-[#d5dfb8] transition-colors' : ''} ${config.headerClassName || ''} ${draggedItem === index ? 'opacity-50 border-dashed border-zinc-500' : ''}`}
-                                            onClick={() => config.sortable !== false && handleSort(config.id)}
-                                        >
-                                            <div className="flex items-center justify-center gap-1 cursor-grab active:cursor-grabbing">
-                                                {config.label}
-                                                {config.sortable !== false && <ArrowUpDown className="w-2.5 h-2.5 opacity-30" />}
-                                            </div>
-                                        </th>
-                                    );
-                                })}
-                            </tr>
-                        )}
-                        itemContent={(index, player) => (
-                            <>
-                                <TableCell className="bg-zinc-50 font-black">{index + 1}</TableCell>
-                                {visibleColumns.map(colId => {
-                                    const config = allColumns.find(c => c.id === colId);
-                                    if (!config) return null;
-
-                                    if (isReducedView && systemLists.reducedColumns && !systemLists.reducedColumns.includes(colId)) return null;
-
-                                    if (colId === 'selection') {
-                                        return (
-                                            <TableCell key={colId} className="">
-                                                <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex-1 min-h-[400px]">
+                        <TableVirtuoso
+                            style={{ height: 'calc(100vh - 400px)', minHeight: '400px' }}
+                            data={filteredAndSortedPlayers}
+                            fixedHeaderContent={() => (
+                                <tr className="text-left bg-zinc-50">
+                                    <th className="px-2 py-3 text-[9px] font-black text-zinc-900 uppercase tracking-tighter border border-zinc-200 bg-[#e1e9cc] whitespace-nowrap sticky top-0 z-20">Nº</th>
+                                    {visibleColumns.map((colId, index) => {
+                                        if (colId === 'selection') {
+                                            const allVisibleSelected = filteredAndSortedPlayers.length > 0 && filteredAndSortedPlayers.every(p => selectedIds.has(p.id));
+                                            return (
+                                                <th key="selection" className="px-2 py-3 border border-zinc-200 bg-[#e1e9cc] sticky top-0 z-20 w-10 text-center">
                                                     <input
                                                         type="checkbox"
-                                                        checked={selectedIds.has(player.id)}
-                                                        onChange={(e) => toggleSelectOne(player.id, e)}
+                                                        checked={allVisibleSelected}
+                                                        onChange={toggleSelectAll}
                                                         className="w-4 h-4 rounded border-zinc-300 text-[#b4c885] focus:ring-[#b4c885]"
                                                     />
+                                                </th>
+                                            );
+                                        }
+
+                                        const config = allColumns.find(c => c.id === colId);
+                                        if (!config) return null;
+
+                                        if (isReducedView && systemLists.reducedColumns && !systemLists.reducedColumns.includes(config.id)) return null;
+
+                                        return (
+                                            <th
+                                                key={colId}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, index)}
+                                                onDragEnd={handleDragEnd}
+                                                onDragOver={(e) => handleDragOver(e, index)}
+                                                onDrop={(e) => handleDrop(e, index)}
+                                                className={`px-2 py-3 text-[9px] font-black text-zinc-900 uppercase tracking-tighter border border-zinc-200 bg-[#e1e9cc] whitespace-nowrap sticky top-0 z-20 ${config.sortable !== false ? 'cursor-pointer hover:bg-[#d5dfb8] transition-colors' : ''} ${config.headerClassName || ''} ${draggedItem === index ? 'opacity-50 border-dashed border-zinc-500' : ''}`}
+                                                onClick={() => config.sortable !== false && handleSort(config.id)}
+                                            >
+                                                <div className="flex items-center justify-center gap-1 cursor-grab active:cursor-grabbing">
+                                                    {config.label}
+                                                    {config.sortable !== false && <ArrowUpDown className="w-2.5 h-2.5 opacity-30" />}
                                                 </div>
+                                            </th>
+                                        );
+                                    })}
+                                </tr>
+                            )}
+                            itemContent={(index, player) => (
+                                <>
+                                    <TableCell className="bg-zinc-50 font-black">{index + 1}</TableCell>
+                                    {visibleColumns.map(colId => {
+                                        const config = allColumns.find(c => c.id === colId);
+                                        if (!config) return null;
+
+                                        if (isReducedView && systemLists.reducedColumns && !systemLists.reducedColumns.includes(colId)) return null;
+
+                                        if (colId === 'selection') {
+                                            return (
+                                                <TableCell key={colId} className="">
+                                                    <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedIds.has(player.id)}
+                                                            onChange={(e) => toggleSelectOne(player.id, e)}
+                                                            className="w-4 h-4 rounded border-zinc-300 text-[#b4c885] focus:ring-[#b4c885]"
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                            );
+                                        }
+
+                                        let content: React.ReactNode = (player as any)[colId];
+                                        if (config.render) {
+                                            content = config.render(player);
+                                        }
+
+                                        return (
+                                            <TableCell key={colId} className={config.className}>
+                                                {content}
                                             </TableCell>
                                         );
-                                    }
-
-                                    let content: React.ReactNode = (player as any)[colId];
-                                    if (config.render) {
-                                        content = config.render(player);
-                                    }
-
+                                    })}
+                                </>
+                            )}
+                            components={{
+                                TableRow: (props) => {
+                                    const index = props['data-index'];
+                                    const player = filteredAndSortedPlayers[index];
                                     return (
-                                        <TableCell key={colId} className={config.className}>
-                                            {content}
-                                        </TableCell>
+                                        <tr
+                                            {...props}
+                                            onClick={() => setEditingPlayer(player)}
+                                            className="hover:bg-[#f9faf6] transition-colors group cursor-pointer border-b border-zinc-100 last:border-0"
+                                        />
                                     );
-                                })}
-                            </>
-                        )}
-                        components={{
-                            TableRow: (props) => {
-                                const index = props['data-index'];
-                                const player = filteredAndSortedPlayers[index];
-                                return (
-                                    <tr
-                                        {...props}
-                                        onClick={() => setEditingPlayer(player)}
-                                        className="hover:bg-[#f9faf6] transition-colors group cursor-pointer border-b border-zinc-100 last:border-0"
-                                    />
-                                );
-                            }
-                        }}
-                    />
-                </div>
-
-                {filteredAndSortedPlayers.length === 0 && (
-                    <div className="p-20 text-center space-y-4">
-                        <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center mx-auto text-zinc-300">
-                            <Users className="w-10 h-10" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-black text-zinc-900 uppercase tracking-tight italic">No se encontraron registros</p>
-                        </div>
+                                }
+                            }}
+                        />
                     </div>
-                )}
 
-                <div className="p-6 bg-zinc-50/50 flex items-center justify-between border-t border-zinc-100">
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-[#e1e9cc] rounded-sm" />
-                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">CABECERA</span>
+                    {filteredAndSortedPlayers.length === 0 && (
+                        <div className="p-20 text-center space-y-4">
+                            <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center mx-auto text-zinc-300">
+                                <Users className="w-10 h-10" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-black text-zinc-900 uppercase tracking-tight italic">No se encontraron registros</p>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-amber-50 border border-amber-200 rounded-sm" />
-                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">DATO PENDIENTE</span>
+                    )}
+
+                    <div className="p-6 bg-zinc-50/50 flex items-center justify-between border-t border-zinc-100">
+                        <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-[#e1e9cc] rounded-sm" />
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">CABECERA</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-amber-50 border border-amber-200 rounded-sm" />
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">DATO PENDIENTE</span>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsReducedView(!isReducedView)}
-                            className="flex items-center gap-2 text-[10px] font-black uppercase text-[#b4c885] hover:gap-3 transition-all"
-                        >
-                            {isReducedView ? 'VER TABLA COMPLETA' : 'VER VISTA REDUCIDA'}
-                            <LayoutGrid className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setIsReducedView(!isReducedView)}
+                                className="flex items-center gap-2 text-[10px] font-black uppercase text-[#b4c885] hover:gap-3 transition-all"
+                            >
+                                {isReducedView ? 'VER TABLA COMPLETA' : 'VER VISTA REDUCIDA'}
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            ) : (
+                <div className="flex-1 bg-white rounded-[40px] border border-zinc-100 shadow-xl p-8 overflow-hidden min-h-[600px]">
+                    <ContactsView userSport={selectedCategory as Category | 'Global'} />
+                </div>
+            )}
         </div>
     );
 };

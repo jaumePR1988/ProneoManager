@@ -22,13 +22,15 @@ interface LayoutProps {
     setActiveTab: (tab: string) => void;
     user: any;
     onNewPlayer: () => void;
+    playerView?: 'players' | 'contacts';
+    onPlayerViewChange?: (view: 'players' | 'contacts') => void;
 }
 
 // Define visibility rules for Header elements
 const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'settings', 'calendar', 'scouting'];
 const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'calendar'];
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer, playerView, onPlayerViewChange }) => {
     const [pendingCount, setPendingCount] = React.useState(0);
     // Role-based Tab Filtering
     const userRole = (user?.role || 'guest').toLowerCase();
@@ -48,9 +50,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
 
     const tabs = [
         { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
-        { id: 'players', label: 'Futbolistas/Entrenadores', icon: Users },
+        { id: 'players', label: 'Base de Datos', icon: Users },
         { id: 'scouting', label: 'Scouting', icon: Search, hidden: isTreasurer },
-        { id: 'calendar', label: 'Agenda / Informe', icon: Briefcase, hidden: isTreasurer || isScout },
+        { id: 'calendar', label: 'Calendario / Informes', icon: Briefcase, hidden: isTreasurer || isScout },
         { id: 'reports', label: 'Reportes', icon: FileText, hidden: isTreasurer },
         { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin && !isTreasurer },
         { id: 'users', label: 'Usuarios', icon: UserCog, hidden: !isAdmin },
@@ -134,7 +136,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                 <header className="h-24 px-10 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-md border-b border-zinc-100 relative z-10">
                     <div className="flex items-center gap-8">
                         {activeTab !== 'reports' && (
-                            <h2 className="text-2xl font-black text-zinc-900 tracking-tight capitalize">
+                            <h2 className="text-2xl font-black text-zinc-900 tracking-tight uppercase">
                                 {tabs.find(t => t.id === activeTab)?.label}
                             </h2>
                         )}
@@ -155,10 +157,32 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                     </div>
 
                     <div className="flex items-center gap-4">
+                        {activeTab === 'players' && playerView && onPlayerViewChange && (
+                            <div className="bg-zinc-100/80 backdrop-blur-sm p-1 rounded-xl flex gap-1 border border-zinc-200 shadow-sm mr-2">
+                                <button
+                                    onClick={() => onPlayerViewChange('players')}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${playerView === 'players'
+                                        ? 'bg-white text-proneo-green shadow-sm'
+                                        : 'text-zinc-400 hover:text-zinc-600'
+                                        }`}
+                                >
+                                    Jugadores
+                                </button>
+                                <button
+                                    onClick={() => onPlayerViewChange('contacts')}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${playerView === 'contacts'
+                                        ? 'bg-white text-proneo-green shadow-sm'
+                                        : 'text-zinc-400 hover:text-zinc-600'
+                                        }`}
+                                >
+                                    Agenda
+                                </button>
+                            </div>
+                        )}
                         {!HIDE_NEW_PLAYER_TABS.includes(activeTab) && (
                             <button
                                 onClick={onNewPlayer}
-                                className="bg-proneo-green text-white px-6 h-12 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-proneo-green/20 transition-all active:scale-95 shadow-lg"
+                                className="bg-proneo-green text-white px-6 h-12 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-xl hover:shadow-proneo-green/20 transition-all active:scale-95 shadow-lg shrink-0"
                             >
                                 <Plus className="w-4 h-4" />
                                 Nuevo Jugador

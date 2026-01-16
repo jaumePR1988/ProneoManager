@@ -1,4 +1,5 @@
 export type ContactCategory = 'Fútbol' | 'F. Sala' | 'Femenino' | 'Entrenadores' | 'General';
+export type ContactType = 'Club' | 'Comunicación';
 
 export interface Contact {
     id: string;
@@ -7,6 +8,7 @@ export interface Contact {
     role: string;       // e.g. "Director Deportivo", "Entrenador"
     club: string;
     category: ContactCategory;
+    type: ContactType;
 
     // Contact Details
     phone: string;

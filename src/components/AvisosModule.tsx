@@ -1,27 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
     Bell,
-    Calendar,
     AlertTriangle,
-    Clock,
     Cake,
-    Target,
     MessageSquare,
     CheckCircle2,
     Trophy,
-    X,
-    Filter,
     Check,
     Clock4,
     UserPlus,
-    UserMinus,
     Banknote,
     FileText
 } from 'lucide-react';
 import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { usePlayers } from '../hooks/usePlayers';
-import { Player } from '../types/player';
 
 interface AvisosModuleProps {
     userSport?: string;
@@ -50,6 +43,11 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
     // State for Pending Users
     const [pendingUsers, setPendingUsers] = useState<any[]>([]);
 
+    // State for completed/snoozed alerts (Synced with Firestore)
+    const [completedAlerts, setCompletedAlerts] = useState<string[]>([]);
+    const [snoozedAlerts, setSnoozedAlerts] = useState<Record<string, number>>({});
+    const [prefLoading, setPrefLoading] = useState(true);
+
     // State for filtering
     const [selectedCategory, setSelectedCategory] = useState<string>(
         (userSport !== 'General' && userSport) ? userSport : 'Todos'
@@ -62,26 +60,35 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
         }
     }, [userSport]);
 
-    // State for Completed (Permanent deletion)
-    const [completedAlerts, setCompletedAlerts] = useState<string[]>(() => {
-        const saved = localStorage.getItem('proneo_completed_alerts');
-        return saved ? JSON.parse(saved) : [];
-    });
-
-    // State for Snoozed (Temporary - 24 hours)
-    const [snoozedAlerts, setSnoozedAlerts] = useState<Record<string, number>>(() => {
-        const saved = localStorage.getItem('proneo_snoozed_alerts');
-        return saved ? JSON.parse(saved) : {};
-    });
-
-    // Persist changes
+    // Fetch Preferences from Firestore
     useEffect(() => {
-        localStorage.setItem('proneo_completed_alerts', JSON.stringify(completedAlerts));
-    }, [completedAlerts]);
+        if (!auth.currentUser?.email) return;
 
-    useEffect(() => {
-        localStorage.setItem('proneo_snoozed_alerts', JSON.stringify(snoozedAlerts));
-    }, [snoozedAlerts]);
+        const userRef = doc(db, 'users', auth.currentUser.email);
+        const unsubscribe = onSnapshot(userRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setCompletedAlerts(data.completedAlerts || []);
+                setSnoozedAlerts(data.snoozedAlerts || {});
+            }
+            setPrefLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    // Helper to persist preferences
+    const persistPrefs = async (newCompleted: string[], newSnoozed: Record<string, number>) => {
+        if (!auth.currentUser?.email) return;
+        try {
+            await updateDoc(doc(db, 'users', auth.currentUser.email), {
+                completedAlerts: newCompleted,
+                snoozedAlerts: newSnoozed
+            });
+        } catch (err) {
+            console.error("Error persisting alert preferences:", err);
+        }
+    };
 
     // Fetch Pending Users for Admin Alerts
     useEffect(() => {
@@ -93,16 +100,19 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
     }, []);
 
     // Handlers
-    const handleComplete = (id: string, e: React.MouseEvent) => {
+    const handleComplete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        setCompletedAlerts(prev => [...prev, id]);
+        const newCompleted = [...completedAlerts, id];
+        setCompletedAlerts(newCompleted);
+        await persistPrefs(newCompleted, snoozedAlerts);
     };
 
-    const handleSnooze = (id: string, e: React.MouseEvent) => {
+    const handleSnooze = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        // Snooze for 24 hours
         const snoozeUntil = Date.now() + (24 * 60 * 60 * 1000);
-        setSnoozedAlerts(prev => ({ ...prev, [id]: snoozeUntil }));
+        const newSnoozed = { ...snoozedAlerts, [id]: snoozeUntil };
+        setSnoozedAlerts(newSnoozed);
+        await persistPrefs(completedAlerts, newSnoozed);
     };
 
     const handleQuickApprove = async (email: string, e: React.MouseEvent) => {
@@ -474,6 +484,11 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
 
 
     // 3. FILTERING LOGIC
+    if (prefLoading) return (
+        <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-proneo-green/20 border-t-proneo-green rounded-full animate-spin"></div>
+        </div>
+    );
 
     // Filter out Completed (Deleted)
     alerts = alerts.filter(a => !completedAlerts.includes(a.id));

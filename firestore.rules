@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper to check if user is authenticated and part of the organization
+    function isAuthenticated() {
+      return request.auth != null && request.auth.token.email.endsWith('@proneosports.com');
+    }
+
+    // Helper to check if user is approved
+    function isApproved() {
+      let email = request.auth.token.email;
+      // Allow bypass for "jaume" as requested
+      return email.lower().contains('jaume') || email.lower().contains('jpedragosa') || 
+             get(/databases/$(database)/documents/users/$(email)).data.approved == true;
+    }
+
+    // Rules for User profiles
+    match /users/{userEmail} {
+      allow read, write: if isAuthenticated() && (request.auth.token.email == userEmail || isApproved());
+    }
+
+    // Rules for Players
+    match /players/{playerId} {
+      allow read, write: if isAuthenticated() && isApproved();
+    }
+
+    // Rules for Reports
+    match /reports/{reportId} {
+      allow read, write: if isAuthenticated() && isApproved();
+    }
+
+    // Rules for Push Messages (Security audit findings)
+    match /push_messages/{messageId} {
+      allow read: if isAuthenticated() && isApproved();
+      // Only admins/directors should create push messages
+      allow create: if isAuthenticated() && isApproved() && 
+                    get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role in ['admin', 'director'];
+    }
+  }
+}
