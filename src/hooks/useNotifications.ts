@@ -16,7 +16,7 @@ export const useNotifications = () => {
                 if (status === 'granted') {
                     // Replace with your VAPID key from Firebase Console -> Project Settings -> Cloud Messaging
                     const fcmToken = await getToken(messaging, {
-                        vapidKey: 'BGHQy8-x_e_j_h_i_p_i_c_a_k_e_y_v_a_p_i_d_k_e_y' // Placeholder - User should update or I find it
+                        vapidKey: 'BOUzsUo5hx3dtWfTBxMbzStxKtrJRcubmy4jbrDKaHow9qwj1RFzepvXyZ5HGIvvy0YOVLh4QDcX92DnhQPCi_k'
                     });
 
                     if (fcmToken) {
@@ -33,7 +33,7 @@ export const useNotifications = () => {
             requestPermission();
         } else if (auth.currentUser && permission === 'granted') {
             // Already granted, just ensure we have the token and it's updated
-            getToken(messaging, { vapidKey: 'BGHQy8-x_e_j_h_i_p_i_c_a_k_e_y_v_a_p_i_d_k_e_y' })
+            getToken(messaging, { vapidKey: 'BOUzsUo5hx3dtWfTBxMbzStxKtrJRcubmy4jbrDKaHow9qwj1RFzepvXyZ5HGIvvy0YOVLh4QDcX92DnhQPCi_k' })
                 .then(t => {
                     if (t) {
                         setToken(t);
