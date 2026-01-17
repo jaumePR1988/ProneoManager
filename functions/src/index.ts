@@ -86,61 +86,95 @@ export const dailyAlertScanner = functions.pubsub
     .onRun(async (context) => {
         const today = new Date();
         const playersSnapshot = await admin.firestore().collection("players").get();
-        const alertsToSend: { target: string; title: string; message: string }[] = [];
+        const scoutingSnapshot = await admin.firestore().collection("players_scouting").get();
+        const alertsToSend: { target: string; title: string; message: string; priority: string }[] = [];
 
-        playersSnapshot.forEach((doc) => {
-            const p = doc.data();
+        // Helper to parse DD/MM/YYYY
+        const parseDMY = (dateStr: string) => {
+            const [d, m, y] = dateStr.split("/");
+            return new Date(Number(y), Number(m) - 1, Number(d));
+        };
+
+        const processPlayer = (p: any, isScouting: boolean) => {
             const category = p.category || "Fútbol";
 
             // 1. Verificar Cumpleaños
             if (p.birthDate) {
-                const [d, m] = p.birthDate.split("/");
-                if (Number(d) === today.getDate() && Number(m) === (today.getMonth() + 1)) {
+                const dob = p.birthDate.includes('/') ? parseDMY(p.birthDate) : new Date(p.birthDate);
+                if (dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()) {
                     alertsToSend.push({
                         target: category,
                         title: "🎂 ¡Cumpleaños Hoy!",
-                        message: `${p.name} cumple años hoy. ¡No olvides felicitarle!`
+                        message: `${p.name} cumple años hoy.`,
+                        priority: 'normal'
                     });
                 }
             }
 
-            // 2. Verificar Vencimiento de Agencia (Proneo)
-            if (p.proneo?.agencyEndDate) {
-                const [d, m, y] = p.proneo.agencyEndDate.split("/");
-                const endDate = new Date(Number(y), Number(m) - 1, Number(d));
-                const diffTime = endDate.getTime() - today.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            // 2. Avisos Prioritarios: Cláusulas Opcionales
+            if (p.contract?.optionalNoticeDate) {
+                const noticeDate = p.contract.optionalNoticeDate.includes('/') ? parseDMY(p.contract.optionalNoticeDate) : new Date(p.contract.optionalNoticeDate);
+                const diffDays = Math.ceil((noticeDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-                // Avisar a los 180, 90, 30 y 7 días
-                const thresholds = [180, 90, 30, 7];
-                if (thresholds.includes(diffDays)) {
-                    let timeLabel = `${diffDays} días`;
-                    if (diffDays === 180) timeLabel = "6 meses";
-                    if (diffDays === 90) timeLabel = "3 meses";
-                    if (diffDays === 30) timeLabel = "1 mes";
-                    if (diffDays === 7) timeLabel = "1 semana";
-
+                if (diffDays === 30 || diffDays === 15 || diffDays === 7 || diffDays === 1) {
                     alertsToSend.push({
                         target: category,
-                        title: "⚠️ Vencimiento Próximo",
-                        message: `El contrato de ${p.name} vence en ${timeLabel}.`
+                        title: "🚨 Límite Cláusula Opcional",
+                        message: `${p.name}: El plazo para decidir sobre el año opcional vence en ${diffDays} días (${p.contract.optionalNoticeDate}).`,
+                        priority: 'critical'
                     });
                 }
             }
-        });
 
-        // 3. Enviar las notificaciones acumuladas
+            // 3. Avisos Prioritarios: Cobros Pendientes (Si es Admin/Tesorero)
+            if (p.contractYears) {
+                p.contractYears.forEach((year: any) => {
+                    ['clubPayment', 'playerPayment'].forEach(type => {
+                        const pay = year[type];
+                        if (pay?.status === 'Pendiente' && pay.dueDate) {
+                            const dueDate = pay.dueDate.includes('/') ? parseDMY(pay.dueDate) : new Date(pay.dueDate);
+                            const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                            if (diffDays === 0) {
+                                alertsToSend.push({
+                                    target: 'Finanzas', // Special target for financial alerts
+                                    title: "💰 COBRO VENCIDO HOY",
+                                    message: `${p.name}: Hoy vence el cobro de ${type === 'clubPayment' ? 'Club' : 'Jugador'} - ${year.year}.`,
+                                    priority: 'critical'
+                                });
+                            }
+                        }
+                    });
+                });
+            }
+        };
+
+        playersSnapshot.forEach(doc => processPlayer(doc.data(), false));
+        scoutingSnapshot.forEach(doc => processPlayer(doc.data(), true));
+
+        // 4. Enviar las notificaciones acumuladas
         for (const alert of alertsToSend) {
-            const userSnapshot = await admin.firestore()
-                .collection("users")
-                .where("sport", "==", alert.target)
-                .get();
+            let tokens: string[] = [];
 
-            const tokens: string[] = [];
-            userSnapshot.forEach(uDoc => {
-                const userData = uDoc.data();
-                if (userData.fcmToken) tokens.push(userData.fcmToken);
-            });
+            if (alert.target === 'Finanzas') {
+                // Send to Admins, Directors, and Treasurers
+                const adminSnapshot = await admin.firestore().collection("users")
+                    .where("role", "in", ["admin", "director", "tesorero"])
+                    .get();
+                adminSnapshot.forEach(uDoc => {
+                    const d = uDoc.data();
+                    if (d.fcmToken) tokens.push(d.fcmToken);
+                });
+            } else {
+                // Send to users specialized in that category
+                const userSnapshot = await admin.firestore().collection("users")
+                    .where("sport", "==", alert.target)
+                    .get();
+                userSnapshot.forEach(uDoc => {
+                    const d = uDoc.data();
+                    if (d.fcmToken) tokens.push(d.fcmToken);
+                });
+            }
 
             if (tokens.length > 0) {
                 const payload: admin.messaging.MulticastMessage = {
@@ -153,9 +187,12 @@ export const dailyAlertScanner = functions.pubsub
                         notification: {
                             icon: "https://proneomanager.web.app/logo-192.png",
                             badge: "https://proneomanager.web.app/logo-192.png",
-                            click_action: "https://proneomobile-app.web.app",
+                            click_action: "https://proneomanager.web.app/avisos",
                         },
                     },
+                    data: {
+                        priority: alert.priority
+                    }
                 };
                 await admin.messaging().sendEachForMulticast(payload);
             }

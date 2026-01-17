@@ -15,6 +15,7 @@ import {
 import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { usePlayers } from '../hooks/usePlayers';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface AvisosModuleProps {
     userSport?: string;
@@ -23,6 +24,9 @@ interface AvisosModuleProps {
 }
 
 const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', userName, userRole = 'scout' }) => {
+    // Notifications Hook
+    const { permission, token } = useNotifications();
+
     // 1. Fetch ALL players (database + scouting) to generate global alerts
     const { players: dbPlayers } = usePlayers(false);
     const { players: scoutingPlayers } = usePlayers(true);
@@ -537,6 +541,30 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                 <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs mt-2 mb-6">
                     Notificaciones inteligentes y recordatorios críticos
                 </p>
+
+                {/* Notifications Status Card */}
+                <div className="mb-6 p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${permission === 'granted' ? 'bg-proneo-green/10 text-proneo-green' : 'bg-red-50 text-red-500'}`}>
+                            <Bell className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Avisos al Móvil</p>
+                            <p className="text-xs font-bold text-zinc-900">
+                                {permission === 'granted' ? 'Activados (Recibirás avisos a las 10:00 AM)' :
+                                    permission === 'denied' ? 'Bloqueados por el navegador' : 'Pendiente de activar'}
+                            </p>
+                        </div>
+                    </div>
+                    {permission !== 'granted' && permission !== 'denied' && (
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="bg-zinc-900 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+                        >
+                            Activar
+                        </button>
+                    )}
+                </div>
 
                 {/* Categories Filter - Hide if user has specific sport assigned */}
                 {userSport === 'General' && (

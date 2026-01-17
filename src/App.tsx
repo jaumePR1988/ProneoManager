@@ -5,6 +5,7 @@ import {
     User as FirebaseUser
 } from 'firebase/auth';
 import { auth, isDemoMode } from './firebase/config';
+import { useNotifications } from './hooks/useNotifications';
 // isDemoMode removed from config, checking if used elsewhere or if I should re-add it to config.ts
 import Login from './components/Login';
 import Layout from './components/Layout';
@@ -28,6 +29,8 @@ import { usePlayers } from './hooks/usePlayers';
 import { useAutoLogout } from './hooks/useAutoLogout';
 
 function App() {
+    useNotifications();
+
     const [user, setUser] = useState<FirebaseUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('dashboard');
