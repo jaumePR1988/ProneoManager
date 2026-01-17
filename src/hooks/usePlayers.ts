@@ -13,6 +13,21 @@ import {
 import { db, isDemoMode } from '../firebase/config';
 import { Player, DynamicField } from '../types/player';
 
+// Helper to sort system lists alphabetically
+const sortSystemLists = (lists: any) => {
+    const sorted = { ...lists };
+    const keysToSort = ['leagues', 'clubs', 'positions', 'brands', 'agents', 'selections', 'feet', 'divisions'];
+
+    keysToSort.forEach(key => {
+        if (Array.isArray(sorted[key])) {
+            sorted[key] = [...sorted[key]].sort((a, b) =>
+                String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true })
+            );
+        }
+    });
+    return sorted;
+};
+
 const MOCK_PLAYERS_INITIAL: Player[] = [
     {
         id: '1',
@@ -108,6 +123,7 @@ let SESSION_SYSTEM_LISTS = {
     agents: ['Jaume', 'Joan Francesc', 'Albert Redondo', 'Sistema AI'],
     selections: ['No', 'Si', 'Sub-17', 'Sub-19', 'Sub-21', 'Absoluta'],
     feet: ['Derecha', 'Izquierda', 'Ambas', 'Ambidiestro'],
+    divisions: ['1ª División', '2ª División', '1ª RFEF', '2ª RFEF', '3ª RFEF', 'Regional'],
     reducedColumns: ['firstName', 'lastName1', 'club', 'league', 'division', 'position', 'endDate', 'sportsBrand', 'sportsBrand2']
 };
 
@@ -115,7 +131,7 @@ export const usePlayers = (isScouting: boolean = false) => {
     const [players, setPlayers] = useState<Player[]>(isDemoMode ? SESSION_PLAYERS.filter(p => p.isScouting === isScouting) : []);
     const [schema, setSchema] = useState<DynamicField[]>(isDemoMode ? SESSION_SCHEMA : []);
     const [systemLists, setSystemLists] = useState(isDemoMode ? SESSION_SYSTEM_LISTS : {
-        leagues: [], clubs: [], positions: [], brands: [], agents: [], selections: [], feet: [], reducedColumns: []
+        leagues: [], clubs: [], positions: [], brands: [], agents: [], selections: [], feet: [], divisions: [], reducedColumns: []
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
@@ -144,7 +160,12 @@ export const usePlayers = (isScouting: boolean = false) => {
         const listsRef = doc(db, 'settings', 'system_lists');
         const unsubLists = onSnapshot(listsRef, (snapshot) => {
             if (snapshot.exists()) {
-                setSystemLists(snapshot.data() as any);
+                const data = snapshot.data();
+                const merged = {
+                    ...SESSION_SYSTEM_LISTS,
+                    ...data
+                };
+                setSystemLists(sortSystemLists(merged));
             }
         });
 
@@ -273,15 +294,17 @@ export const usePlayers = (isScouting: boolean = false) => {
     };
 
     const updateSystemLists = async (newLists: typeof SESSION_SYSTEM_LISTS) => {
+        const sortedLists = sortSystemLists(newLists);
+
         if (isDemoMode) {
-            SESSION_SYSTEM_LISTS = { ...newLists };
+            SESSION_SYSTEM_LISTS = { ...sortedLists };
             setSystemLists(SESSION_SYSTEM_LISTS);
             return;
         }
         try {
             const listsRef = doc(db, 'settings', 'system_lists');
             const { setDoc } = await import('firebase/firestore');
-            await setDoc(listsRef, newLists);
+            await setDoc(listsRef, sortedLists);
         } catch (err) {
             console.error("Error updating system lists:", err);
         }

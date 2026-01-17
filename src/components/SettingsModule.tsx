@@ -40,7 +40,8 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
         brands: '',
         agents: '',
         selections: '',
-        feet: ''
+        feet: '',
+        divisions: ''
     });
 
     // Initialize local lists when systemLists loads or tab changes
@@ -52,7 +53,8 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
             brands: systemLists.brands.join(', '),
             agents: systemLists.agents.join(', '),
             selections: (systemLists as any).selections?.join(', ') || '',
-            feet: (systemLists as any).feet?.join(', ') || ''
+            feet: (systemLists as any).feet?.join(', ') || '',
+            divisions: (systemLists as any).divisions?.join(', ') || ''
         });
     }, [systemLists, activeTab]);
 
@@ -65,10 +67,11 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
             brands: localLists.brands.split(',').map(s => s.trim()).filter(s => s),
             agents: localLists.agents.split(',').map(s => s.trim()).filter(s => s),
             selections: localLists.selections.split(',').map(s => s.trim()).filter(s => s),
-            feet: localLists.feet.split(',').map(s => s.trim()).filter(s => s)
+            feet: localLists.feet.split(',').map(s => s.trim()).filter(s => s),
+            divisions: localLists.divisions.split(',').map(s => s.trim()).filter(s => s)
         };
         await updateSystemLists(newLists as any);
-        alert('Listas actualizadas correctamente');
+        alert('Listas actualizadas y ordenadas alfabéticamente');
     };
 
     const categories: (Category | 'General')[] = ['General', 'Fútbol', 'F. Sala', 'Femenino', 'Entrenadores'];
@@ -218,6 +221,7 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                                                 { id: 'club', label: 'Club', type: 'select' },
                                                 { id: 'position', label: 'Posición', type: 'select' },
                                                 { id: 'preferredFoot', label: 'Pierna Hábil', type: 'select' },
+                                                { id: 'division', label: 'División', type: 'select' },
                                                 { id: 'birthDate', label: 'Fecha Nacimiento', type: 'date' },
                                                 { id: 'nationality', label: 'Nacionalidad', type: 'text' },
                                                 { id: 'nationality2', label: 'Nacionalidad 2', type: 'text' },
@@ -311,7 +315,8 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                                     { key: 'brands' as const, label: 'Marcas Deportivas', icon: Tag },
                                     { key: 'agents' as const, label: 'Agentes / Seguimiento', icon: UsersIcon },
                                     { key: 'selections' as const, label: 'Niveles de Selección', icon: Trophy },
-                                    { key: 'feet' as const, label: 'Piernas Hábiles', icon: UserCircle }
+                                    { key: 'feet' as const, label: 'Piernas Hábiles', icon: UserCircle },
+                                    { key: 'divisions' as const, label: 'Divisiones / Categorías', icon: LayoutDashboard }
                                 ].map(list => (
                                     <div key={list.key} className="space-y-3 text-left">
                                         <div className="flex items-center justify-between ml-4">
@@ -319,7 +324,7 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                                                 <list.icon className="w-3.5 h-3.5" />
                                                 {list.label}
                                             </label>
-                                            <span className="text-[9px] font-bold text-zinc-300 uppercase">{systemLists[list.key].length} opciones</span>
+                                            <span className="text-[9px] font-bold text-zinc-300 uppercase">{systemLists[list.key]?.length || 0} opciones</span>
                                         </div>
                                         <div className="relative">
                                             <textarea

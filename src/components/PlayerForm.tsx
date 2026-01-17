@@ -501,7 +501,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Label>DIVISIÓN</Label>
-                                        <Input name="division" value={formData.division} onChange={handleInputChange} />
+                                        <Select
+                                            name="division"
+                                            value={formData.division}
+                                            onChange={handleInputChange}
+                                            options={['', ...(systemLists as any).divisions || []]}
+                                        />
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Label>MARCA DEPORTIVA</Label>
