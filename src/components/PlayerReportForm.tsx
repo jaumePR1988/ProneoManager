@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Save, FileText, User, Calendar, ClipboardList, Search, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Save, FileText, User, Calendar, ClipboardList, Search, AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { ReportType, PlayerReportFormData } from '../types/playerReport';
 
@@ -20,7 +20,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
     initialReport,
     preselectedType
 }) => {
-    const { players: databasePlayers } = usePlayers(false);
+    const { players: databasePlayers, systemLists } = usePlayers(false);
     const { players: scoutingPlayers, updatePlayer } = usePlayers(true);
 
     const isAdmin = (userRole?.toLowerCase() === 'admin' || userRole?.toLowerCase() === 'director' || userSport === 'General');
@@ -34,6 +34,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
     const [newPlayerBirthDate, setNewPlayerBirthDate] = useState(initialReport?.birthDate || '');
     const [newPlayerNationality, setNewPlayerNationality] = useState(initialReport?.nationality || '');
     const [newPlayerCategory, setNewPlayerCategory] = useState(initialReport?.category || (userSport === 'General' ? 'Fútbol' : userSport));
+    const [newPlayerDivision, setNewPlayerDivision] = useState(initialReport?.division || '');
     const [date, setDate] = useState(initialReport?.date || new Date().toISOString().split('T')[0]);
     const [notes, setNotes] = useState(initialReport?.notes || '');
     const [saving, setSaving] = useState(false);
@@ -122,6 +123,7 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
                 birthDate: reportType === 'nuevo' ? newPlayerBirthDate : '',
                 nationality: reportType === 'nuevo' ? newPlayerNationality : '',
                 category: reportType === 'nuevo' ? newPlayerCategory : undefined,
+                division: (reportType === 'nuevo' || reportType === 'scouting') ? newPlayerDivision : '',
             } as any);
             onClose();
         } catch (err) {
@@ -249,14 +251,38 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
                                 </div>
 
                                 {selectedPlayerId && selectedPlayer && (
-                                    <div className="mt-3 p-4 rounded-2xl bg-proneo-green/5 border border-proneo-green/10 flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-proneo-green/20 flex items-center justify-center text-proneo-green">
-                                            <User className="w-5 h-5" />
+                                    <div className="mt-3 p-4 rounded-2xl bg-proneo-green/5 border border-proneo-green/10 flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-proneo-green/20 flex items-center justify-center text-proneo-green">
+                                                <User className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-zinc-900">{selectedPlayer.name || `${selectedPlayer.firstName} ${selectedPlayer.lastName1}`}</p>
+                                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{selectedPlayer.club} • {selectedPlayer.category} {selectedPlayer.division ? `• ${selectedPlayer.division}` : ''}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-black text-zinc-900">{selectedPlayer.name || `${selectedPlayer.firstName} ${selectedPlayer.lastName1}`}</p>
-                                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{selectedPlayer.club} • {selectedPlayer.category}</p>
-                                        </div>
+
+                                        {/* Division selector for Scouting reports if not already defined for the player */}
+                                        {reportType === 'scouting' && (
+                                            <div className="min-w-[140px]">
+                                                <div className="relative">
+                                                    <select
+                                                        value={newPlayerDivision || selectedPlayer.division || ''}
+                                                        onChange={(e) => {
+                                                            setNewPlayerDivision(e.target.value);
+                                                            // Optionally we could update the player object in memory or just use this for the report
+                                                        }}
+                                                        className="w-full bg-white border border-zinc-200 rounded-lg pl-3 pr-8 h-9 text-[10px] font-black uppercase tracking-widest text-zinc-600 focus:border-proneo-green outline-none appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="">División...</option>
+                                                        {systemLists.divisions.map((div: string) => (
+                                                            <option key={div} value={div}>{div}</option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400 pointer-events-none" />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -297,6 +323,22 @@ const PlayerReportForm: React.FC<PlayerReportFormProps> = ({
                                         placeholder="Ej: Mediocentro"
                                         className="w-full bg-zinc-50 border border-zinc-100 rounded-xl px-4 h-12 text-sm font-bold text-zinc-900 focus:bg-white focus:border-proneo-green transition-all outline-none"
                                     />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2 block">División / Categoría</label>
+                                    <div className="relative text-left">
+                                        <select
+                                            value={newPlayerDivision}
+                                            onChange={(e) => setNewPlayerDivision(e.target.value)}
+                                            className="w-full bg-zinc-50 border border-zinc-100 rounded-xl px-4 h-12 text-sm font-bold text-zinc-900 focus:bg-white focus:border-proneo-green transition-all outline-none appearance-none"
+                                        >
+                                            <option value="">Seleccionar...</option>
+                                            {systemLists.divisions.map((div: string) => (
+                                                <option key={div} value={div}>{div}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                                    </div>
                                 </div>
                             </div>
 

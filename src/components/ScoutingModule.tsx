@@ -24,7 +24,7 @@ interface ScoutingModuleProps {
 }
 
 const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', userRole = 'scout', userName }) => {
-    const { players: allScoutingPlayers, loading, addPlayer, updatePlayer, deletePlayer } = usePlayers(true);
+    const { players: allScoutingPlayers, loading, addPlayer, updatePlayer, deletePlayer, systemLists } = usePlayers(true);
 
     const isAdmin = userRole === 'admin' || userRole === 'director';
     const [selectedSport, setSelectedSport] = useState<string>(userSport);
@@ -44,6 +44,8 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [viewingNote, setViewingNote] = useState<{ content: string; date: string; author: string; player: string } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDivision, setSelectedDivision] = useState<string>('all');
+    const [selectedPosition, setSelectedPosition] = useState<string>('all');
 
     const scoutingPlayers = useMemo(() => {
         let filtered = allScoutingPlayers || [];
@@ -73,8 +75,18 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
             );
         }
 
+        // 4. Division Filter
+        if (selectedDivision !== 'all') {
+            filtered = filtered.filter(p => p.division === selectedDivision);
+        }
+
+        // 5. Position Filter
+        if (selectedPosition !== 'all') {
+            filtered = filtered.filter(p => p.position === selectedPosition);
+        }
+
         return filtered;
-    }, [allScoutingPlayers, selectedSport, userRole, userName, searchTerm]);
+    }, [allScoutingPlayers, selectedSport, userRole, userName, searchTerm, selectedDivision, selectedPosition]);
 
 
     const handleSaveScouting = async (data: Partial<Player>) => {
@@ -233,15 +245,50 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                         </div>
 
                         {/* Integrated Search Bar */}
-                        <div className="flex-1 relative group md:ml-2">
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
-                            <input
-                                type="text"
-                                placeholder="Buscar objetivo..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-[60px] bg-zinc-50 border border-zinc-100 rounded-[28px] pl-16 pr-32 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-zinc-100 outline-none transition-all placeholder:text-zinc-400"
-                            />
+                        <div className="flex-1 relative group md:ml-2 flex items-center gap-2">
+                            <div className="flex-1 relative">
+                                <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar objetivo..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full h-[60px] bg-zinc-50 border border-zinc-100 rounded-[28px] pl-16 pr-6 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-zinc-100 outline-none transition-all placeholder:text-zinc-400"
+                                />
+                            </div>
+
+                            {/* Filters Group */}
+                            <div className="hidden lg:flex items-center gap-2 pr-4">
+                                {/* Division Filter */}
+                                <div className="relative">
+                                    <select
+                                        value={selectedDivision}
+                                        onChange={(e) => setSelectedDivision(e.target.value)}
+                                        className="appearance-none bg-white border-2 border-zinc-100 h-11 px-4 pr-10 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-600 focus:border-blue-500 transition-all outline-none cursor-pointer"
+                                    >
+                                        <option value="all">División: Todas</option>
+                                        {systemLists.divisions.map((div: string) => (
+                                            <option key={div} value={div}>{div}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400 pointer-events-none" />
+                                </div>
+
+                                {/* Position Filter */}
+                                <div className="relative">
+                                    <select
+                                        value={selectedPosition}
+                                        onChange={(e) => setSelectedPosition(e.target.value)}
+                                        className="appearance-none bg-white border-2 border-zinc-100 h-11 px-4 pr-10 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-600 focus:border-blue-500 transition-all outline-none cursor-pointer"
+                                    >
+                                        <option value="all">Posición: Todas</option>
+                                        {Array.from(new Set(allScoutingPlayers.map(p => p.position).filter(Boolean))).sort().map(pos => (
+                                            <option key={pos} value={pos}>{pos}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400 pointer-events-none" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -10,7 +10,8 @@ import {
     FileText,
     Briefcase,
     UserCog,
-    Send
+    Send,
+    Camera
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -27,8 +28,8 @@ interface LayoutProps {
 }
 
 // Define visibility rules for Header elements
-const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'settings', 'calendar', 'scouting'];
-const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'calendar'];
+const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'settings', 'calendar', 'scouting', 'multimedia'];
+const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'calendar', 'multimedia'];
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer, playerView, onPlayerViewChange }) => {
     const [pendingCount, setPendingCount] = React.useState(0);
@@ -54,6 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         { id: 'scouting', label: 'Scouting', icon: Search, hidden: isTreasurer },
         { id: 'calendar', label: 'Calendario / Informes', icon: Briefcase, hidden: isTreasurer || isScout },
         { id: 'reports', label: 'Reportes', icon: FileText, hidden: isTreasurer },
+        { id: 'multimedia', label: 'Multimedia', icon: Camera, hidden: isTreasurer || isScout },
         { id: 'admin', label: 'Administración', icon: Briefcase, hidden: !isAdmin && !isTreasurer },
         { id: 'users', label: 'Usuarios', icon: UserCog, hidden: !isAdmin },
         { id: 'comms', label: 'Comunicaciones', icon: Send, hidden: !isAdmin && !isCommunication },

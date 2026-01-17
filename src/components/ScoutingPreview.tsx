@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, TrendingUp, Shield, Award, Calendar, ExternalLink, Printer, Filter, User, FileText } from 'lucide-react';
-import { Player, Category, Position } from '../types/player';
+import { X, Shield, Award, Calendar, Printer, Filter, User, ChevronDown } from 'lucide-react';
+import { Player, Category } from '../types/player';
+import { usePlayers } from '../hooks/usePlayers';
 
 interface ScoutingPreviewProps {
     onClose: () => void;
@@ -8,8 +9,10 @@ interface ScoutingPreviewProps {
 }
 
 const ScoutingPreview: React.FC<ScoutingPreviewProps> = ({ onClose, players }) => {
+    const { systemLists } = usePlayers();
     const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
     const [selectedPosition, setSelectedPosition] = useState<string>('Todos');
+    const [selectedDivision, setSelectedDivision] = useState<string>('Todos');
 
     // 1. Dynamic Season Logic
     const today = new Date();
@@ -32,8 +35,33 @@ const ScoutingPreview: React.FC<ScoutingPreviewProps> = ({ onClose, players }) =
         players
             .filter(p => p.isScouting)
             .filter(p => selectedCategory === 'Todos' || p.category === selectedCategory)
+            .filter(p => selectedDivision === 'Todos' || p.division === selectedDivision)
             .map(p => p.position)
     )).sort();
+
+    // Helper for gender-adapted positions
+    const formatPosition = (pos: string, cat: string) => {
+        if (!pos) return 'Jugador';
+        if (cat === 'Femenino') {
+            const mappings: Record<string, string> = {
+                'Portero': 'Portera',
+                'Defensa': 'Defensa',
+                'Lateral': 'Lateral',
+                'Central': 'Central',
+                'Mediocentro': 'Mediocentrista',
+                'Interior': 'Interior',
+                'Extremo': 'Extrema',
+                'Delantero': 'Delantera',
+                'Mediapunta': 'Mediapunta',
+                'Entrenador': 'Entrenadora',
+                'Ala': 'Ala',
+                'Cierre': 'Cierre',
+                'Pivot': 'Pivot'
+            };
+            return mappings[pos] || pos;
+        }
+        return pos;
+    };
 
     // Helper to chunk array into pages
     const PLAYERS_PER_PAGE = 10;
@@ -51,7 +79,10 @@ const ScoutingPreview: React.FC<ScoutingPreviewProps> = ({ onClose, players }) =
             // Position Filter
             const isPositionMatch = selectedPosition === 'Todos' || p.position === selectedPosition;
 
-            return isScoutingPlayer && isCategory && isPositionMatch;
+            // Division Filter
+            const isDivisionMatch = selectedDivision === 'Todos' || p.division === selectedDivision;
+
+            return isScoutingPlayer && isCategory && isPositionMatch && isDivisionMatch;
         });
 
         // Split into chunks/pages
@@ -100,6 +131,23 @@ const ScoutingPreview: React.FC<ScoutingPreviewProps> = ({ onClose, players }) =
                                     <option key={cat} value={cat}>{cat}</option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* Division Filter */}
+                        <div className="flex items-center gap-2 border-l border-zinc-700 pl-4">
+                            <div className="relative text-left">
+                                <select
+                                    value={selectedDivision}
+                                    onChange={(e) => setSelectedDivision(e.target.value)}
+                                    className="bg-zinc-800 text-white text-xs font-bold px-3 py-1.5 pr-8 rounded-lg border border-zinc-700 outline-none focus:border-blue-500 transition-colors uppercase tracking-wide appearance-none cursor-pointer"
+                                >
+                                    <option value="Todos">Todas las Divisiones</option>
+                                    {(systemLists.divisions || []).map((div: string) => (
+                                        <option key={div} value={div}>{div}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
+                            </div>
                         </div>
 
                         {/* Position Filter */}
@@ -236,7 +284,7 @@ const ScoutingPreview: React.FC<ScoutingPreviewProps> = ({ onClose, players }) =
                                             <div className="flex items-center gap-2 mt-1">
                                                 <div className="flex items-center gap-1.5 text-[9px] font-black uppercase bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md">
                                                     <Award className="w-3 h-3 shrink-0" />
-                                                    <span>{player.position || 'Jugador'}</span>
+                                                    <span>{formatPosition(player.position || '', player.category)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 text-[9px] font-black uppercase bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md">
                                                     <span>{player.preferredFoot || 'Derecha'}</span>
@@ -255,7 +303,7 @@ const ScoutingPreview: React.FC<ScoutingPreviewProps> = ({ onClose, players }) =
                                                 </span>
                                             </div>
                                             <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${player.scouting?.status === 'Contactado' ? 'bg-blue-100 text-blue-600' :
-                                                player.scouting?.status === 'Rechazado' ? 'bg-red-100 text-red-600' :
+                                                (player.scouting?.status as string) === 'Rechazado' ? 'bg-red-100 text-red-600' :
                                                     'bg-zinc-100 text-zinc-500'
                                                 }`}>
                                                 {player.scouting?.status || 'Pendiente'}

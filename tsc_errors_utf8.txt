@@ -1,0 +1,4 @@
+﻿src/components/Dashboard.tsx(40,11): error TS6198: All destructured elements are unused.
+src/components/PlayerModule.tsx(2,18): error TS6133: 'Filter' is declared but its value is never read.
+src/components/ScoutingModule.tsx(2,32): error TS6133: 'Plus' is declared but its value is never read.
+src/hooks/usePlayers.ts(12,5): error TS6133: 'Timestamp' is declared but its value is never read.

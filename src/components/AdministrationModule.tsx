@@ -38,8 +38,11 @@ const AdministrationModule: React.FC = () => {
 
     // Filter Logic
     const filteredRows = billingRows.filter(row => {
-        const matchesSearch = row.playerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            row.playerClub.toLowerCase().includes(searchTerm.toLowerCase());
+        const playerName = row.playerName || '';
+        const playerClub = row.playerClub || '';
+
+        const matchesSearch = playerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            playerClub.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
 

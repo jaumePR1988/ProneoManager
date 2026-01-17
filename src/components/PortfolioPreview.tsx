@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, TrendingUp, Shield, Award, Calendar, ExternalLink, Printer, Filter } from 'lucide-react';
+import { X, TrendingUp, Shield, Award, Calendar, ExternalLink, Printer, Filter, ChevronDown } from 'lucide-react';
 import { Player, Category, Position } from '../types/player';
+import { usePlayers } from '../hooks/usePlayers';
 
 interface PortfolioPreviewProps {
     onClose: () => void;
@@ -8,7 +9,9 @@ interface PortfolioPreviewProps {
 }
 
 const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players }) => {
+    const { systemLists } = usePlayers(false);
     const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+    const [selectedDivision, setSelectedDivision] = useState<string>('Todos');
     const [selectedPosition, setSelectedPosition] = useState<string>('Todos');
 
     // 1. Dynamic Season Logic
@@ -54,10 +57,13 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
             const contractYear = contractDate.getFullYear();
             const expiresThisSeason = contractYear === targetYear;
 
+            // Division Filter
+            const isDivisionMatch = selectedDivision === 'Todos' || p.division === selectedDivision;
+
             // Position Filter
             const isPositionMatch = selectedPosition === 'Todos' || p.position === selectedPosition;
 
-            return isDatabasePlayer && isCategory && expiresThisSeason && isPositionMatch;
+            return isDatabasePlayer && isCategory && expiresThisSeason && isDivisionMatch && isPositionMatch;
         });
 
         // Split into chunks/pages
@@ -108,18 +114,34 @@ const PortfolioPreview: React.FC<PortfolioPreviewProps> = ({ onClose, players })
                             </select>
                         </div>
 
+                        {/* Division Filter */}
+                        <div className="flex items-center gap-2 border-l border-white/10 pl-4 relative">
+                            <select
+                                value={selectedDivision}
+                                onChange={(e) => setSelectedDivision(e.target.value)}
+                                className="bg-zinc-800 text-white text-xs font-bold pl-3 pr-8 py-1.5 rounded-lg border border-zinc-700 outline-none focus:border-proneo-green transition-colors uppercase tracking-wide appearance-none cursor-pointer"
+                            >
+                                <option value="Todos">Todas las Divisiones</option>
+                                {(systemLists.divisions || []).map(div => (
+                                    <option key={div} value={div}>{div}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400 pointer-events-none" />
+                        </div>
+
                         {/* Position Filter */}
-                        <div className="flex items-center gap-2 border-l border-zinc-700 pl-4">
+                        <div className="flex items-center gap-2 border-l border-zinc-700 pl-4 relative">
                             <select
                                 value={selectedPosition}
                                 onChange={(e) => setSelectedPosition(e.target.value)}
-                                className="bg-zinc-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 outline-none focus:border-proneo-green transition-colors uppercase tracking-wide"
+                                className="bg-zinc-800 text-white text-xs font-bold pl-3 pr-8 py-1.5 rounded-lg border border-zinc-700 outline-none focus:border-proneo-green transition-colors uppercase tracking-wide appearance-none cursor-pointer"
                             >
                                 <option value="Todos">Todas las Posiciones</option>
                                 {availablePositions.map(pos => (
                                     <option key={pos} value={pos}>{pos}</option>
                                 ))}
                             </select>
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-400 pointer-events-none" />
                         </div>
                     </div>
                 </div>

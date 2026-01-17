@@ -20,7 +20,9 @@ import ProfileModule from './components/ProfileModule';
 import PlayerForm from './components/PlayerForm';
 import NotificationCenter from './components/NotificationCenter';
 import AgendaInformeModule from './components/AgendaInformeModule';
+import MultimediaModule from './components/MultimediaModule';
 // import IAModule from './components/IAModule';
+import PublicPhotoUpload from './components/PublicPhotoUpload';
 
 import { usePlayers } from './hooks/usePlayers';
 import { useAutoLogout } from './hooks/useAutoLogout';
@@ -132,6 +134,15 @@ function App() {
         return () => unsubscribe();
     }, []);
 
+    // 1. PUBLIC ROUTE CHECK (Bypass everything for photo updates)
+    const pathname = window.location.pathname;
+    const isPublicUpdateRoute = pathname.startsWith('/update/');
+    const publicPlayerId = isPublicUpdateRoute ? pathname.split('/').pop() : null;
+
+    if (isPublicUpdateRoute && publicPlayerId) {
+        return <PublicPhotoUpload playerId={publicPlayerId} />;
+    }
+
 
     const renderContent = () => {
         switch (activeTab) {
@@ -150,6 +161,8 @@ function App() {
                 return <AgendaInformeModule userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0] || ''} userRole={userRole} userId={user?.uid || ''} />;
             case 'reports':
                 return <ReportsModule userRole={userRole} userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} />;
+            case 'multimedia':
+                return <MultimediaModule userSport={userSport} />;
             case 'admin':
                 return <AdministrationModule />;
             case 'avisos':

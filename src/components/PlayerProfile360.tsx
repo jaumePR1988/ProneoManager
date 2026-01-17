@@ -9,7 +9,9 @@ import {
     Save,
     Plus,
     Trash2,
-    Banknote
+    Banknote,
+    Copy,
+    Share2
 } from 'lucide-react';
 import { Player, PlayerSeason } from '../types/player';
 
@@ -30,6 +32,7 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
     const [seasons, setSeasons] = useState<PlayerSeason[]>(player.seasons || []);
 
     const [isSaving, setIsSaving] = useState(false);
+    const [showCopiedToast, setShowCopiedToast] = useState(false);
 
     // Ensure seasons is initialized if empty
     useEffect(() => {
@@ -94,11 +97,30 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
         window.print();
     };
 
+    const copyUpdateLink = () => {
+        const baseUrl = window.location.origin;
+        const link = `${baseUrl}/update/${player.id}`;
+        navigator.clipboard.writeText(link);
+
+        setShowCopiedToast(true);
+        setTimeout(() => setShowCopiedToast(false), 2000);
+    };
+
     // Calculate Age
     const age = player.birthDate ? new Date().getFullYear() - new Date(player.birthDate).getFullYear() : 'N/A';
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200 print:p-0 print:bg-white print:fixed print:inset-0">
+            {/* Custom Toast Notification */}
+            {showCopiedToast && (
+                <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[300] bg-zinc-900 text-white px-6 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
+                    <div className="w-6 h-6 bg-proneo-green/20 rounded-full flex items-center justify-center">
+                        <Copy className="w-3 h-3 text-proneo-green" />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-widest">Enlace copiado</span>
+                </div>
+            )}
+
             {/* Main Card Container */}
             <div className="bg-white w-full max-w-6xl h-[90vh] rounded-[40px] overflow-hidden flex shadow-2xl relative print:w-full print:h-full print:rounded-none print:shadow-none print:max-w-none">
 
@@ -130,6 +152,15 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                     ) : (
                         <Save className="w-5 h-5 text-white" />
                     )}
+                </button>
+
+                {/* Copy Link Button (Hidden on Print) */}
+                <button
+                    onClick={copyUpdateLink}
+                    className="absolute top-6 right-[12rem] z-20 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors print:hidden shadow-sm"
+                    title="Copiar Link para Jugador"
+                >
+                    <Share2 className="w-5 h-5 text-white" />
                 </button>
 
                 {/* Left Panel: Visual Identity (The "Card") */}

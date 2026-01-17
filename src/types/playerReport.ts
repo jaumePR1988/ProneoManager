@@ -19,6 +19,7 @@ export interface PlayerReport {
     birthDate?: string;
     nationality?: string;
     category?: string;
+    division?: string;
     createdAt: number;
     updatedAt: number;
 }
@@ -36,4 +37,5 @@ export interface PlayerReportFormData {
     birthDate?: string;
     nationality?: string;
     category?: string;
+    division?: string;
 }

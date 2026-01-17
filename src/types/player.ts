@@ -2,7 +2,7 @@ export type Category = 'Fútbol' | 'F. Sala' | 'Femenino' | 'Entrenadores';
 export type Position = 'Portero' | 'Cierre' | 'Ala' | 'Pivot' | 'Ala/Cierre' | 'Ala/Pivot' | 'Defensa' | 'Mediocentro' | 'Extremo' | 'Delantero' | 'Entrenador';
 export type PreferredFoot = 'Derecha' | 'Izquierda' | 'Ambas' | 'Ambidiestro';
 export type PayerType = 'Club' | 'Jugador' | 'Ambos';
-export type ScoutingStatus = 'No contactado' | 'Contactado' | 'Negociando';
+export type ScoutingStatus = 'No contactado' | 'Contactado' | 'Negociando' | 'Rechazado';
 
 export interface DynamicField {
     id: string;
@@ -16,6 +16,7 @@ export interface PlayerSeason {
     id?: string;
     season: string;
     club: string;       // Was 'team'
+    team?: string;      // Compatibility for older data or sessions
     division: string;   // Was 'league'
     matches: number;
     goals: number;
@@ -137,6 +138,8 @@ export interface Player {
     customFields: Record<string, any>;
 
     photoUrl?: string;
+    photoUpdateDate?: string;
+    photoStatus?: '✅' | '❌';
     documents: { id: string; name: string; url: string; type: 'contract' | 'other'; date: string }[];
 
     createdAt: number;

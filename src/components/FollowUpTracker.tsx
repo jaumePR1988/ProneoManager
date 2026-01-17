@@ -12,11 +12,12 @@ interface FollowUpTrackerProps {
 }
 
 const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin }) => {
-    const { players: databasePlayers } = usePlayers(false);
+    const { players: databasePlayers, systemLists } = usePlayers(false);
     const { players: scoutingPlayers, addPlayer: addScoutingPlayer } = usePlayers(true);
     const { reports, loading, deleteReport, updateReport } = usePlayerReports();
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDivision, setSelectedDivision] = useState<string>('all');
     const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
     const [filterType, setFilterType] = useState<'all' | 'cantera' | 'scouting'>('all');
     const [editingReport, setEditingReport] = useState<PlayerReport | null>(null);
@@ -105,8 +106,23 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
             );
         }
 
+        if (selectedDivision !== 'all') {
+            filtered = filtered.filter(p => {
+                // If it's a real player, check player.division
+                // If it's a virtual player OR real player but we want to check the specific report division (more robust)
+                // Let's check both for best experience
+                const playerDiv = p.player.division;
+
+                // Also check if any of the player's reports have this division (for historical accuracy)
+                const playerReports = getPlayerReports(p.player.id, p.player.name);
+                const hasReportInDiv = playerReports.some(r => r.division === selectedDivision);
+
+                return playerDiv === selectedDivision || hasReportInDiv;
+            });
+        }
+
         return filtered.sort((a, b) => b.lastDate - a.lastDate);
-    }, [playerReportCounts, filterType, searchTerm]);
+    }, [playerReportCounts, filterType, searchTerm, selectedDivision]);
 
     const getPlayerReports = (playerId: string, playerName?: string): PlayerReport[] => {
         return reports
@@ -220,6 +236,20 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
                         </button>
                     ))}
                 </div>
+
+                <div className="flex-1 md:flex-none min-w-[200px] relative group">
+                    <select
+                        value={selectedDivision}
+                        onChange={(e) => setSelectedDivision(e.target.value)}
+                        className="w-full h-14 bg-white border-2 border-zinc-100 rounded-2xl px-6 text-sm font-black uppercase tracking-widest outline-none focus:border-proneo-green transition-all appearance-none cursor-pointer"
+                    >
+                        <option value="all">Todas las Divisiones</option>
+                        {systemLists.divisions.map((div: string) => (
+                            <option key={div} value={div}>{div}</option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                </div>
             </div>
 
             {/* Stats */}
@@ -263,185 +293,191 @@ const FollowUpTracker: React.FC<FollowUpTrackerProps> = ({ userSport, isAdmin })
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* Players List */}
-            <div className="bg-white rounded-[40px] border border-zinc-100 shadow-sm overflow-hidden">
+            < div className="bg-white rounded-[40px] border border-zinc-100 shadow-sm overflow-hidden" >
                 <div className="p-8 border-b border-zinc-50">
                     <h3 className="font-black text-sm uppercase tracking-widest text-zinc-900">Historial de Seguimiento</h3>
                 </div>
 
-                {filteredPlayers.length === 0 ? (
-                    <div className="p-12 text-center">
-                        <FileText className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                        <p className="text-sm font-bold text-zinc-400">No hay informes registrados</p>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-zinc-50">
-                        {filteredPlayers.map(({ player, count, lastDate }) => {
-                            const isExpanded = expandedPlayerId === player.id;
-                            const playerReports = getPlayerReports(player.id, player.name);
-                            const daysSince = getDaysSinceLastContact(lastDate);
+                {
+                    filteredPlayers.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <FileText className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
+                            <p className="text-sm font-bold text-zinc-400">No hay informes registrados</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-zinc-50">
+                            {filteredPlayers.map(({ player, count, lastDate }) => {
+                                const isExpanded = expandedPlayerId === player.id;
+                                const playerReports = getPlayerReports(player.id, player.name);
+                                const daysSince = getDaysSinceLastContact(lastDate);
 
-                            return (
-                                <div key={player.id}>
-                                    <div
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => setExpandedPlayerId(isExpanded ? null : player.id)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                setExpandedPlayerId(isExpanded ? null : player.id);
-                                            }
-                                        }}
-                                        className="w-full p-6 hover:bg-zinc-50/50 transition-all text-left flex items-center justify-between gap-4 cursor-pointer outline-none focus:bg-zinc-50"
-                                    >
-                                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                                            <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center font-black text-zinc-600 text-sm">
-                                                {count}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-black text-sm text-zinc-900 truncate">{player.name}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${(player as any).isNewPlayer || (player.origin === 'scouting' && (player as any).scouting?.status === 'Seguimiento')
-                                                        ? 'bg-orange-500/10 text-orange-500'
-                                                        : player.origin === 'cantera'
-                                                            ? 'bg-proneo-green/10 text-proneo-green'
-                                                            : 'bg-blue-500/10 text-blue-500'
-                                                        }`}>
-                                                        {(player as any).isNewPlayer || (player.origin === 'scouting' && (player as any).scouting?.status === 'Seguimiento') ? 'NEW' : player.origin === 'cantera' ? 'Cantera' : 'Scouting'}
-                                                    </span>
-                                                    <span className="text-[10px] font-bold text-zinc-400">
-                                                        {player.category}
-                                                    </span>
+                                return (
+                                    <div key={player.id}>
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => setExpandedPlayerId(isExpanded ? null : player.id)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    setExpandedPlayerId(isExpanded ? null : player.id);
+                                                }
+                                            }}
+                                            className="w-full p-6 hover:bg-zinc-50/50 transition-all text-left flex items-center justify-between gap-4 cursor-pointer outline-none focus:bg-zinc-50"
+                                        >
+                                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center font-black text-zinc-600 text-sm">
+                                                    {count}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-black text-sm text-zinc-900 truncate">{player.name}</p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${(player as any).isNewPlayer || (player.origin === 'scouting' && (player as any).scouting?.status === 'Seguimiento')
+                                                            ? 'bg-orange-500/10 text-orange-500'
+                                                            : player.origin === 'cantera'
+                                                                ? 'bg-proneo-green/10 text-proneo-green'
+                                                                : 'bg-blue-500/10 text-blue-500'
+                                                            }`}>
+                                                            {(player as any).isNewPlayer || (player.origin === 'scouting' && (player as any).scouting?.status === 'Seguimiento') ? 'NEW' : player.origin === 'cantera' ? 'Cantera' : 'Scouting'}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-zinc-400">
+                                                            {player.category}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Último contacto</p>
-                                                <p className={`text-xs font-bold mt-0.5 ${daysSince > 30 ? 'text-red-500' : daysSince > 14 ? 'text-orange-500' : 'text-proneo-green'
-                                                    }`}>
-                                                    Hace {daysSince} días
-                                                </p>
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Último contacto</p>
+                                                    <p className={`text-xs font-bold mt-0.5 ${daysSince > 30 ? 'text-red-500' : daysSince > 14 ? 'text-orange-500' : 'text-proneo-green'
+                                                        }`}>
+                                                        Hace {daysSince} días
+                                                    </p>
+                                                </div>
+                                                {isExpanded ? (
+                                                    <ChevronUp className="w-5 h-5 text-zinc-400" />
+                                                ) : (
+                                                    <ChevronDown className="w-5 h-5 text-zinc-400" />
+                                                )}
                                             </div>
-                                            {isExpanded ? (
-                                                <ChevronUp className="w-5 h-5 text-zinc-400" />
-                                            ) : (
-                                                <ChevronDown className="w-5 h-5 text-zinc-400" />
-                                            )}
                                         </div>
-                                    </div>
 
-                                    {isExpanded && (
-                                        <div className="px-6 pb-6 space-y-3">
-                                            {playerReports.map((report) => (
-                                                <div
-                                                    key={report.id}
-                                                    className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-                                                >
-                                                    <div className="flex items-start justify-between gap-4 mb-2">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <Calendar className="w-3.5 h-3.5 text-proneo-green" />
-                                                            <span className="text-xs font-black text-zinc-900">{report.date}</span>
-                                                            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${report.reportType === 'seguimiento'
-                                                                ? 'bg-proneo-green/10 text-proneo-green'
-                                                                : report.reportType === 'scouting'
-                                                                    ? 'bg-blue-500/10 text-blue-500'
-                                                                    : 'bg-emerald-500/10 text-emerald-500'
-                                                                }`}>
-                                                                {report.reportType === 'nuevo' ? 'VISTO' : report.reportType}
-                                                            </span>
-                                                            <span className="text-[10px] font-bold text-zinc-400">• {report.scoutName}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            {report.reportType === 'nuevo' && !report.playerId && (
+                                        {isExpanded && (
+                                            <div className="px-6 pb-6 space-y-3">
+                                                {playerReports.map((report) => (
+                                                    <div
+                                                        key={report.id}
+                                                        className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-4 mb-2">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <Calendar className="w-3.5 h-3.5 text-proneo-green" />
+                                                                <span className="text-xs font-black text-zinc-900">{report.date}</span>
+                                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${report.reportType === 'seguimiento'
+                                                                    ? 'bg-proneo-green/10 text-proneo-green'
+                                                                    : report.reportType === 'scouting'
+                                                                        ? 'bg-blue-500/10 text-blue-500'
+                                                                        : 'bg-emerald-500/10 text-emerald-500'
+                                                                    }`}>
+                                                                    {report.reportType === 'nuevo' ? 'VISTO' : report.reportType}
+                                                                </span>
+                                                                <span className="text-[10px] font-bold text-zinc-400">• {report.scoutName}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                {report.reportType === 'nuevo' && !report.playerId && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleConvertToScouting(report);
+                                                                        }}
+                                                                        disabled={isConverting === report.id}
+                                                                        className="flex items-center gap-2 px-3 py-1.5 bg-proneo-green/10 hover:bg-proneo-green text-proneo-green hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                                                                    >
+                                                                        {isConverting === report.id ? (
+                                                                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                                        ) : (
+                                                                            <UserPlus className="w-3.5 h-3.5" />
+                                                                        )}
+                                                                        <span>Pasar a Scouting</span>
+                                                                    </button>
+                                                                )}
                                                                 <button
+                                                                    type="button"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        handleConvertToScouting(report);
+                                                                        setEditingReport(report);
                                                                     }}
-                                                                    disabled={isConverting === report.id}
-                                                                    className="flex items-center gap-2 px-3 py-1.5 bg-proneo-green/10 hover:bg-proneo-green text-proneo-green hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                                                                    className="p-2 hover:bg-zinc-200 rounded-lg group transition-all"
+                                                                    title="Editar informe"
                                                                 >
-                                                                    {isConverting === report.id ? (
-                                                                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                                                    ) : (
-                                                                        <UserPlus className="w-3.5 h-3.5" />
-                                                                    )}
-                                                                    <span>Pasar a Scouting</span>
+                                                                    <Edit2 className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 transition-colors" />
                                                                 </button>
-                                                            )}
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setEditingReport(report);
-                                                                }}
-                                                                className="p-2 hover:bg-zinc-200 rounded-lg group transition-all"
-                                                                title="Editar informe"
-                                                            >
-                                                                <Edit2 className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 transition-colors" />
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDeleteReport(report.id);
-                                                                }}
-                                                                className="p-2 hover:bg-red-50 rounded-lg group transition-all"
-                                                                title="Eliminar informe"
-                                                            >
-                                                                <Trash2 className="w-4 h-4 text-zinc-300 group-hover:text-red-500 transition-colors" />
-                                                            </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteReport(report.id);
+                                                                    }}
+                                                                    className="p-2 hover:bg-red-50 rounded-lg group transition-all"
+                                                                    title="Eliminar informe"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4 text-zinc-300 group-hover:text-red-500 transition-colors" />
+                                                                </button>
+                                                            </div>
                                                         </div>
+                                                        <p className="text-xs text-zinc-600 leading-relaxed">{report.notes}</p>
                                                     </div>
-                                                    <p className="text-xs text-zinc-600 leading-relaxed">{report.notes}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )
+                }
+            </div >
 
             {/* Modals & Overlays */}
-            {editingReport && (
-                <PlayerReportForm
-                    initialReport={editingReport}
-                    userRole={isAdmin ? 'admin' : 'scout'}
-                    userSport={userSport}
-                    onClose={() => setEditingReport(null)}
-                    onSave={async (data) => {
-                        const { id, ...rest } = data as any;
-                        await updateReport(id, rest);
-                        setEditingReport(null);
-                        setToast({ message: 'Informe actualizado correctamente', type: 'success' });
-                        setTimeout(() => setToast(null), 3000);
-                    }}
-                />
-            )}
+            {
+                editingReport && (
+                    <PlayerReportForm
+                        initialReport={editingReport}
+                        userRole={isAdmin ? 'admin' : 'scout'}
+                        userSport={userSport}
+                        onClose={() => setEditingReport(null)}
+                        onSave={async (data) => {
+                            const { id, ...rest } = data as any;
+                            await updateReport(id, rest);
+                            setEditingReport(null);
+                            setToast({ message: 'Informe actualizado correctamente', type: 'success' });
+                            setTimeout(() => setToast(null), 3000);
+                        }}
+                    />
+                )
+            }
 
-            {toast && (
-                <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-bottom-4 duration-300">
-                    <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md border ${toast.type === 'error'
-                        ? 'bg-red-500/90 text-white border-red-400'
-                        : 'bg-proneo-green/90 text-zinc-900 border-proneo-green/20'
-                        }`}>
-                        {toast.type === 'error' ? (
-                            <AlertCircle className="w-5 h-5" />
-                        ) : (
-                            <CheckCircle2 className="w-5 h-5" />
-                        )}
-                        <span className="text-sm font-black uppercase tracking-widest">{toast.message}</span>
+            {
+                toast && (
+                    <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-bottom-4 duration-300">
+                        <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md border ${toast.type === 'error'
+                            ? 'bg-red-500/90 text-white border-red-400'
+                            : 'bg-proneo-green/90 text-zinc-900 border-proneo-green/20'
+                            }`}>
+                            {toast.type === 'error' ? (
+                                <AlertCircle className="w-5 h-5" />
+                            ) : (
+                                <CheckCircle2 className="w-5 h-5" />
+                            )}
+                            <span className="text-sm font-black uppercase tracking-widest">{toast.message}</span>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

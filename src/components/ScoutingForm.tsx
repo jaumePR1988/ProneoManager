@@ -11,6 +11,7 @@ interface ScoutingFormProps {
 
 const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSave }) => {
     const { users } = useUsers();
+    const { systemLists } = usePlayers(true);
     // Filter for internal agents (scouts, directors, admins)
     const proneoAgents = users.filter(u => ['scout', 'external_scout', 'admin', 'director', 'agent'].includes(u.role)).map(u => u.name);
     const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
@@ -40,6 +41,7 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
             category: 'Fútbol',
             club: '',
             league: '',
+            division: '',
             isScouting: true,
         };
 
@@ -368,6 +370,22 @@ const ScoutingForm: React.FC<ScoutingFormProps> = ({ initialData, onClose, onSav
                                         <option value="Ala/Pivot">Ala/Pivot</option>
                                         <option value="Entrenador">Entrenador</option>
                                     </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">División</label>
+                                    <div className="relative text-left">
+                                        <select
+                                            className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-bold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all appearance-none cursor-pointer"
+                                            value={formData.division || ''}
+                                            onChange={e => updateField('division', e.target.value)}
+                                        >
+                                            <option value="">Seleccionar...</option>
+                                            {systemLists.divisions.map((div: string) => (
+                                                <option key={div} value={div}>{div}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Pierna Hábil</label>

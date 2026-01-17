@@ -1,0 +1,79 @@
+﻿src/components/AgencyExpiryReportPreview.tsx(2,13): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/AvisosModule.tsx(4,5): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/AvisosModule.tsx(6,5): error TS6133: 'Clock' is declared but its value is never read.
+src/components/AvisosModule.tsx(12,5): error TS6133: 'X' is declared but its value is never read.
+src/components/AvisosModule.tsx(13,5): error TS6133: 'Filter' is declared but its value is never read.
+src/components/AvisosModule.tsx(17,5): error TS6133: 'UserMinus' is declared but its value is never read.
+src/components/AvisosModule.tsx(20,10): error TS6133: 'auth' is declared but its value is never read.
+src/components/AvisosModule.tsx(22,1): error TS6133: 'Player' is declared but its value is never read.
+src/components/EconomicReportPreview.tsx(203,67): error TS6133: 'entry' is declared but its value is never read.
+src/components/EventForm.tsx(2,13): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/EventForm.tsx(2,23): error TS6133: 'Clock' is declared but its value is never read.
+src/components/EventForm.tsx(2,38): error TS6133: 'Users' is declared but its value is never read.
+src/components/EventForm.tsx(3,64): error TS6133: 'where' is declared but its value is never read.
+src/components/NotificationCenter.tsx(8,5): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/components/PlayerForm.tsx(90,39): error TS2339: Property 'sportsBrand' does not exist on type 'never'.
+src/components/PlayerForm.tsx(91,46): error TS2339: Property 'sportsBrandEndDate' does not exist on type 'never'.
+src/components/PlayerForm.tsx(92,37): error TS2339: Property 'selection' does not exist on type 'never'.
+src/components/PlayerForm.tsx(93,43): error TS2339: Property 'monitoringAgent' does not exist on type 'never'.
+src/components/PlayerForm.tsx(94,35): error TS2339: Property 'seasons' does not exist on type 'never'.
+src/components/PlayerForm.tsx(95,36): error TS2339: Property 'salaries' does not exist on type 'never'.
+src/components/PlayerForm.tsx(96,41): error TS2339: Property 'contractYears' does not exist on type 'never'.
+src/components/PlayerForm.tsx(97,40): error TS2339: Property 'customFields' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(83,39): error TS2339: Property 'sportsBrand' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(84,46): error TS2339: Property 'sportsBrandEndDate' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(85,37): error TS2339: Property 'selection' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(86,43): error TS2339: Property 'monitoringAgent' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(87,35): error TS2339: Property 'seasons' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(88,36): error TS2339: Property 'salaries' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(89,41): error TS2339: Property 'contractYears' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(90,40): error TS2339: Property 'customFields' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(91,37): error TS2339: Property 'documents' does not exist on type 'never'.
+src/components/PlayerForm_backup.tsx(435,47): error TS2739: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; year: string; salary: number; clubCommissionPct: number; playerCommissionPct: number; }' is missing the following properties from type 'ContractYear': clubCommissionType, playerCommissionType, clubPayment, playerPayment, globalStatus
+src/components/PlayerModule.tsx(11,5): error TS6133: 'ArrowUp' is declared but its value is never read.
+src/components/PlayerModule.tsx(12,5): error TS6133: 'ArrowDown' is declared but its value is never read.
+src/components/PlayerModule.tsx(138,11): error TS6133: 'categories' is declared but its value is never read.
+src/components/PlayerModule.tsx(157,22): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(167,85): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(168,72): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(169,85): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(170,114): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(178,22): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(199,22): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(208,22): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(217,22): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/components/PlayerModule.tsx(305,49): error TS6133: 'index' is declared but its value is never read.
+src/components/PlayerModule.tsx(431,15): error TS6133: 'headers' is declared but its value is never read.
+src/components/PlayerModule.tsx(556,11): error TS6133: 'TableHeader' is declared but its value is never read.
+src/components/PlayerModule.tsx(718,33): error TS2322: Type 'string' is not assignable to type 'Category | undefined'.
+src/components/PlayerModule.tsx(850,101): error TS2345: Argument of type 'ChangeEvent<HTMLInputElement>' is not assignable to parameter of type 'MouseEvent<Element, MouseEvent>'.
+  Type 'ChangeEvent<HTMLInputElement>' is missing the following properties from type 'MouseEvent<Element, MouseEvent>': altKey, button, buttons, clientX, and 14 more.
+src/components/PlayerProfile360.tsx(4,5): error TS6133: 'Share2' is declared but its value is never read.
+src/components/PlayerProfile360.tsx(6,5): error TS6133: 'Shield' is declared but its value is never read.
+src/components/PlayerProfile360.tsx(7,5): error TS6133: 'Activity' is declared but its value is never read.
+src/components/PlayerProfile360.tsx(12,5): error TS6133: 'Flag' is declared but its value is never read.
+src/components/PortfolioPreview.tsx(2,13): error TS6133: 'TrendingUp' is declared but its value is never read.
+src/components/PortfolioPreview.tsx(2,50): error TS6133: 'ExternalLink' is declared but its value is never read.
+src/components/PortfolioPreview.tsx(3,28): error TS6133: 'Position' is declared but its value is never read.
+src/components/ProfileModule.tsx(5,10): error TS6133: 'auth' is declared but its value is never read.
+src/components/ReportsModule.tsx(5,5): error TS6133: 'Filter' is declared but its value is never read.
+src/components/ReportsModule.tsx(11,5): error TS6133: 'TrendingUp' is declared but its value is never read.
+src/components/ReportsModule.tsx(18,1): error TS6133: 'EconomicReportPreview' is declared but its value is never read.
+src/components/ScoutingForm.tsx(2,25): error TS6133: 'MapPin' is declared but its value is never read.
+src/components/ScoutingForm.tsx(3,18): error TS6133: 'Category' is declared but its value is never read.
+src/components/ScoutingForm.tsx(3,28): error TS6133: 'Position' is declared but its value is never read.
+src/components/ScoutingForm.tsx(3,38): error TS6133: 'PreferredFoot' is declared but its value is never read.
+src/components/ScoutingForm.tsx(3,53): error TS6133: 'ScoutingStatus' is declared but its value is never read.
+src/components/ScoutingForm.tsx(254,61): error TS6133: 'db' is declared but its value is never read.
+src/components/ScoutingForm.tsx(254,74): error TS6133: 'isDemoMode' is declared but its value is never read.
+src/components/ScoutingModule.tsx(3,5): error TS6133: 'MessageSquare' is declared but its value is never read.
+src/components/ScoutingPreview.tsx(2,13): error TS6133: 'TrendingUp' is declared but its value is never read.
+src/components/ScoutingPreview.tsx(2,40): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/ScoutingPreview.tsx(2,50): error TS6133: 'ExternalLink' is declared but its value is never read.
+src/components/ScoutingPreview.tsx(2,87): error TS6133: 'FileText' is declared but its value is never read.
+src/components/ScoutingPreview.tsx(3,28): error TS6133: 'Position' is declared but its value is never read.
+src/components/ScoutingPreview.tsx(250,49): error TS2367: This comparison appears to be unintentional because the types '"No contactado" | "Negociando" | undefined' and '"Rechazado"' have no overlap.
+src/components/UsersModule.tsx(2,20): error TS6133: 'Shield' is declared but its value is never read.
+src/components/UsersModule.tsx(5,20): error TS6133: 'UserData' is declared but its value is never read.
+src/hooks/usePlayers.ts(45,34): error TS2353: Object literal may only specify known properties, and 'team' does not exist in type 'PlayerSeason'.
+src/hooks/usePlayers.ts(90,34): error TS2353: Object literal may only specify known properties, and 'team' does not exist in type 'PlayerSeason'.
