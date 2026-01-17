@@ -25,8 +25,17 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<'Todos' | 'Completado' | 'Pendiente'>('Todos');
     const [selectedCategory, setSelectedCategory] = useState<string>(userSport === 'General' ? 'Todos' : userSport);
+    const [selectedAgent, setSelectedAgent] = useState<string>('Todos');
     const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
     const [showCopiedToast, setShowCopiedToast] = useState(false);
+
+    const allAgents = useMemo(() => {
+        const agents = new Set<string>();
+        allPlayers.forEach(p => {
+            if (p.monitoringAgent) agents.add(p.monitoringAgent);
+        });
+        return Array.from(agents).sort();
+    }, [allPlayers]);
 
     const filteredPlayers = useMemo(() => {
         return allPlayers.filter(player => {
@@ -43,9 +52,11 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
 
             const matchesCategory = selectedCategory === 'Todos' || player.category === selectedCategory;
 
-            return matchesSearch && matchesStatus && matchesCategory;
+            const matchesAgent = selectedAgent === 'Todos' || player.monitoringAgent === selectedAgent;
+
+            return matchesSearch && matchesStatus && matchesCategory && matchesAgent;
         });
-    }, [allPlayers, searchTerm, selectedStatus, selectedCategory]);
+    }, [allPlayers, searchTerm, selectedStatus, selectedCategory, selectedAgent]);
 
     const stats = useMemo(() => {
         const total = filteredPlayers.length;
@@ -163,6 +174,20 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
                         </select>
                         <Clock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
                     </div>
+
+                    <div className="relative">
+                        <select
+                            value={selectedAgent}
+                            onChange={(e) => setSelectedAgent(e.target.value)}
+                            className="h-14 bg-zinc-50 border-2 border-transparent rounded-2xl px-6 text-xs font-black uppercase tracking-widest outline-none focus:bg-white focus:border-proneo-green transition-all appearance-none cursor-pointer pr-12"
+                        >
+                            <option value="Todos">Todos los Agentes</option>
+                            {allAgents.map(agent => (
+                                <option key={agent} value={agent}>{agent}</option>
+                            ))}
+                        </select>
+                        <Users className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                    </div>
                 </div>
             </div>
 
@@ -185,6 +210,7 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
                                     </button>
                                 </th>
                                 <th className="px-4 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Jugador</th>
+                                <th className="px-4 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Agente</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Especialidad</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Estado</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Última Actualización</th>
@@ -223,6 +249,11 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
                                                     <p className="font-black text-zinc-900 uppercase italic tracking-tight">{player.name}</p>
                                                     <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{player.club}</p>
                                                 </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-6">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-bold text-zinc-700 uppercase">{player.monitoringAgent || '-'}</span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
