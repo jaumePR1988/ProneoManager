@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-    Camera,
     CheckCircle2,
-    XCircle,
     Search,
     Filter,
     Clock,
@@ -11,17 +9,17 @@ import {
     Image as ImageIcon,
     CheckSquare,
     Square,
-    Zap
+    Zap,
+    Users
 } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
-import { Player } from '../types/player';
 
 interface MultimediaModuleProps {
     userSport: string;
 }
 
 const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
-    const { players: allPlayers, systemLists } = usePlayers(false);
+    const { players: allPlayers } = usePlayers(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<'Todos' | 'Completado' | 'Pendiente'>('Todos');
     const [selectedCategory, setSelectedCategory] = useState<string>(userSport === 'General' ? 'Todos' : userSport);
