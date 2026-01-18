@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Save, User, Phone, Briefcase, Calendar, ChevronDown } from 'lucide-react';
 import { Player } from '../types/player';
 import { useUsers } from '../hooks/useUsers';
+import { usePlayers } from '../hooks/usePlayers';
 
 interface ScoutingFormProps {
     initialData?: Player;

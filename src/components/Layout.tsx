@@ -28,8 +28,8 @@ interface LayoutProps {
 }
 
 // Define visibility rules for Header elements
-const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'settings', 'calendar', 'scouting', 'multimedia'];
-const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'calendar', 'multimedia'];
+const HIDE_SEARCH_TABS = ['dashboard', 'reports', 'players', 'avisos', 'admin', 'users', 'settings', 'calendar', 'scouting', 'multimedia', 'comms'];
+const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'scouting', 'admin', 'users', 'calendar', 'multimedia', 'comms'];
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer, playerView, onPlayerViewChange }) => {
     const [pendingCount, setPendingCount] = React.useState(0);
