@@ -24,6 +24,11 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && isApproved();
     }
 
+    // Rules for Scouting Players
+    match /scouting_players/{playerId} {
+      allow read, write: if isAuthenticated() && isApproved();
+    }
+
     // Rules for Reports
     match /reports/{reportId} {
       allow read, write: if isAuthenticated() && isApproved();

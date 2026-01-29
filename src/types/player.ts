@@ -139,6 +139,14 @@ export interface Player {
 
     photoUrl?: string;
     photoUpdateDate?: string;
+
+    // Loan Information (Cesiones)
+    loanData?: {
+        isLoaned: boolean;
+        ownerClub: string; // "Club Propietario" (e.g. FC Barcelona)
+        loanEndDate?: string;
+    };
+
     photoStatus?: '✅' | '❌';
     documents: { id: string; name: string; url: string; type: 'contract' | 'other'; date: string }[];
 

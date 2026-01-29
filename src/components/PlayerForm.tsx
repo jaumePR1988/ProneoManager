@@ -105,6 +105,11 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
             sportsBrand2: '',
             sportsBrandEndDate2: '',
             division: '',
+            loanData: {
+                isLoaned: false,
+                ownerClub: '',
+                loanEndDate: ''
+            }
         } as Partial<Player>;
     });
 
@@ -574,14 +579,60 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                     Situación Contractual
                                 </h3>
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <Label>EQUIPO</Label>
-                                        <Select
-                                            name="club"
-                                            value={formData.club}
-                                            onChange={handleInputChange}
-                                            options={systemLists.clubs}
-                                        />
+                                    {/* Loan Section - Aligned */}
+                                    <div className="space-y-3 border-y border-dashed border-zinc-200 py-4 my-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label>¿CEDIDO?</Label>
+                                            <div className="flex items-center gap-3">
+                                                <span className={`text-xs font-bold ${formData.loanData?.isLoaned ? 'text-zinc-400' : 'text-zinc-800'}`}>NO</span>
+                                                <button
+                                                    onClick={() => {
+                                                        const isLoaned = !formData.loanData?.isLoaned;
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            loanData: {
+                                                                ...prev.loanData,
+                                                                isLoaned,
+                                                                ownerClub: isLoaned ? (prev.loanData?.ownerClub || '') : ''
+                                                            }
+                                                        }));
+                                                    }}
+                                                    className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ${formData.loanData?.isLoaned ? 'bg-[#b4c885]' : 'bg-zinc-200'}`}
+                                                >
+                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ${formData.loanData?.isLoaned ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                </button>
+                                                <span className={`text-xs font-bold ${formData.loanData?.isLoaned ? 'text-zinc-800' : 'text-zinc-400'}`}>SI</span>
+                                            </div>
+                                        </div>
+
+                                        {formData.loanData?.isLoaned && (
+                                            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                                                <Label>CLUB PROPIETARIO</Label>
+                                                <Select
+                                                    name="loanData.ownerClub"
+                                                    value={formData.loanData?.ownerClub}
+                                                    onChange={handleInputChange}
+                                                    options={systemLists.clubs}
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center gap-3">
+                                            <Label>{formData.loanData?.isLoaned ? 'CLUB DESTINO' : 'EQUIPO'}</Label>
+                                            <Select
+                                                name="club"
+                                                value={formData.club}
+                                                onChange={handleInputChange}
+                                                options={systemLists.clubs}
+                                            />
+                                        </div>
+
+                                        {formData.loanData?.isLoaned && (
+                                            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                                                <Label>FIN CESIÓN</Label>
+                                                <Input type="date" name="loanData.loanEndDate" value={formData.loanData?.loanEndDate} onChange={handleInputChange} />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Label>LIGA</Label>

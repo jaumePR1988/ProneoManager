@@ -29,7 +29,7 @@ const AdministrationModule: React.FC = () => {
         return player.contractYears.map(year => ({
             ...year,
             playerId: player.id,
-            playerName: player.name,
+            playerName: player.name || player.firstName || 'Sin Nombre',
             playerClub: player.club,
             category: player.category,
             payerType: player.proneo?.payerType || 'Club'

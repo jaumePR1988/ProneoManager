@@ -1,187 +1,107 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onUserCreated = exports.dailyAlertScanner = exports.onPushMessageCreated = void 0;
-const functions = require("firebase-functions");
+exports.uploadPlayerPhoto = exports.getPublicPlayerProfile = void 0;
+const https_1 = require("firebase-functions/v2/https");
+const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 admin.initializeApp();
+const db = admin.firestore();
+const storage = admin.storage();
 /**
- * Cloud Function que se dispara cuando se añade un documento a 'push_messages'.
- * Actúa como el "cartero" que lleva el mensaje del PC al móvil.
+ * Get Public Player Profile
+ * Returns only safe, public information about a player.
  */
-exports.onPushMessageCreated = functions.firestore
-    .document("push_messages/{messageId}")
-    .onCreate(async (snapshot, context) => {
-    const data = snapshot.data();
-    if (!data)
-        return;
-    const { title, message, target } = data;
+exports.getPublicPlayerProfile = (0, https_1.onCall)({ cors: true }, async (request) => {
+    const { playerId } = request.data;
+    if (!playerId) {
+        throw new https_1.HttpsError('invalid-argument', 'Player ID is required');
+    }
     try {
-        // 1. Buscar los tokens de los usuarios destinatarios
-        let userQuery = admin.firestore().collection("users");
-        // Si el target no es 'Todos', filtramos por la especialidad (sport)
-        if (target && target !== "Todos") {
-            userQuery = userQuery.where("sport", "==", target);
+        // Try regular players first
+        let playerDoc = await db.collection('players').doc(playerId).get();
+        let isScouting = false;
+        if (!playerDoc.exists) {
+            // Try scouting players
+            playerDoc = await db.collection('scouting_players').doc(playerId).get();
+            isScouting = true;
         }
-        const userSnapshot = await userQuery.get();
-        const tokens = [];
-        userSnapshot.forEach((doc) => {
-            const userData = doc.data();
-            if (userData.fcmToken) {
-                tokens.push(userData.fcmToken);
-            }
-        });
-        if (tokens.length === 0) {
-            console.log("No se encontraron dispositivos para el target:", target);
-            return;
+        if (!playerDoc.exists) {
+            throw new https_1.HttpsError('not-found', 'Player not found');
         }
-        // 2. Construir y enviar el mensaje multicast
-        const payload = {
-            tokens: [...new Set(tokens)],
-            notification: {
-                title: title,
-                body: message,
-            },
-            webpush: {
-                notification: {
-                    icon: "https://proneomanager.web.app/logo-192.png",
-                    badge: "https://proneomanager.web.app/logo-192.png",
-                    click_action: "https://proneomobile-app.web.app",
-                },
-            },
+        const data = playerDoc.data();
+        // RETURN ONLY PUBLIC DATA
+        // NO salaries, NO contracts, NO phone numbers
+        return {
+            id: playerDoc.id,
+            firstName: (data === null || data === void 0 ? void 0 : data.firstName) || '',
+            lastName1: (data === null || data === void 0 ? void 0 : data.lastName1) || '',
+            name: (data === null || data === void 0 ? void 0 : data.name) || (data === null || data === void 0 ? void 0 : data.firstName) || 'Jugador',
+            club: (data === null || data === void 0 ? void 0 : data.club) || '',
+            category: (data === null || data === void 0 ? void 0 : data.category) || '',
+            position: (data === null || data === void 0 ? void 0 : data.position) || '',
+            photoUrl: (data === null || data === void 0 ? void 0 : data.photoUrl) || null,
+            isScouting: isScouting
         };
-        const response = await admin.messaging().sendEachForMulticast(payload);
-        // 3. Registrar el resultado en el documento para trazabilidad
-        await snapshot.ref.update({
-            status: "sent",
-            sentAt: admin.firestore.FieldValue.serverTimestamp(),
-            successCount: response.successCount,
-            failureCount: response.failureCount,
-        });
-        console.log(`Mensaje enviado con éxito a ${response.successCount} dispositivos.`);
     }
     catch (error) {
-        console.error("Error enviating push notifications:", error);
-        await snapshot.ref.update({
-            status: "error",
-            error: error instanceof Error ? error.message : "Error desconocido",
-        });
+        logger.error("Error getting public profile", error);
+        throw new https_1.HttpsError('internal', 'Unable to retrieve player profile');
     }
 });
 /**
- * Escáner diario que se ejecuta a las 10:00 AM.
- * Busca cumpleaños y vencimientos de contrato para enviar avisos push automáticos.
+ * Upload Player Photo
+ * Receives Base64 image, saves to storage, and updates Firestore.
  */
-exports.dailyAlertScanner = functions.pubsub
-    .schedule("0 10 * * *")
-    .timeZone("Europe/Madrid")
-    .onRun(async (context) => {
-    const today = new Date();
-    const playersSnapshot = await admin.firestore().collection("players").get();
-    const alertsToSend = [];
-    playersSnapshot.forEach((doc) => {
-        var _a;
-        const p = doc.data();
-        const category = p.category || "Fútbol";
-        // 1. Verificar Cumpleaños
-        if (p.birthDate) {
-            const [d, m] = p.birthDate.split("/");
-            if (Number(d) === today.getDate() && Number(m) === (today.getMonth() + 1)) {
-                alertsToSend.push({
-                    target: category,
-                    title: "🎂 ¡Cumpleaños Hoy!",
-                    message: `${p.name} cumple años hoy. ¡No olvides felicitarle!`
-                });
-            }
+exports.uploadPlayerPhoto = (0, https_1.onCall)({ cors: true }, async (request) => {
+    const { playerId, photoBase64, mimeType } = request.data; // e.g. "image/jpeg"
+    if (!playerId || !photoBase64 || !mimeType) {
+        throw new https_1.HttpsError('invalid-argument', 'Missing parameters');
+    }
+    // Validate MIME type
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+        throw new https_1.HttpsError('invalid-argument', 'Invalid image format. Use JPG, PNG or WebP.');
+    }
+    try {
+        const bucket = storage.bucket();
+        const buffer = Buffer.from(photoBase64, 'base64');
+        // Check size (approximate from buffer) - Limit to ~5MB
+        if (buffer.length > 5 * 1024 * 1024) {
+            throw new https_1.HttpsError('resource-exhausted', 'Image too large (Max 5MB)');
         }
-        // 2. Verificar Vencimiento de Agencia (Proneo)
-        if ((_a = p.proneo) === null || _a === void 0 ? void 0 : _a.agencyEndDate) {
-            const [d, m, y] = p.proneo.agencyEndDate.split("/");
-            const endDate = new Date(Number(y), Number(m) - 1, Number(d));
-            const diffTime = endDate.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            // Avisar a los 180, 90, 30 y 7 días
-            const thresholds = [180, 90, 30, 7];
-            if (thresholds.includes(diffDays)) {
-                let timeLabel = `${diffDays} días`;
-                if (diffDays === 180)
-                    timeLabel = "6 meses";
-                if (diffDays === 90)
-                    timeLabel = "3 meses";
-                if (diffDays === 30)
-                    timeLabel = "1 mes";
-                if (diffDays === 7)
-                    timeLabel = "1 semana";
-                alertsToSend.push({
-                    target: category,
-                    title: "⚠️ Vencimiento Próximo",
-                    message: `El contrato de ${p.name} vence en ${timeLabel}.`
-                });
-            }
+        // Determine collection
+        let collectionName = 'players';
+        let playerRef = db.collection('players').doc(playerId);
+        let playerSnap = await playerRef.get();
+        if (!playerSnap.exists) {
+            collectionName = 'scouting_players';
+            playerRef = db.collection('scouting_players').doc(playerId);
+            playerSnap = await playerRef.get();
         }
-    });
-    // 3. Enviar las notificaciones acumuladas
-    for (const alert of alertsToSend) {
-        const userSnapshot = await admin.firestore()
-            .collection("users")
-            .where("sport", "==", alert.target)
-            .get();
-        const tokens = [];
-        userSnapshot.forEach(uDoc => {
-            const userData = uDoc.data();
-            if (userData.fcmToken)
-                tokens.push(userData.fcmToken);
+        if (!playerSnap.exists) {
+            throw new https_1.HttpsError('not-found', 'Player not found');
+        }
+        // 1. Upload to Storage
+        const filePath = `${collectionName}/${playerId}/profile_photo_${Date.now()}.${mimeType.split('/')[1]}`;
+        const file = bucket.file(filePath);
+        await file.save(buffer, {
+            metadata: { contentType: mimeType },
+            public: true // Optional: Make the file public or use signed URL. Let's make it public for simplicity in display.
         });
-        if (tokens.length > 0) {
-            const payload = {
-                tokens: [...new Set(tokens)],
-                notification: {
-                    title: alert.title,
-                    body: alert.message,
-                },
-                webpush: {
-                    notification: {
-                        icon: "https://proneomanager.web.app/logo-192.png",
-                        badge: "https://proneomanager.web.app/logo-192.png",
-                        click_action: "https://proneomobile-app.web.app",
-                    },
-                },
-            };
-            await admin.messaging().sendEachForMulticast(payload);
-        }
+        // Get Public URL
+        // Method A: publicUrl() method (requires making it public)
+        const publicUrl = file.publicUrl();
+        // 2. Update Firestore
+        await playerRef.update({
+            photoUrl: publicUrl,
+            photoUpdateDate: new Date().toISOString(),
+            photoStatus: '✅',
+            updatedAt: Date.now()
+        });
+        return { success: true, url: publicUrl };
     }
-    console.log(`Escaneo diario completado. Generadas ${alertsToSend.length} alertas.`);
-    return null;
-});
-/**
- * Cloud Function que notifica a los administradores cuando hay un nuevo registro.
- */
-exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
-    const adminSnapshot = await admin.firestore()
-        .collection("users")
-        .where("role", "in", ["admin", "director"])
-        .get();
-    const tokens = [];
-    adminSnapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.fcmToken)
-            tokens.push(data.fcmToken);
-    });
-    if (tokens.length > 0) {
-        const payload = {
-            tokens: [...new Set(tokens)],
-            notification: {
-                title: "👤 Nueva Solicitud de Acceso",
-                body: `${user.displayName || user.email} se ha registrado y espera aprobación.`,
-            },
-            webpush: {
-                notification: {
-                    icon: "https://proneomanager.web.app/logo-192.png",
-                    click_action: "https://proneomobile-app.web.app",
-                }
-            }
-        };
-        return admin.messaging().sendEachForMulticast(payload);
+    catch (error) {
+        logger.error("Error uploading photo", error);
+        throw new https_1.HttpsError('internal', 'Upload failed');
     }
-    return null;
 });
 //# sourceMappingURL=index.js.map

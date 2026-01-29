@@ -363,6 +363,7 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                                                     'nationality', 'nationality2', 'contract.endDate', 'contract.optional', 'contract.optionalNoticeDate',
                                                     'contract.conditions', 'proneo.agencyEndDate', 'proneoStatus', 'sportsBrand',
                                                     'sportsBrandEndDate', 'sportsBrand2', 'sportsBrandEndDate2', 'monitoringAgent', 'monitoringAgent2',
+                                                    'loanData.ownerClub', 'loanData.isLoaned',
                                                     ...schema.map(f => `custom_${f.id}`)
                                                 ];
                                                 updateSystemLists({ ...systemLists, reducedColumns: allIds });
@@ -397,6 +398,8 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                                         { id: 'sportsBrandEndDate2', label: 'Fin Marca 2' },
                                         { id: 'monitoringAgent', label: 'Seguimiento' },
                                         { id: 'monitoringAgent2', label: 'Seguimiento 2' },
+                                        { id: 'loanData.ownerClub', label: 'Club Propietario (Cesión)' },
+                                        { id: 'loanData.isLoaned', label: '¿Cedido?' },
                                         ...schema.map(f => ({ id: `custom_${f.id}`, label: f.label }))
                                     ].map(col => {
                                         const isSelected = systemLists.reducedColumns?.includes(col.id);

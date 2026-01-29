@@ -4,11 +4,19 @@ import { messaging, db, auth } from '../firebase/config';
 import { doc, updateDoc } from 'firebase/firestore';
 
 export const useNotifications = () => {
-    const [permission, setPermission] = useState<NotificationPermission>(Notification.permission);
+    const [permission, setPermission] = useState<NotificationPermission>(
+        typeof Notification !== 'undefined' ? Notification.permission : 'default'
+    );
     const [token, setToken] = useState<string | null>(null);
 
     useEffect(() => {
         const requestPermission = async () => {
+            // Safe guard for browsers without Notification support
+            if (typeof Notification === 'undefined') {
+                console.warn("Notifications not supported in this browser");
+                return;
+            }
+
             try {
                 const status = await Notification.requestPermission();
                 setPermission(status);

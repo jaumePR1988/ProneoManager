@@ -59,7 +59,7 @@ const BillingTable: React.FC<BillingTableProps> = ({ rows, title, isCurrent, onU
                             <td className="px-6 py-4 border-b border-zinc-100 bg-inherit">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 font-black text-xs">
-                                        {row.playerName.charAt(0)}
+                                        {row.playerName?.charAt(0) || '?'}
                                     </div>
                                     <div>
                                         <p className="font-bold text-sm text-zinc-900">{row.playerName}</p>

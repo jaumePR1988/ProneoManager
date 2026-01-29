@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, Upload, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { db, storage } from '../firebase/config';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Player } from '../types/player';
+import { functions } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
 
 interface PublicPhotoUploadProps {
     playerId: string;
 }
 
+interface PublicProfile {
+    id: string;
+    firstName: string;
+    lastName1: string;
+    name: string;
+    club: string;
+    category: string;
+    photoUrl: string | null;
+}
+
 const PublicPhotoUpload: React.FC<PublicPhotoUploadProps> = ({ playerId }) => {
-    const [player, setPlayer] = useState<Player | null>(null);
+    const [player, setPlayer] = useState<PublicProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -21,26 +29,13 @@ const PublicPhotoUpload: React.FC<PublicPhotoUploadProps> = ({ playerId }) => {
     useEffect(() => {
         const fetchPlayer = async () => {
             try {
-                // In a real production app, we'd use a server-side hash or more complex ID 
-                // for security, but for this implementation we use the direct ID.
-                const playerRef = doc(db, 'players', playerId);
-                const playerSnap = await getDoc(playerRef);
-
-                if (playerSnap.exists()) {
-                    setPlayer({ id: playerSnap.id, ...playerSnap.data() } as Player);
-                } else {
-                    // Try scouting players
-                    const scoutingRef = doc(db, 'scouting_players', playerId);
-                    const scoutingSnap = await getDoc(scoutingRef);
-                    if (scoutingSnap.exists()) {
-                        setPlayer({ id: scoutingSnap.id, ...scoutingSnap.data() } as Player);
-                    } else {
-                        setError('No se pudo encontrar el perfil del jugador.');
-                    }
-                }
+                const getPublicProfile = httpsCallable(functions, 'getPublicPlayerProfile');
+                const result = await getPublicProfile({ playerId });
+                const data = result.data as PublicProfile;
+                setPlayer(data);
             } catch (err) {
-                console.error(err);
-                setError('Error de conexión al cargar el perfil.');
+                console.error("Error fetching profile:", err);
+                setError('No se pudo encontrar el perfil del jugador o el enlace ha caducado.');
             } finally {
                 setLoading(false);
             }
@@ -66,29 +61,23 @@ const PublicPhotoUpload: React.FC<PublicPhotoUploadProps> = ({ playerId }) => {
     };
 
     const handleUpload = async () => {
-        if (!selectedFile || !player) return;
+        if (!selectedFile || !player || !preview) return;
 
         setUploading(true);
         try {
-            // 1. Upload to Storage
-            const storagePath = `players/${player.id}/profile_photo_${Date.now()}.jpg`;
-            const storageRef = ref(storage, storagePath);
-            await uploadBytes(storageRef, selectedFile);
-            const downloadUrl = await getDownloadURL(storageRef);
+            // Split base64 to get just the data
+            const base64Data = preview.split(',')[1];
 
-            // 2. Update Firestore
-            const collection = player.isScouting ? 'scouting_players' : 'players';
-            const playerRef = doc(db, collection, player.id);
-            await updateDoc(playerRef, {
-                photoUrl: downloadUrl,
-                photoUpdateDate: new Date().toISOString(),
-                photoStatus: '✅',
-                updatedAt: Date.now()
+            const uploadPhoto = httpsCallable(functions, 'uploadPlayerPhoto');
+            await uploadPhoto({
+                playerId: player.id,
+                photoBase64: base64Data,
+                mimeType: selectedFile.type
             });
 
             setSuccess(true);
         } catch (err) {
-            console.error(err);
+            console.error("Error uploading:", err);
             alert('Error al subir la imagen. Por favor, inténtalo de nuevo.');
         } finally {
             setUploading(false);
@@ -156,7 +145,7 @@ const PublicPhotoUpload: React.FC<PublicPhotoUploadProps> = ({ playerId }) => {
 
             <div className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-white/5 rounded-[40px] p-10 relative z-10 shadow-2xl">
                 <div className="text-center mb-8">
-                    <p className="text-2xl font-black text-proneo-green uppercase italic tracking-tight mb-1">¡Hola, {player?.firstName}!</p>
+                    <p className="text-2xl font-black text-proneo-green uppercase italic tracking-tight mb-1">¡Hola, {player?.firstName || player?.name}!</p>
                     <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">Actualiza tu ficha</h2>
                     <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-2">{player?.club} • {player?.category}</p>
                 </div>

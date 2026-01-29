@@ -184,6 +184,25 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
         { id: 'monitoringAgent', label: 'Seguimiento', className: "font-black text-[#b4c885]" },
         { id: 'monitoringAgent2', label: 'Seguimiento 2', className: "font-bold text-zinc-400" },
         {
+            id: 'loanData.ownerClub',
+            label: 'Club Prop.',
+            className: "font-bold text-indigo-600 bg-indigo-50",
+            render: (p: Player) => p.loanData?.ownerClub || '-'
+        },
+        {
+            id: 'loanData.isLoaned',
+            label: 'Cedido',
+            className: "text-center",
+            render: (p: Player) => (
+                <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider ${p.loanData?.isLoaned
+                    ? 'bg-indigo-100 text-indigo-600 border border-indigo-200'
+                    : 'text-zinc-300'
+                    }`}>
+                    {p.loanData?.isLoaned ? 'SÍ' : '-'}
+                </span>
+            )
+        },
+        {
             id: 'salary',
             label: 'Salario',
             className: "text-right font-mono",
@@ -450,6 +469,9 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                     else if (id === 'optional') val = p.contract?.optional || '';
                     else if (id === 'optionalNoticeDate') val = p.contract?.optionalNoticeDate || '';
                     else if (id === 'conditions') val = p.contract?.conditions || '';
+                    else if (id === 'loanData.ownerClub') val = p.loanData?.ownerClub || '';
+                    else if (id === 'loanData.isLoaned') val = p.loanData?.isLoaned ? 'SÍ' : 'NO';
+                    else if (id === 'conditions') val = p.contract?.conditions || '';
                     // Default fallback
                 }
                 row[col.label] = val;
@@ -501,6 +523,8 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                 if (id === 'optional') val = p.contract?.optional;
                 if (id === 'optionalNoticeDate') val = p.contract?.optionalNoticeDate;
                 if (id === 'conditions') val = p.contract?.conditions;
+                if (id === 'loanData.ownerClub') val = p.loanData?.ownerClub || '-';
+                if (id === 'loanData.isLoaned') val = p.loanData?.isLoaned ? 'SÍ' : '-';
                 if (id === 'proneoStatus') {
                     const now = new Date();
                     const endDate = p.proneo?.agencyEndDate ? new Date(p.proneo.agencyEndDate) : null;

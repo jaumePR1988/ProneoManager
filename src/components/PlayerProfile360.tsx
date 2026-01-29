@@ -11,9 +11,11 @@ import {
     Trash2,
     Banknote,
     Copy,
-    Share2
+    Share2,
+    Download
 } from 'lucide-react';
 import { Player, PlayerSeason } from '../types/player';
+import { getCountryFlagUrl } from '../utils/countries';
 
 interface PlayerProfile360Props {
     player: Player;
@@ -186,8 +188,20 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                             <img
                                 src={player.photoUrl || 'https://i.pravatar.cc/300'}
                                 alt={player.lastName1}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                             />
+                            {/* Download Action */}
+                            <a
+                                href={player.photoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute bottom-2 right-2 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-all z-20"
+                                title="Descargar Foto Original"
+                                download={`foto_${player.lastName1}.jpg`}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Download className="w-4 h-4" />
+                            </a>
                         </div>
 
                         <div className="mt-8 text-center space-y-2">
@@ -210,25 +224,15 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                                 {/* Flag Component(s) */}
                                 <div className="flex flex-wrap justify-center gap-2">
                                     {[player.nationality, player.nationality2].filter(Boolean).map((nat, index) => {
-                                        const countryCode = !nat ? 'es' :
-                                            nat.toLowerCase() === 'españa' ? 'es' :
-                                                nat.toLowerCase() === 'francia' ? 'fr' :
-                                                    nat.toLowerCase() === 'argentina' ? 'ar' :
-                                                        nat.toLowerCase() === 'brasil' ? 'br' :
-                                                            nat.toLowerCase() === 'inglaterra' ? 'gb-eng' :
-                                                                nat.toLowerCase() === 'alemania' ? 'de' :
-                                                                    nat.toLowerCase() === 'italia' ? 'it' :
-                                                                        nat.toLowerCase() === 'portugal' ? 'pt' :
-                                                                            nat.toLowerCase() === 'uruguay' ? 'uy' :
-                                                                                nat.toLowerCase() === 'chile' ? 'cl' : 'es';
+                                        if (!nat) return null;
                                         return (
                                             <div key={index} className="flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm shadow-sm transition-all hover:bg-white/30">
                                                 <img
-                                                    src={`https://flagcdn.com/24x18/${countryCode}.png`}
+                                                    src={getCountryFlagUrl(nat)}
                                                     alt={nat}
-                                                    className="h-4 object-contain"
+                                                    className="h-4 object-contain shadow-sm rounded-sm"
                                                     onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = 'https://flagcdn.com/24x18/es.png';
+                                                        (e.target as HTMLImageElement).style.display = 'none'; // Hide if flag not found rather than showing wrong one
                                                     }}
                                                 />
                                                 <span className="text-xs font-black uppercase tracking-widest text-zinc-900">
