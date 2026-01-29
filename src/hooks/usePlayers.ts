@@ -16,7 +16,7 @@ import { Player, DynamicField } from '../types/player';
 // Helper to sort system lists alphabetically
 const sortSystemLists = (lists: any) => {
     const sorted = { ...lists };
-    const keysToSort = ['leagues', 'clubs', 'positions', 'brands', 'agents', 'selections', 'feet', 'divisions'];
+    const keysToSort = ['leagues', 'clubs', 'clubs_futsal', 'clubs_women', 'positions', 'brands', 'agents', 'selections', 'feet', 'divisions'];
 
     keysToSort.forEach(key => {
         if (Array.isArray(sorted[key])) {
@@ -115,9 +115,12 @@ const MOCK_PLAYERS_INITIAL: Player[] = [
 // Module-level state for Demo Mode persistence
 let SESSION_PLAYERS = [...MOCK_PLAYERS_INITIAL];
 let SESSION_SCHEMA: DynamicField[] = [];
+
 let SESSION_SYSTEM_LISTS = {
     leagues: ['España', 'Italia', 'Bélgica', 'Polonia', 'Dubai', 'Brasil'],
-    clubs: ['FC Barcelona', 'ElPozo Murcia', 'Inter Movistar', 'Palma Futsal', 'Jimbee Cartagena', 'Manzanares FS', 'Jaén Paraíso', 'Industrias Santa Coloma'],
+    clubs: ['FC Barcelona', 'Real Madrid', 'Atlético de Madrid', 'Valencia CF', 'Sevilla FC', 'Real Betis'],
+    clubs_futsal: ['FC Barcelona FS', 'ElPozo Murcia', 'Inter Movistar', 'Palma Futsal', 'Jimbee Cartagena', 'Manzanares FS', 'Jaén Paraíso', 'Industrias Santa Coloma'],
+    clubs_women: ['FC Barcelona Femení', 'Real Madrid Femenino', 'Atlético Madrid Femenino'],
     positions: ['Portero', 'Ala', 'Cierre', 'Pivot', 'Ala/Cierre', 'Ala/Pivot', 'Entrenador', 'Defensa', 'Mediocentro', 'Extremo', 'Delantero'],
     brands: ['Joma', 'Adidas', 'Nike', 'Munich', 'Senda', 'Luanvi'],
     agents: ['Jaume', 'Joan Francesc', 'Albert Redondo', 'Sistema AI'],
@@ -131,7 +134,7 @@ export const usePlayers = (isScouting: boolean = false) => {
     const [players, setPlayers] = useState<Player[]>(isDemoMode ? SESSION_PLAYERS.filter(p => p.isScouting === isScouting) : []);
     const [schema, setSchema] = useState<DynamicField[]>(isDemoMode ? SESSION_SCHEMA : []);
     const [systemLists, setSystemLists] = useState(isDemoMode ? SESSION_SYSTEM_LISTS : {
-        leagues: [], clubs: [], positions: [], brands: [], agents: [], selections: [], feet: [], divisions: [], reducedColumns: []
+        leagues: [], clubs: [], clubs_futsal: [], clubs_women: [], positions: [], brands: [], agents: [], selections: [], feet: [], divisions: [], reducedColumns: []
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);

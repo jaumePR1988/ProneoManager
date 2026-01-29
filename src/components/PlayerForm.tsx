@@ -469,12 +469,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                 </h3>
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-3">
-                                        <Label>DEPORTE</Label>
+                                        <Label>CATEGORÍA</Label>
                                         <Select
                                             name="category"
                                             value={formData.category}
                                             onChange={handleInputChange}
-                                            options={['Fútbol', 'F. Sala', 'Femenino', 'Entrenadores']}
+                                            options={['Fútbol', 'F. Sala', 'Femenino']}
                                         />
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -612,7 +612,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                                     name="loanData.ownerClub"
                                                     value={formData.loanData?.ownerClub}
                                                     onChange={handleInputChange}
-                                                    options={systemLists.clubs}
+                                                    options={formData.category === 'F. Sala' ? ((systemLists as any).clubs_futsal || []) : systemLists.clubs}
                                                 />
                                             </div>
                                         )}
@@ -623,7 +623,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                                 name="club"
                                                 value={formData.club}
                                                 onChange={handleInputChange}
-                                                options={systemLists.clubs}
+                                                options={formData.category === 'F. Sala' ? ((systemLists as any).clubs_futsal || []) : systemLists.clubs}
                                             />
                                         </div>
 

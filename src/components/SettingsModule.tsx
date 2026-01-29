@@ -36,6 +36,8 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
     const [localLists, setLocalLists] = useState({
         leagues: '',
         clubs: '',
+        clubs_futsal: '',
+        clubs_women: '',
         positions: '',
         brands: '',
         agents: '',
@@ -49,6 +51,8 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
         setLocalLists({
             leagues: systemLists.leagues.join(', '),
             clubs: systemLists.clubs.join(', '),
+            clubs_futsal: (systemLists as any).clubs_futsal?.join(', ') || '',
+            clubs_women: (systemLists as any).clubs_women?.join(', ') || '',
             positions: systemLists.positions.join(', '),
             brands: systemLists.brands.join(', '),
             agents: systemLists.agents.join(', '),
@@ -63,6 +67,8 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
             ...systemLists,
             leagues: localLists.leagues.split(',').map(s => s.trim()).filter(s => s),
             clubs: localLists.clubs.split(',').map(s => s.trim()).filter(s => s),
+            clubs_futsal: localLists.clubs_futsal.split(',').map(s => s.trim()).filter(s => s),
+            clubs_women: localLists.clubs_women.split(',').map(s => s.trim()).filter(s => s),
             positions: localLists.positions.split(',').map(s => s.trim()).filter(s => s),
             brands: localLists.brands.split(',').map(s => s.trim()).filter(s => s),
             agents: localLists.agents.split(',').map(s => s.trim()).filter(s => s),
@@ -310,7 +316,9 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ user }) => {
                             <div className="p-8 space-y-8">
                                 {[
                                     { key: 'leagues' as const, label: 'Ligas', icon: Trophy },
-                                    { key: 'clubs' as const, label: 'Equipos/Clubes', icon: Shield },
+                                    { key: 'clubs' as const, label: 'Equipos (Genérico)', icon: Shield },
+                                    { key: 'clubs_futsal' as const, label: 'Equipos (Futsal)', icon: Shield },
+                                    { key: 'clubs_women' as const, label: 'Equipos (Femenino)', icon: Shield },
                                     { key: 'positions' as const, label: 'Posiciones', icon: UserCircle },
                                     { key: 'brands' as const, label: 'Marcas Deportivas', icon: Tag },
                                     { key: 'agents' as const, label: 'Agentes / Seguimiento', icon: UsersIcon },
