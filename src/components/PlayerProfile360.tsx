@@ -263,6 +263,9 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                                 className="bg-transparent text-zinc-900 font-black text-sm uppercase outline-none w-full cursor-pointer appearance-none"
                             >
                                 <option className="text-zinc-900 bg-[#b4c885]" value="No internacional">No Int.</option>
+                                <option className="text-zinc-900 bg-[#b4c885]" value="Sub-15">Sub-15</option>
+                                <option className="text-zinc-900 bg-[#b4c885]" value="Sub-16">Sub-16</option>
+                                <option className="text-zinc-900 bg-[#b4c885]" value="Sub-17">Sub-17</option>
                                 <option className="text-zinc-900 bg-[#b4c885]" value="Sub-18">Sub-18</option>
                                 <option className="text-zinc-900 bg-[#b4c885]" value="Sub-19">Sub-19</option>
                                 <option className="text-zinc-900 bg-[#b4c885]" value="Sub-21">Sub-21</option>
