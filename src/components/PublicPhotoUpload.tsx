@@ -44,19 +44,35 @@ const PublicPhotoUpload: React.FC<PublicPhotoUploadProps> = ({ playerId }) => {
         fetchPlayer();
     }, [playerId]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                alert('La imagen es demasiado grande (máximo 5MB)');
+            // Allow larger files (e.g. 20MB) because we will compress them
+            if (file.size > 20 * 1024 * 1024) {
+                alert('La imagen es demasiado grande (máximo 20MB)');
                 return;
             }
-            setSelectedFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+
+            try {
+                // Compress Client-Side
+                const { compressImage } = await import('../utils/imageCompression');
+                const compressedBlob = await compressImage(file, 1000, 0.8);
+
+                // Create a new File from the compressed blob
+                const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+
+                setSelectedFile(compressedFile);
+
+                // Create preview from compressed blob
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setPreview(reader.result as string);
+                };
+                reader.readAsDataURL(compressedBlob);
+            } catch (err) {
+                console.error("Compression specific error:", err);
+                alert("Error al procesar la imagen.");
+            }
         }
     };
 

@@ -375,32 +375,37 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                                         const file = e.target.files?.[0];
                                                         if (!file) return;
 
-                                                        // 1. Create local preview immediately (Base64)
-                                                        const reader = new FileReader();
-                                                        reader.onloadend = () => {
-                                                            const base64String = reader.result as string;
-                                                            // Set immediately so user sees it locally
-                                                            handleInputChange({ target: { name: 'photoUrl', value: base64String } } as any);
-                                                        };
-                                                        reader.readAsDataURL(file);
+                                                        try {
+                                                            // 0. Compress Image Client-Side
+                                                            // We dynamically import to avoid circular dep issues if any, keeping it clean
+                                                            const { compressImage } = await import('../utils/imageCompression');
+                                                            const compressedBlob = await compressImage(file, 800, 0.8);
+                                                            const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
 
-                                                        // 2. Try Upload to Firebase (if not demo mode)
-                                                        // We import isDemoMode dynamically or check config
-                                                        const { isDemoMode } = await import('../firebase/config');
+                                                            // 1. Create local preview immediately (Base64) from compressed version
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                const base64String = reader.result as string;
+                                                                handleInputChange({ target: { name: 'photoUrl', value: base64String } } as any);
+                                                            };
+                                                            reader.readAsDataURL(compressedBlob);
 
-                                                        if (!isDemoMode) {
-                                                            try {
+                                                            // 2. Try Upload to Firebase (if not demo mode)
+                                                            const { isDemoMode } = await import('../firebase/config');
+
+                                                            if (!isDemoMode) {
                                                                 const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
                                                                 const { storage } = await import('../firebase/config');
                                                                 const storageRef = ref(storage, `players/${crypto.randomUUID()}_${file.name}`);
-                                                                const snapshot = await uploadBytes(storageRef, file);
+
+                                                                // Upload the COMPRESSED file, not the original
+                                                                const snapshot = await uploadBytes(storageRef, compressedFile);
                                                                 const url = await getDownloadURL(snapshot.ref);
-                                                                // If upload succeeds, overwrite the base64 with the real URL
+
                                                                 handleInputChange({ target: { name: 'photoUrl', value: url } } as any);
-                                                            } catch (error) {
-                                                                console.warn("Upload failed (using local preview):", error);
-                                                                // Keeps the base64 version which is already set
                                                             }
+                                                        } catch (error) {
+                                                            console.warn("Upload/Compression failed:", error);
                                                         }
                                                     }}
                                                 />
