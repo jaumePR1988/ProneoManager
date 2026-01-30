@@ -13,6 +13,7 @@ import {
     Users
 } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
+import MediaManagerModal from './MediaManagerModal';
 
 interface MultimediaModuleProps {
     userSport: string;
@@ -26,6 +27,9 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
     const [selectedAgent, setSelectedAgent] = useState<string>('Todos');
     const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
     const [showCopiedToast, setShowCopiedToast] = useState(false);
+
+    // Media Manager Modal State
+    const [mediaModalPlayer, setMediaModalPlayer] = useState<{ id: string, name: string } | null>(null);
 
     const allAgents = useMemo(() => {
         const agents = new Set<string>();
@@ -69,7 +73,7 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
 
     const copyUpdateLink = (playerId: string) => {
         const baseUrl = window.location.origin;
-        const link = `${baseUrl}/update/${playerId}`;
+        const link = `${baseUrl}/portal/${playerId}`;
         navigator.clipboard.writeText(link);
         setShowCopiedToast(true);
         setTimeout(() => setShowCopiedToast(false), 2000);
@@ -79,7 +83,7 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
         const baseUrl = window.location.origin;
         const links = filteredPlayers
             .filter(p => selectedPlayerIds.includes(p.id))
-            .map(p => `${p.name}: ${baseUrl}/update/${p.id}`)
+            .map(p => `${p.name}: ${baseUrl}/portal/${p.id}`)
             .join('\n');
 
         navigator.clipboard.writeText(links);
@@ -291,10 +295,18 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
                                                 >
                                                     <Copy className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
                                                 </button>
+                                                {/* Gallery Button - Opens Media Manager */}
                                                 <button
-                                                    onClick={() => window.open(`/update/${player.id}`, '_blank')}
+                                                    onClick={() => setMediaModalPlayer({ id: player.id, name: player.name })}
+                                                    className="p-3 bg-zinc-50 text-zinc-400 hover:bg-purple-500/10 hover:text-purple-500 rounded-xl transition-all group/btn"
+                                                    title="Gestión Multimedia (Galería)"
+                                                >
+                                                    <ImageIcon className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                                                </button>
+                                                <button
+                                                    onClick={() => window.open(`/portal/${player.id}`, '_blank')}
                                                     className="p-3 bg-zinc-50 text-zinc-400 hover:bg-blue-500/10 hover:text-blue-500 rounded-xl transition-all group/btn"
-                                                    title="Abrir vista previa"
+                                                    title="Abrir vista previa (Portal)"
                                                 >
                                                     <ExternalLink className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
                                                 </button>
@@ -369,6 +381,15 @@ const MultimediaModule: React.FC<MultimediaModuleProps> = ({ userSport }) => {
                     </div>
                 )}
             </div>
+
+            {/* Render Media Manager Modal */}
+            {mediaModalPlayer && (
+                <MediaManagerModal
+                    playerId={mediaModalPlayer.id}
+                    playerName={mediaModalPlayer.name}
+                    onClose={() => setMediaModalPlayer(null)}
+                />
+            )}
         </div>
     );
 };

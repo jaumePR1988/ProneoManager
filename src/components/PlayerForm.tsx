@@ -26,6 +26,7 @@ interface PlayerFormProps {
     onDelete?: (id: string) => Promise<void>;
     isScoutingInitial?: boolean;
     initialData?: Player | null;
+    userRole?: string;
 }
 
 const Label = ({ children }: { children: React.ReactNode }) => (
@@ -55,7 +56,8 @@ const Select = ({ name, value, onChange, options }: { name: string, value: any, 
     </div>
 );
 
-const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isScoutingInitial = false, initialData = null }) => {
+const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isScoutingInitial = false, initialData = null, userRole = 'admin' }) => {
+    const isCommunication = userRole === 'comunicacion';
     const { schema, systemLists } = usePlayers(false);
     const [formData, setFormData] = useState<Partial<Player>>(() => {
         if (initialData) {
@@ -729,190 +731,192 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                         </div>
 
                         {/* Financial Details Section - Compact */}
-                        <div className="mt-4 pt-4 border-t border-zinc-100">
-                            <h3 className="text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-6 text-center">Detalles Económicos del Contrato</h3>
+                        {!isCommunication && (
+                            <div className="mt-4 pt-4 border-t border-zinc-100">
+                                <h3 className="text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-6 text-center">Detalles Económicos del Contrato</h3>
 
-                            <div className="space-y-4">
-                                {(formData.contractYears || []).map((year, index) => (
-                                    <div key={year.id} className="flex flex-col md:flex-row items-end gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-100 relative group">
-                                        <button
-                                            onClick={() => {
-                                                const newYears = formData.contractYears?.filter(y => y.id !== year.id);
-                                                setFormData(prev => ({ ...prev, contractYears: newYears }));
-                                            }}
-                                            className="absolute -right-2 -top-2 w-6 h-6 bg-red-50 text-red-400 hover:bg-red-100 rounded-full flex items-center justify-center transition-colors shadow-sm opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash className="w-3 h-3" />
-                                        </button>
-
-                                        <div className="flex-1 space-y-1">
-                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Temporada</span>
-                                            <Input
-                                                placeholder="Ej: 2024/25"
-                                                value={year.year}
-                                                onChange={(e) => {
-                                                    const newYears = [...(formData.contractYears || [])];
-                                                    newYears[index] = { ...newYears[index], year: e.target.value };
+                                <div className="space-y-4">
+                                    {(formData.contractYears || []).map((year, index) => (
+                                        <div key={year.id} className="flex flex-col md:flex-row items-end gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-100 relative group">
+                                            <button
+                                                onClick={() => {
+                                                    const newYears = formData.contractYears?.filter(y => y.id !== year.id);
                                                     setFormData(prev => ({ ...prev, contractYears: newYears }));
                                                 }}
-                                            />
-                                        </div>
-                                        <div className="flex-1 space-y-1">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Salario</span>
-                                                <select
-                                                    value={year.currency || 'EUR'}
-                                                    onChange={(e) => {
-                                                        const newYears = [...(formData.contractYears || [])];
-                                                        newYears[index] = { ...newYears[index], currency: e.target.value };
-                                                        setFormData(prev => ({ ...prev, contractYears: newYears }));
-                                                    }}
-                                                    className="text-[9px] font-bold text-zinc-500 bg-transparent outline-none cursor-pointer hover:text-zinc-800"
-                                                >
-                                                    <option value="EUR">EUR (€)</option>
-                                                    <option value="USD">USD ($)</option>
-                                                    <option value="GBP">GBP (£)</option>
-                                                    <option value="JPY">JPY (¥)</option>
-                                                    <option value="AUD">AUD ($)</option>
-                                                </select>
-                                            </div>
-                                            <div className="relative">
+                                                className="absolute -right-2 -top-2 w-6 h-6 bg-red-50 text-red-400 hover:bg-red-100 rounded-full flex items-center justify-center transition-colors shadow-sm opacity-0 group-hover:opacity-100"
+                                            >
+                                                <Trash className="w-3 h-3" />
+                                            </button>
+
+                                            <div className="flex-1 space-y-1">
+                                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Temporada</span>
                                                 <Input
-                                                    type="number"
-                                                    value={year.salary === 0 ? '' : year.salary}
+                                                    placeholder="Ej: 2024/25"
+                                                    value={year.year}
                                                     onChange={(e) => {
                                                         const newYears = [...(formData.contractYears || [])];
-                                                        newYears[index] = { ...newYears[index], salary: e.target.value as any };
+                                                        newYears[index] = { ...newYears[index], year: e.target.value };
                                                         setFormData(prev => ({ ...prev, contractYears: newYears }));
                                                     }}
                                                 />
                                             </div>
-                                        </div>
-                                        <div className="w-32 space-y-1">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Club</span>
-                                                <button
-                                                    onClick={() => {
-                                                        const newYears = [...(formData.contractYears || [])];
-                                                        const currentType = newYears[index].clubCommissionType || 'percentage';
-                                                        newYears[index] = { ...newYears[index], clubCommissionType: currentType === 'percentage' ? 'fixed' : 'percentage' };
-                                                        setFormData(prev => ({ ...prev, contractYears: newYears }));
-                                                    }}
-                                                    className="bg-zinc-200 hover:bg-zinc-300 text-zinc-600 px-2 rounded text-[9px] font-bold uppercase transition-colors"
-                                                >
-                                                    {year.clubCommissionType === 'fixed' ? 'FIJO' : '%'}
-                                                </button>
+                                            <div className="flex-1 space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Salario</span>
+                                                    <select
+                                                        value={year.currency || 'EUR'}
+                                                        onChange={(e) => {
+                                                            const newYears = [...(formData.contractYears || [])];
+                                                            newYears[index] = { ...newYears[index], currency: e.target.value };
+                                                            setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                        }}
+                                                        className="text-[9px] font-bold text-zinc-500 bg-transparent outline-none cursor-pointer hover:text-zinc-800"
+                                                    >
+                                                        <option value="EUR">EUR (€)</option>
+                                                        <option value="USD">USD ($)</option>
+                                                        <option value="GBP">GBP (£)</option>
+                                                        <option value="JPY">JPY (¥)</option>
+                                                        <option value="AUD">AUD ($)</option>
+                                                    </select>
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={year.salary === 0 ? '' : year.salary}
+                                                        onChange={(e) => {
+                                                            const newYears = [...(formData.contractYears || [])];
+                                                            newYears[index] = { ...newYears[index], salary: e.target.value as any };
+                                                            setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="relative">
-                                                <Input
-                                                    type="number"
-                                                    value={year.clubCommissionType === 'fixed' ? year.clubCommissionFixed : year.clubCommissionPct}
-                                                    onChange={(e) => {
-                                                        const newYears = [...(formData.contractYears || [])];
-                                                        const val = Number(e.target.value);
-                                                        if (year.clubCommissionType === 'fixed') {
-                                                            newYears[index] = { ...newYears[index], clubCommissionFixed: val };
-                                                        } else {
-                                                            newYears[index] = { ...newYears[index], clubCommissionPct: val };
-                                                        }
-                                                        setFormData(prev => ({ ...prev, contractYears: newYears }));
-                                                    }}
-                                                />
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
-                                                    {year.clubCommissionType === 'fixed' ? (year.currency === 'USD' ? '$' : year.currency === 'GBP' ? '£' : '€') : '%'}
+                                            <div className="w-32 space-y-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Club</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newYears = [...(formData.contractYears || [])];
+                                                            const currentType = newYears[index].clubCommissionType || 'percentage';
+                                                            newYears[index] = { ...newYears[index], clubCommissionType: currentType === 'percentage' ? 'fixed' : 'percentage' };
+                                                            setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                        }}
+                                                        className="bg-zinc-200 hover:bg-zinc-300 text-zinc-600 px-2 rounded text-[9px] font-bold uppercase transition-colors"
+                                                    >
+                                                        {year.clubCommissionType === 'fixed' ? 'FIJO' : '%'}
+                                                    </button>
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={year.clubCommissionType === 'fixed' ? year.clubCommissionFixed : year.clubCommissionPct}
+                                                        onChange={(e) => {
+                                                            const newYears = [...(formData.contractYears || [])];
+                                                            const val = Number(e.target.value);
+                                                            if (year.clubCommissionType === 'fixed') {
+                                                                newYears[index] = { ...newYears[index], clubCommissionFixed: val };
+                                                            } else {
+                                                                newYears[index] = { ...newYears[index], clubCommissionPct: val };
+                                                            }
+                                                            setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                        }}
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
+                                                        {year.clubCommissionType === 'fixed' ? (year.currency === 'USD' ? '$' : year.currency === 'GBP' ? '£' : '€') : '%'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="w-32 space-y-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Jugador</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newYears = [...(formData.contractYears || [])];
+                                                            const currentType = newYears[index].playerCommissionType || 'percentage';
+                                                            newYears[index] = { ...newYears[index], playerCommissionType: currentType === 'percentage' ? 'fixed' : 'percentage' };
+                                                            setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                        }}
+                                                        className="bg-zinc-200 hover:bg-zinc-300 text-zinc-600 px-2 rounded text-[9px] font-bold uppercase transition-colors"
+                                                    >
+                                                        {year.playerCommissionType === 'fixed' ? 'FIJO' : '%'}
+                                                    </button>
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={year.playerCommissionType === 'fixed' ? year.playerCommissionFixed : year.playerCommissionPct}
+                                                        onChange={(e) => {
+                                                            const newYears = [...(formData.contractYears || [])];
+                                                            const val = Number(e.target.value);
+                                                            if (year.playerCommissionType === 'fixed') {
+                                                                newYears[index] = { ...newYears[index], playerCommissionFixed: val };
+                                                            } else {
+                                                                newYears[index] = { ...newYears[index], playerCommissionPct: val };
+                                                            }
+                                                            setFormData(prev => ({ ...prev, contractYears: newYears }));
+                                                        }}
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
+                                                        {year.playerCommissionType === 'fixed' ? (year.currency === 'USD' ? '$' : year.currency === 'GBP' ? '£' : '€') : '%'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="w-28 flex flex-col items-end justify-center pb-2">
+                                                <span className="text-[9px] font-bold text-zinc-400 uppercase">Comisión Total</span>
+                                                <span className="text-sm font-black text-[#b4c885]">
+                                                    {(() => {
+                                                        const salary = Number(year.salary) || 0;
+                                                        const clubComm = year.clubCommissionType === 'fixed'
+                                                            ? (Number(year.clubCommissionFixed) || 0)
+                                                            : (salary * (Number(year.clubCommissionPct) || 0) / 100);
+
+                                                        const playerComm = year.playerCommissionType === 'fixed'
+                                                            ? (Number(year.playerCommissionFixed) || 0)
+                                                            : (salary * (Number(year.playerCommissionPct) || 0) / 100);
+
+                                                        const total = clubComm + playerComm;
+
+                                                        return total.toLocaleString('es-ES', {
+                                                            style: 'currency',
+                                                            currency: year.currency || 'EUR',
+                                                            maximumFractionDigits: 0
+                                                        });
+                                                    })()}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="w-32 space-y-1">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider ml-1">Jugador</span>
-                                                <button
-                                                    onClick={() => {
-                                                        const newYears = [...(formData.contractYears || [])];
-                                                        const currentType = newYears[index].playerCommissionType || 'percentage';
-                                                        newYears[index] = { ...newYears[index], playerCommissionType: currentType === 'percentage' ? 'fixed' : 'percentage' };
-                                                        setFormData(prev => ({ ...prev, contractYears: newYears }));
-                                                    }}
-                                                    className="bg-zinc-200 hover:bg-zinc-300 text-zinc-600 px-2 rounded text-[9px] font-bold uppercase transition-colors"
-                                                >
-                                                    {year.playerCommissionType === 'fixed' ? 'FIJO' : '%'}
-                                                </button>
-                                            </div>
-                                            <div className="relative">
-                                                <Input
-                                                    type="number"
-                                                    value={year.playerCommissionType === 'fixed' ? year.playerCommissionFixed : year.playerCommissionPct}
-                                                    onChange={(e) => {
-                                                        const newYears = [...(formData.contractYears || [])];
-                                                        const val = Number(e.target.value);
-                                                        if (year.playerCommissionType === 'fixed') {
-                                                            newYears[index] = { ...newYears[index], playerCommissionFixed: val };
-                                                        } else {
-                                                            newYears[index] = { ...newYears[index], playerCommissionPct: val };
-                                                        }
-                                                        setFormData(prev => ({ ...prev, contractYears: newYears }));
-                                                    }}
-                                                />
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400">
-                                                    {year.playerCommissionType === 'fixed' ? (year.currency === 'USD' ? '$' : year.currency === 'GBP' ? '£' : '€') : '%'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="w-28 flex flex-col items-end justify-center pb-2">
-                                            <span className="text-[9px] font-bold text-zinc-400 uppercase">Comisión Total</span>
-                                            <span className="text-sm font-black text-[#b4c885]">
-                                                {(() => {
-                                                    const salary = Number(year.salary) || 0;
-                                                    const clubComm = year.clubCommissionType === 'fixed'
-                                                        ? (Number(year.clubCommissionFixed) || 0)
-                                                        : (salary * (Number(year.clubCommissionPct) || 0) / 100);
+                                    ))}
 
-                                                    const playerComm = year.playerCommissionType === 'fixed'
-                                                        ? (Number(year.playerCommissionFixed) || 0)
-                                                        : (salary * (Number(year.playerCommissionPct) || 0) / 100);
-
-                                                    const total = clubComm + playerComm;
-
-                                                    return total.toLocaleString('es-ES', {
-                                                        style: 'currency',
-                                                        currency: year.currency || 'EUR',
-                                                        maximumFractionDigits: 0
-                                                    });
-                                                })()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                <button
-                                    onClick={() => {
-                                        const newYear: ContractYear = {
-                                            id: crypto.randomUUID(),
-                                            year: '',
-                                            salary: 0,
-                                            currency: 'EUR',
-                                            clubCommissionType: 'percentage',
-                                            clubCommissionPct: 10,
-                                            clubCommissionFixed: 0,
-                                            playerCommissionType: 'percentage',
-                                            playerCommissionPct: 0,
-                                            playerCommissionFixed: 0,
-                                            clubPayment: { status: 'Pendiente', dueDate: '', isPaid: false },
-                                            playerPayment: { status: 'Pendiente', dueDate: '', isPaid: false },
-                                            globalStatus: 'Pendiente'
-                                        };
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            contractYears: [...(prev.contractYears || []), newYear]
-                                        }));
-                                    }}
-                                    className="w-full h-10 border-2 border-dashed border-zinc-200 rounded-xl flex items-center justify-center gap-2 text-zinc-400 hover:text-[#b4c885] hover:border-[#b4c885] transition-all font-bold text-xs uppercase tracking-widest"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>Añadir Año</span>
-                                </button>
+                                    <button
+                                        onClick={() => {
+                                            const newYear: ContractYear = {
+                                                id: crypto.randomUUID(),
+                                                year: '',
+                                                salary: 0,
+                                                currency: 'EUR',
+                                                clubCommissionType: 'percentage',
+                                                clubCommissionPct: 10,
+                                                clubCommissionFixed: 0,
+                                                playerCommissionType: 'percentage',
+                                                playerCommissionPct: 0,
+                                                playerCommissionFixed: 0,
+                                                clubPayment: { status: 'Pendiente', dueDate: '', isPaid: false },
+                                                playerPayment: { status: 'Pendiente', dueDate: '', isPaid: false },
+                                                globalStatus: 'Pendiente'
+                                            };
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                contractYears: [...(prev.contractYears || []), newYear]
+                                            }));
+                                        }}
+                                        className="w-full h-10 border-2 border-dashed border-zinc-200 rounded-xl flex items-center justify-center gap-2 text-zinc-400 hover:text-[#b4c885] hover:border-[#b4c885] transition-all font-bold text-xs uppercase tracking-widest"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        <span>Añadir Año</span>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
 
                         {/* Contract Repository Section */}

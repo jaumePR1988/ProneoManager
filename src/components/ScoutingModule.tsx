@@ -204,6 +204,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
                     initialData={signingPlayer}
                     onClose={() => setSigningPlayer(null)}
                     onSave={handleConfirmSign}
+                    userRole={userRole}
                 />
             )}
 

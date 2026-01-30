@@ -173,7 +173,7 @@ function App() {
             case 'settings':
                 return user ? <SettingsModule user={user} /> : <Dashboard setActiveTab={setActiveTab} userRole={userRole} />;
             case 'users':
-                return <UsersModule />;
+                return <UsersModule userRole={userRole} userSport={userSport} />;
             case 'comms':
                 return <NotificationCenter />;
             default:
@@ -222,6 +222,7 @@ function App() {
                         await addPlayer(data);
                         // Don't close immediately, let PlayerForm handle the success popup and then close
                     }}
+                    userRole={userRole}
                 />
             )}
         </>

@@ -241,7 +241,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
             }))
     ].filter(col => {
         if (isCommunication) {
-            return !['salary', 'clubCommissionPct', 'playerCommissionPct'].includes(col.id);
+            return !['salary', 'clubCommissionPct', 'playerCommissionPct', 'conditions'].includes(col.id);
         }
         return true;
     }), [schema, selectedCategory, isCommunication]);

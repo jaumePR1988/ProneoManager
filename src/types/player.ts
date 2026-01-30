@@ -139,6 +139,7 @@ export interface Player {
 
     photoUrl?: string;
     photoUpdateDate?: string;
+    accessCode?: string; // PIN for Player Portal Access
 
     // Loan Information (Cesiones)
     loanData?: {

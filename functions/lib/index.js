@@ -12,9 +12,9 @@ const storage = admin.storage();
  * Returns only safe, public information about a player.
  */
 exports.getPublicPlayerProfile = (0, https_1.onCall)({ cors: true }, async (request) => {
-    const { playerId } = request.data;
-    if (!playerId) {
-        throw new https_1.HttpsError('invalid-argument', 'Player ID is required');
+    const { playerId, pin } = request.data;
+    if (!playerId || !pin) {
+        throw new https_1.HttpsError('invalid-argument', 'Missing credentials');
     }
     try {
         // Try regular players first
@@ -29,18 +29,32 @@ exports.getPublicPlayerProfile = (0, https_1.onCall)({ cors: true }, async (requ
             throw new https_1.HttpsError('not-found', 'Player not found');
         }
         const data = playerDoc.data();
-        // RETURN ONLY PUBLIC DATA
-        // NO salaries, NO contracts, NO phone numbers
-        return {
-            id: playerDoc.id,
-            firstName: (data === null || data === void 0 ? void 0 : data.firstName) || '',
-            lastName1: (data === null || data === void 0 ? void 0 : data.lastName1) || '',
-            name: (data === null || data === void 0 ? void 0 : data.name) || (data === null || data === void 0 ? void 0 : data.firstName) || 'Jugador',
-            club: (data === null || data === void 0 ? void 0 : data.club) || '',
-            category: (data === null || data === void 0 ? void 0 : data.category) || '',
-            position: (data === null || data === void 0 ? void 0 : data.position) || '',
-            photoUrl: (data === null || data === void 0 ? void 0 : data.photoUrl) || null,
+        // 1. SECURITY CHECK: Validate PIN
+        // We compare the PIN provided by the user with the stored 'accessCode'
+        if ((data === null || data === void 0 ? void 0 : data.accessCode) !== pin) {
+            throw new https_1.HttpsError('permission-denied', 'Invalid Access Code');
+        }
+        // 2. GENERATE CUSTOM TOKEN
+        // This token allows the client to sign in as this player
+        const customToken = await admin.auth().createCustomToken(playerId, {
+            role: 'player',
             isScouting: isScouting
+        });
+        // 3. RETURN DATA TO CLIENT
+        return {
+            token: customToken,
+            player: {
+                id: playerDoc.id,
+                firstName: (data === null || data === void 0 ? void 0 : data.firstName) || '',
+                lastName1: (data === null || data === void 0 ? void 0 : data.lastName1) || '',
+                name: (data === null || data === void 0 ? void 0 : data.name) || (data === null || data === void 0 ? void 0 : data.firstName) || 'Jugador',
+                club: (data === null || data === void 0 ? void 0 : data.club) || '',
+                category: (data === null || data === void 0 ? void 0 : data.category) || '',
+                position: (data === null || data === void 0 ? void 0 : data.position) || '',
+                photoUrl: (data === null || data === void 0 ? void 0 : data.photoUrl) || null,
+                isScouting: isScouting,
+                accessCode: data === null || data === void 0 ? void 0 : data.accessCode // Return it back just in case client needs it for local state
+            }
         };
     }
     catch (error) {

@@ -12,10 +12,10 @@ const storage = admin.storage();
  * Returns only safe, public information about a player.
  */
 export const getPublicPlayerProfile = onCall({ cors: true }, async (request) => {
-    const { playerId } = request.data;
+    const { playerId, pin } = request.data;
 
-    if (!playerId) {
-        throw new HttpsError('invalid-argument', 'Player ID is required');
+    if (!playerId || !pin) {
+        throw new HttpsError('invalid-argument', 'Missing credentials');
     }
 
     try {
@@ -35,18 +35,34 @@ export const getPublicPlayerProfile = onCall({ cors: true }, async (request) => 
 
         const data = playerDoc.data();
 
-        // RETURN ONLY PUBLIC DATA
-        // NO salaries, NO contracts, NO phone numbers
-        return {
-            id: playerDoc.id,
-            firstName: data?.firstName || '',
-            lastName1: data?.lastName1 || '',
-            name: data?.name || data?.firstName || 'Jugador',
-            club: data?.club || '',
-            category: data?.category || '',
-            position: data?.position || '',
-            photoUrl: data?.photoUrl || null,
+        // 1. SECURITY CHECK: Validate PIN
+        // We compare the PIN provided by the user with the stored 'accessCode'
+        if (data?.accessCode !== pin) {
+            throw new HttpsError('permission-denied', 'Invalid Access Code');
+        }
+
+        // 2. GENERATE CUSTOM TOKEN
+        // This token allows the client to sign in as this player
+        const customToken = await admin.auth().createCustomToken(playerId, {
+            role: 'player',
             isScouting: isScouting
+        });
+
+        // 3. RETURN DATA TO CLIENT
+        return {
+            token: customToken,
+            player: {
+                id: playerDoc.id,
+                firstName: data?.firstName || '',
+                lastName1: data?.lastName1 || '',
+                name: data?.name || data?.firstName || 'Jugador',
+                club: data?.club || '',
+                category: data?.category || '',
+                position: data?.position || '',
+                photoUrl: data?.photoUrl || null,
+                isScouting: isScouting,
+                accessCode: data?.accessCode // Return it back just in case client needs it for local state
+            }
         };
 
     } catch (error) {
