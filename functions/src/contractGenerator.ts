@@ -177,7 +177,7 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
         try {
             const signatureField = form.getTextField('box_firma');
             if (signatureField) {
-                const widgets = signatureField.getWidgets();
+                const widgets = (signatureField as any).getWidgets();
                 if (widgets.length > 0) {
                     const rect = widgets[0].getRectangle();
                     sigX = rect.x;
@@ -225,7 +225,7 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
         try {
             const dataField = form.getTextField('box_datos');
             if (dataField) {
-                const widgets = dataField.getWidgets();
+                const widgets = (dataField as any).getWidgets();
                 if (widgets.length > 0) {
                     const rect = widgets[0].getRectangle();
                     textX = rect.x;
@@ -235,7 +235,7 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
                 // If we had a signature box but no data box, 
                 // align text with the start of the signature box, below it
                 const signatureField = form.getTextField('box_firma');
-                const rect = signatureField.getWidgets()[0].getRectangle();
+                const rect = (signatureField as any).getWidgets()[0].getRectangle();
                 textX = rect.x;
                 textY = rect.y - 15;
             }
