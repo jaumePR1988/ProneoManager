@@ -80,77 +80,96 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         // Remove header "data:image/png;base64,"
         const signatureImageBytes = Buffer.from(signatureBase64.split(',')[1], 'base64');
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
-        const signatureDims = signatureImage.scale(0.25); // Scale down
-        // 3. Fill Fields & Sign (Iterate pages for side signature)
-        // 3. Fill Fields & Sign (Iterate pages for side signature)
+        const signatureDims = signatureImage.scale(0.5); // Doubled from 0.25
+        // ...
         pages.forEach((page) => {
             // Lateral Signature (Left margin)
             page.drawImage(signatureImage, {
                 x: 20,
                 y: 100,
-                width: signatureDims.width * 0.5,
-                height: signatureDims.height * 0.5,
+                width: signatureDims.width,
+                height: signatureDims.height,
                 rotate: (0, pdf_lib_1.degrees)(90)
             });
         });
-        // FILL FORM FIELDS IF THEY EXIST (AcroForms)
-        const form = pdfDoc.getForm();
+        // ...
+        // DRAW MAIN SIGNATURE
+        // Strategy: Look for a form field named 'box_firma' to get exact coordinates.
+        // If not found, use default coordinates.
+        const signatureDimsMain = signatureImage.scale(0.6); // Keep for default scaling
+        let sigX = 310;
+        let sigY = 550;
+        let sigWidth = signatureDimsMain.width;
+        let sigHeight = signatureDimsMain.height;
+        let hasCustomBox = false;
         try {
-            const fields = form.getFields();
-            if (fields.length > 0) {
-                // Map data to fields
-                const fieldMap = {
-                    'nombre_jugador': playerName,
-                    'dni': dni,
-                    'calle': address.street,
-                    'cp': address.cp,
-                    'ciudad': address.city,
-                    'provincia': address.province,
-                    'fecha_firma': (0, date_fns_1.format)(new Date(), 'dd/MM/yyyy'),
-                    'fecha_nacimiento': (playerData === null || playerData === void 0 ? void 0 : playerData.birthDate) ? (0, date_fns_1.format)(new Date(playerData.birthDate), 'dd/MM/yyyy') : '',
-                    'nacionalidad': (playerData === null || playerData === void 0 ? void 0 : playerData.nationality) || '',
-                };
-                Object.entries(fieldMap).forEach(([key, val]) => {
-                    try {
-                        const field = form.getTextField(key);
-                        if (field) {
-                            let finalVal = val;
-                            let fontToUse = regularFont;
-                            if (key === 'nombre_jugador') {
-                                finalVal = val.toUpperCase();
-                                fontToUse = boldFont;
-                            }
-                            field.setText(finalVal);
-                            try {
-                                field.updateAppearances(fontToUse);
-                            }
-                            catch (errStyle) {
-                                console.warn("Style update failed for", key);
-                            }
-                        }
+            const signatureField = form.getTextField('box_firma');
+            if (signatureField) {
+                const widgets = signatureField.getWidgets();
+                if (widgets.length > 0) {
+                    const rect = widgets[0].getRectangle();
+                    sigX = rect.x;
+                    sigY = rect.y;
+                    // Fit signature within the box maintaining aspect ratio
+                    const boxRatio = rect.width / rect.height;
+                    const sigRatio = signatureImage.width / signatureImage.height;
+                    if (sigRatio > boxRatio) {
+                        // Limited by width
+                        sigWidth = rect.width;
+                        sigHeight = rect.width / sigRatio;
                     }
-                    catch (e) {
-                        // Field might not exist
+                    else {
+                        // Limited by height
+                        sigHeight = rect.height;
+                        sigWidth = rect.height * sigRatio;
                     }
-                });
-                form.flatten();
+                    // Center in box
+                    sigX += (rect.width - sigWidth) / 2;
+                    sigY += (rect.height - sigHeight) / 2;
+                    hasCustomBox = true;
+                    // Remove the field appearance so it doesn't show a border/bg
+                    signatureField.setText('');
+                }
             }
         }
         catch (e) {
-            console.log("No form fields found, skipping form fill");
+            console.log("No specific 'box_firma' field found, using defaults.");
         }
-        // DRAW MAIN SIGNATURE (Assuming Box 'EL JUGADOR' is at the top/table)
-        // Adjust coordinates based on PDF inspection - Moving drastically UP to approx y=550
-        const signatureDimsMain = signatureImage.scale(0.35);
         lastPage.drawImage(signatureImage, {
-            x: 320,
-            y: 550,
-            width: signatureDimsMain.width,
-            height: signatureDimsMain.height,
+            x: sigX,
+            y: sigY,
+            width: sigWidth,
+            height: sigHeight,
         });
+        // Draw Name & DNI
+        // Strategy: Look for 'box_datos' or place relative to signature
+        let textX = sigX;
+        let textY = sigY - 20; // Default: below signature
+        try {
+            const dataField = form.getTextField('box_datos');
+            if (dataField) {
+                const widgets = dataField.getWidgets();
+                if (widgets.length > 0) {
+                    const rect = widgets[0].getRectangle();
+                    textX = rect.x;
+                    textY = rect.y + rect.height - 10; // Start from top of box
+                }
+            }
+            else if (hasCustomBox) {
+                // If we had a signature box but no data box, 
+                // align text with the start of the signature box, below it
+                const signatureField = form.getTextField('box_firma');
+                const rect = signatureField.getWidgets()[0].getRectangle();
+                textX = rect.x;
+                textY = rect.y - 15;
+            }
+        }
+        catch (e) {
+            // Ignore
+        }
         // Draw Name & DNI under signature
-        lastPage.drawText(`${playerName}`, { x: 320, y: 540, size: 10, font: boldFont });
-        lastPage.drawText(`DNI: ${dni}`, { x: 320, y: 528, size: 10, font: regularFont });
+        lastPage.drawText(`${playerName}`, { x: textX, y: textY, size: 10, font: boldFont });
+        lastPage.drawText(`DNI: ${dni}`, { x: textX, y: textY - 12, size: 10, font: regularFont });
         // Draw Dates
         const today = new Date();
         const endDate = (0, date_fns_1.addYears)(today, 2);

@@ -116,6 +116,53 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
 
         // ...
 
+        // FILL FORM FIELDS IF THEY EXIST (AcroForms)
+        const form = pdfDoc.getForm();
+        try {
+            const fields = form.getFields();
+            if (fields.length > 0) {
+                // Map data to fields
+                const fieldMap: Record<string, string> = {
+                    'nombre_jugador': playerName,
+                    'dni': dni,
+                    'calle': address.street,
+                    'cp': address.cp,
+                    'ciudad': address.city,
+                    'provincia': address.province,
+                    'fecha_firma': format(new Date(), 'dd/MM/yyyy'),
+                    'fecha_nacimiento': playerData?.birthDate ? format(new Date(playerData.birthDate), 'dd/MM/yyyy') : '',
+                    'nacionalidad': playerData?.nationality || '',
+                };
+
+                Object.entries(fieldMap).forEach(([key, val]) => {
+                    try {
+                        const field = form.getTextField(key);
+                        if (field) {
+                            let finalVal = val;
+                            let fontToUse = regularFont;
+
+                            if (key === 'nombre_jugador') {
+                                finalVal = val.toUpperCase();
+                                fontToUse = boldFont;
+                            }
+
+                            field.setText(finalVal);
+                            try {
+                                field.updateAppearances(fontToUse);
+                            } catch (errStyle) {
+                                console.warn("Style update failed for", key);
+                            }
+                        }
+                    } catch (e) {
+                        // Field might not exist
+                    }
+                });
+                form.flatten();
+            }
+        } catch (e) {
+            console.log("No form fields found, skipping form fill");
+        }
+
         // DRAW MAIN SIGNATURE
         // Strategy: Look for a form field named 'box_firma' to get exact coordinates.
         // If not found, use default coordinates.
