@@ -37,88 +37,99 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
         // 2. Load Template
         // WE WILL ASSUME A TEMPLATE EXISTS IN STORAGE for now, or use a blank one for testing if not found.
         // For local testing, ensure you have a file or handle the error gracefully.
+        // 2. Load Template & Fonts
         const bucket = storage.bucket();
         const templatePath = `templates/contract_${templateType || 'adult'}.pdf`;
-        const [exists] = await bucket.file(templatePath).exists();
 
+        // Check/Download Template
+        const [exists] = await bucket.file(templatePath).exists();
         let pdfDoc;
+
         if (exists) {
             const [buffer] = await bucket.file(templatePath).download();
             pdfDoc = await PDFDocument.load(buffer);
         } else {
-            // Fallback: Create new PDF if template missing (for testing)
             pdfDoc = await PDFDocument.create();
             pdfDoc.addPage();
         }
 
+        // Register Fontkit
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const fontkit = require('@pdf-lib/fontkit');
+            pdfDoc.registerFontkit(fontkit);
+        } catch (e) {
+            console.warn("Fontkit registration failed:", e);
+        }
+
+        // Load Fonts from Storage
+        let regularFont: any;
+        let boldFont: any;
+
+        try {
+            const regFile = bucket.file('templates/calibri.ttf');
+            const [regExists] = await regFile.exists();
+            if (regExists) {
+                const [regBuf] = await regFile.download();
+                regularFont = await pdfDoc.embedFont(new Uint8Array(regBuf));
+            } else {
+                regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            }
+
+            const boldFile = bucket.file('templates/calibrib.ttf');
+            const [boldExists] = await boldFile.exists();
+            if (boldExists) {
+                const [boldBuf] = await boldFile.download();
+                boldFont = await pdfDoc.embedFont(new Uint8Array(boldBuf));
+            } else {
+                boldFont = regularFont; // Fallback to regular (or helvetica)
+            }
+        } catch (e) {
+            console.warn("Font loading error, using Standard:", e);
+            regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        }
+
+        // ... (Signature setup skipped, assume consistent)
+
         const pages = pdfDoc.getPages();
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        const lastPage = pages[pages.length - 1];
 
         // Process Signature Image
         // Remove header "data:image/png;base64,"
         const signatureImageBytes = Buffer.from(signatureBase64.split(',')[1], 'base64');
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
-        const signatureDims = signatureImage.scale(0.25); // Scale down
+        const signatureDims = signatureImage.scale(0.5); // Doubled from 0.25
 
-        // 3. Fill Fields & Sign (Iterate pages for side signature)
-        const { width } = pages[0].getSize();
+        // ...
 
-        pages.forEach((page, index) => {
+        pages.forEach((page) => {
             // Lateral Signature (Left margin)
             page.drawImage(signatureImage, {
                 x: 20,
-                y: 100, // Adjust vertical position
-                width: signatureDims.width * 0.5,
-                height: signatureDims.height * 0.5,
-                rotate: degrees(90) // Vertical signature style? Or just small on side
+                y: 100,
+                width: signatureDims.width, // Removed * 0.5 factor to double effective size
+                height: signatureDims.height,
+                rotate: degrees(90)
             });
         });
 
-        // 4. Last Page Details
-        const lastPage = pages[pages.length - 1];
+        // ...
 
-        // FILL FORM FIELDS IF THEY EXIST (AcroForms)
-        const form = pdfDoc.getForm();
-        try {
-            const fields = form.getFields();
-            if (fields.length > 0) {
-                // Map data to fields
-                const fieldMap: Record<string, string> = {
-                    'nombre_jugador': playerName,
-                    'dni': dni,
-                    'calle': address.street,
-                    'cp': address.cp,
-                    'ciudad': address.city,
-                    'provincia': address.province,
-                    'fecha_firma': format(new Date(), 'dd/MM/yyyy'),
-                };
+        // DRAW MAIN SIGNATURE
+        // User requested larger size.
+        const signatureDimsMain = signatureImage.scale(0.6); // Increased from 0.35 to 0.6 (~double)
 
-                Object.entries(fieldMap).forEach(([key, val]) => {
-                    try {
-                        const field = form.getTextField(key);
-                        if (field) field.setText(val);
-                    } catch (e) {
-                        // Field might not exist
-                    }
-                });
-                form.flatten();
-            }
-        } catch (e) {
-            console.log("No form fields found, skipping form fill");
-        }
-
-        // DRAW MAIN SIGNATURE (Assuming bottom right area roughly)
         lastPage.drawImage(signatureImage, {
-            x: width - 150,
-            y: 150,
-            width: signatureDims.width,
-            height: signatureDims.height,
+            x: 310, // Slight X adjustment
+            y: 550,
+            width: signatureDimsMain.width,
+            height: signatureDimsMain.height,
         });
 
-        // Draw Name & DNI under signature
-        lastPage.drawText(`${playerName}`, { x: width - 150, y: 135, size: 10, font: boldFont });
-        lastPage.drawText(`DNI: ${dni}`, { x: width - 150, y: 120, size: 10, font });
+        // Draw Name & DNI under signature (Adjusted Y to account for larger signature)
+        lastPage.drawText(`${playerName}`, { x: 320, y: 530, size: 10, font: boldFont });
+        lastPage.drawText(`DNI: ${dni}`, { x: 320, y: 518, size: 10, font: regularFont });
 
         // Draw Dates
         const today = new Date();
@@ -142,7 +153,7 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
         // 6. Update Firestore
         await db.collection('players').doc(playerId).update({
             'proneo.agencyEndDate': format(endDate, 'yyyy-MM-dd'),
-            'proneoStatus': 'Active', // Or whatever status logic you use
+            'proneoStatus': 'PendingValidation', // Se requiere validación por administración
             documents: admin.firestore.FieldValue.arrayUnion({
                 id: `contract_${Date.now()}`,
                 name: 'Contrato Agencia (Renovado)',

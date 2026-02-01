@@ -1,0 +1,3 @@
+REVISIÓN DE FUENTE:
+Por favor, abre 'contract_test_output.pdf' y verifica si la fuente de los campos rellenados coincide con el resto del documento (Calibri).
+Si no coincide, copia 'calibri.ttf' a esta carpeta.

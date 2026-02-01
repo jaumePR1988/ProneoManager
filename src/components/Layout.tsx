@@ -33,21 +33,40 @@ const HIDE_NEW_PLAYER_TABS = ['dashboard', 'reports', 'settings', 'avisos', 'sco
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onNewPlayer, playerView, onPlayerViewChange }) => {
     const [pendingCount, setPendingCount] = React.useState(0);
+    const [alertsCount, setAlertsCount] = React.useState(0);
     // Role-based Tab Filtering
     const userRole = (user?.role || 'guest').toLowerCase();
     const isAdmin = ['admin', 'director'].includes(userRole);
-    const isScout = userRole === 'scout';
     const isTreasurer = userRole === 'tesorero' || userRole === 'treasurer';
     const isCommunication = userRole === 'comunicacion';
+    const isScout = userRole === 'scout';
+
+    // Authorization for Alerts/Pending Users
+    const canSeeAlerts = isAdmin || isTreasurer;
 
     React.useEffect(() => {
-        if (!isAdmin) return;
-        const q = query(collection(db, 'users'), where('approved', '==', false));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setPendingCount(snapshot.size);
+        if (!canSeeAlerts) return;
+
+        // 1. Pending Users (Only Admin/Director)
+        let unsubUsers = () => { };
+        if (isAdmin) {
+            const qUsers = query(collection(db, 'users'), where('approved', '==', false));
+            unsubUsers = onSnapshot(qUsers, (snapshot) => {
+                setPendingCount(snapshot.size);
+            });
+        }
+
+        // 2. Pending Contract Validations (All authorized roles have access)
+        const qContracts = query(collection(db, 'players'), where('proneoStatus', '==', 'PendingValidation'));
+        const unsubContracts = onSnapshot(qContracts, (snapshot) => {
+            setAlertsCount(snapshot.size);
         });
-        return () => unsubscribe();
-    }, [isAdmin]);
+
+        return () => {
+            unsubUsers();
+            unsubContracts();
+        };
+    }, [canSeeAlerts, isAdmin]);
 
     const tabs = [
         { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
@@ -92,6 +111,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                             {tab.id === 'users' && pendingCount > 0 && (
                                 <span className="w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-red-500/20">
                                     {pendingCount}
+                                </span>
+                            )}
+                            {tab.id === 'avisos' && alertsCount > 0 && (
+                                <span className="w-5 h-5 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-orange-500/20">
+                                    {alertsCount}
                                 </span>
                             )}
                             {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-proneo-green ml-2" />}

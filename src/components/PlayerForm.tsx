@@ -726,6 +726,25 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                         <Label>FECHA FIN AGENCIA</Label>
                                         <Input type="date" name="proneo.agencyEndDate" value={formData.proneo?.agencyEndDate} onChange={handleInputChange} />
                                     </div>
+                                    <div className="flex items-center gap-3">
+                                        <Label>SITUACIÓN AGENCIA</Label>
+                                        <div className="flex-1 flex gap-2">
+                                            <Select
+                                                name="proneoStatus"
+                                                value={formData.proneoStatus || 'Active'}
+                                                onChange={handleInputChange}
+                                                options={['Active', 'PendingValidation', 'Inactive']}
+                                            />
+                                            {formData.proneoStatus === 'PendingValidation' && (userRole === 'admin' || userRole === 'director' || userRole === 'tesorero') && (
+                                                <button
+                                                    onClick={() => setFormData(prev => ({ ...prev, proneoStatus: 'Active' }))}
+                                                    className="px-4 bg-orange-500 text-white rounded-sm text-[10px] font-black uppercase hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
+                                                >
+                                                    Validar
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

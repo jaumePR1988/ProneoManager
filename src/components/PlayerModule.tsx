@@ -167,12 +167,16 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                 const now = new Date();
                 const endDate = p.proneo?.agencyEndDate ? new Date(p.proneo.agencyEndDate) : null;
                 const isExpired = !endDate || endDate <= now;
+                const isPending = p.proneoStatus === 'PendingValidation';
+
                 return (
-                    <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider ${isExpired
-                        ? 'bg-red-100 text-red-600 border border-red-200'
-                        : 'bg-emerald-100 text-emerald-600 border border-emerald-200'
+                    <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider ${isPending
+                        ? 'bg-orange-100 text-orange-600 border border-orange-200 animate-pulse'
+                        : isExpired
+                            ? 'bg-red-100 text-red-600 border border-red-200'
+                            : 'bg-emerald-100 text-emerald-600 border border-emerald-200'
                         }`}>
-                        {isExpired ? 'CADUCADO' : 'ACTIVO'}
+                        {isPending ? 'POR VALIDAR' : isExpired ? 'CADUCADO' : 'ACTIVO'}
                     </span>
                 );
             }
@@ -359,8 +363,8 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                 const now = new Date();
                 const dateA = a.proneo?.agencyEndDate ? new Date(a.proneo.agencyEndDate) : new Date(0);
                 const dateB = b.proneo?.agencyEndDate ? new Date(b.proneo.agencyEndDate) : new Date(0);
-                valA = dateA > now ? 'ACTIVO' : 'CADUCADO';
-                valB = dateB > now ? 'ACTIVO' : 'CADUCADO';
+                valA = a.proneoStatus === 'PendingValidation' ? 'POR VALIDAR' : (dateA > now ? 'ACTIVO' : 'CADUCADO');
+                valB = b.proneoStatus === 'PendingValidation' ? 'POR VALIDAR' : (dateB > now ? 'ACTIVO' : 'CADUCADO');
             }
             if (['salary', 'clubCommissionPct', 'playerCommissionPct'].includes(sortField)) {
                 const ya = (a.contractYears || [])[0];
@@ -528,7 +532,7 @@ const PlayerModule: React.FC<PlayerModuleProps> = ({ userRole, userSport = 'Gene
                 if (id === 'proneoStatus') {
                     const now = new Date();
                     const endDate = p.proneo?.agencyEndDate ? new Date(p.proneo.agencyEndDate) : null;
-                    val = (endDate && endDate > now) ? 'ACTIVO' : 'CADUCADO';
+                    val = p.proneoStatus === 'PendingValidation' ? 'POR VALIDAR' : ((endDate && endDate > now) ? 'ACTIVO' : 'CADUCADO');
                 }
                 if (['salary', 'clubCommissionPct', 'playerCommissionPct'].includes(id)) {
                     const y = getValuesForCurrentSeason(p.contractYears);

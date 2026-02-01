@@ -1,0 +1,16 @@
+LISTA DE CAMPOS PARA LOS CONTRATOS PDF:
+--------------------------------------
+nombre_jugador    (Nombre del jugador)
+dni               (DNI o Pasaporte)
+calle             (Dirección: calle y número)
+cp                (Código Postal)
+ciudad            (Ciudad)
+provincia         (Provincia)
+fecha_firma       (La fecha del día de hoy)
+fecha_nacimiento  (Fecha de nacimiento del jugador)
+nacionalidad      (Nacionalidad del jugador)
+
+INSTRUCCIONES:
+1. Añade "Campos de Texto" con estos nombres exactos en tus PDFs.
+2. Nombra los archivos: contract_adult.pdf y contract_minor.pdf
+3. Sube la carpeta "templates" con los archivos a Firebase Storage.

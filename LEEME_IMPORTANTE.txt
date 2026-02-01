@@ -1,0 +1,4 @@
+¡OJO!
+No abras el mismo archivo 'contract_adult.pdf'.
+El script ha creado uno NUEVO llamado 'contract_test_output.pdf'.
+Ese es el que tiene los datos de prueba (Juan Prueba Tester, etc).

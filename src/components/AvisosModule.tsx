@@ -481,10 +481,40 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                 }
             });
         });
-
-
     }
 
+    // F. Contract Renewals Pending Validation (Admin/Director/Tesorero ONLY)
+    if (userRole === 'admin' || userRole === 'director' || userRole === 'tesorero') {
+        dbPlayers.forEach(p => {
+            if (p.proneoStatus === 'PendingValidation') {
+                // Calculate remaining days (10 days from signature)
+                // Assuming createdAt or updatedAt is close to signature time, or looking for contract doc date
+                // For safety, we default to "URGENTE"
+                let daysLeft = 10;
+                const contractDoc = p.documents?.find(d => d.type === 'contract' && d.name.includes('Renovado'));
+                if (contractDoc && contractDoc.date) {
+                    const signDate = new Date(contractDoc.date);
+                    const deadline = new Date(signDate);
+                    deadline.setDate(deadline.getDate() + 10);
+                    const now = new Date();
+                    const diffTime = deadline.getTime() - now.getTime();
+                    daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                }
+
+                alerts.push({
+                    id: `validation-${p.id}`,
+                    type: 'contract_validation',
+                    priority: 'critical',
+                    title: `🚨 VALIDAR CONTRATO (${daysLeft > 0 ? daysLeft + ' días' : 'EXPIRA HOY'})`,
+                    message: `${p.name} ha firmado su renovación. TIENES 10 DÍAS PARA VALIDARLO.`,
+                    player: p,
+                    category: 'Administración',
+                    icon: FileText,
+                    color: 'bg-orange-600 animate-pulse'
+                });
+            }
+        });
+    }
 
 
     // 3. FILTERING LOGIC
@@ -629,6 +659,7 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                                             ${alert.priority === 'critical' ? 'border-red-500 shadow-red-500/10' :
                                                 alert.priority === 'high' ? 'border-red-100 shadow-sm' :
                                                     alert.type === 'completed' ? 'opacity-50' : 'border-zinc-100 shadow-sm'}
+                                            ${alert.type === 'contract_validation' ? 'ring-2 ring-orange-500 animate-pulse' : ''}
                                         `}
                                     >
                                         {/* Actions: Done & Snooze */}

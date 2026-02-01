@@ -1,0 +1,3 @@
+ERROR: 0 CAMPOS ENCONTRADOS
+El PDF actual no tiene campos de formulario (AcroForms).
+Asegúrese de usar la herramienta "Form Field" o "Campo de Texto" en su editor PDF y NO aplanar (flatten) el documento al guardar.

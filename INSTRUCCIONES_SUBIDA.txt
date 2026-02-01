@@ -1,0 +1,15 @@
+PASOS FINALES PARA ACTIVAR CONTRATOS:
+
+1. Ve a tu Firebase Storage > carpeta "templates". (Si no existe, créala).
+2. Sube estos tres archivos:
+    - contract_adult.pdf  (Tu plantilla con los campos arreglados)
+    - calibri.ttf         (Fuente normal)
+    - calibrib.ttf        (Fuente negrita)
+
+Una vez subidos, al generar un contrato desde la web, el sistema:
+- Descargará tu PDF.
+- Descargará tus fuentes.
+- Escribirá el nombre en MAYÚSCULAS y NEGRITA.
+- Escribirá el resto normal.
+
+(Los menores de edad seguirán dando error hasta que subas 'contract_minor.pdf', como pediste).

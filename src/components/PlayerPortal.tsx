@@ -42,6 +42,7 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
     const [pin, setPin] = useState('');
     const [error, setError] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [processing, setProcessing] = useState<{ type: 'contract' | 'photo' | null, message: string }>({ type: null, message: '' });
 
     // Media & UI States
     const [uploading, setUploading] = useState(false);
@@ -186,18 +187,25 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
 
     // Actual deletion logic
     const confirmDeleteAction = async () => {
-        if (!deleteConfirm.ref) return;
-        setDeleteConfirm({ isOpen: false, ref: null }); // Close immediately or wait? Better close to show loader if needed.
+        const refToDelete = deleteConfirm.ref;
+        if (!refToDelete) return;
+
+        // Close modal first to avoid z-index conflicts
+        setDeleteConfirm({ isOpen: false, ref: null });
+
         setUploading(true);
+        setProcessing({ type: 'photo', message: 'Eliminando archivo...' });
+
         try {
-            await deleteObject(deleteConfirm.ref);
+            await deleteObject(refToDelete);
             setToast({ message: 'Archivo eliminado de tu galería', type: 'success' });
-            fetchMedia();
-        } catch (error) {
-            console.error(error);
-            setToast({ message: 'Error al eliminar el archivo', type: 'error' });
+            await fetchMedia(); // Ensure list refresh
+        } catch (error: any) {
+            console.error("Delete error:", error);
+            setToast({ message: `Error al eliminar: ${error.message}`, type: 'error' });
         } finally {
             setUploading(false);
+            setProcessing({ type: null, message: '' });
         }
     };
 
@@ -207,23 +215,34 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
         if (!file.type.startsWith('image/')) return alert("Solo imágenes.");
 
         setUploading(true);
+        setProcessing({ type: 'photo', message: 'Subiendo a tu galería...' });
+
         try {
-            const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
-            const compressedFile = await imageCompression(file, options);
+            // Compression - Safety Wrapper
+            let fileToUpload = file;
+            try {
+                const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+                fileToUpload = await imageCompression(file, options);
+            } catch (compError) {
+                console.warn("Compression failed, uploading original.", compError);
+            }
 
             const path = `players/${playerId}/photos/${Date.now()}_${file.name}`;
-            console.log("Subiendo a galería:", path);
             const fileRef = ref(storage, path);
             const metadata = { contentType: file.type };
-            await uploadBytes(fileRef, compressedFile, metadata);
+
+            await uploadBytes(fileRef, fileToUpload, metadata);
 
             setToast({ message: 'Foto añadida a tu galería', type: 'success' });
-            fetchMedia(); // Refresh the list
-        } catch (error) {
-            console.error(error);
-            setToast({ message: 'Error al subir foto a galería', type: 'error' });
+            await fetchMedia();
+        } catch (error: any) {
+            console.error("Upload error:", error);
+            setToast({ message: `Error al subir: ${error.message}`, type: 'error' });
         } finally {
             setUploading(false);
+            setProcessing({ type: null, message: '' });
+            // Reset input value to allow same file upload
+            e.target.value = '';
         }
     };
 
@@ -240,6 +259,7 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
         if (!file) return;
         if (!file.type.startsWith('image/')) return alert("Solo imágenes.");
 
+        setProcessing({ type: 'photo', message: 'Optimizando y subiendo tu perfil...' });
         setUploading(true);
         try {
             // COMPRESSION
@@ -271,11 +291,13 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
                     setToast({ message: 'Foto de perfil actualizada (Optimizada)', type: 'success' });
                 }
                 setUploading(false);
+                setProcessing({ type: null, message: '' });
             };
         } catch (error) {
             console.error(error);
             setToast({ message: 'Error al subir foto', type: 'error' });
             setUploading(false);
+            setProcessing({ type: null, message: '' });
         }
     };
 
@@ -333,6 +355,7 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
         }
 
         setLoading(true);
+        setProcessing({ type: 'contract', message: 'Firmando digitalmente y generando documento...' });
         try {
             const signatureBase64 = sigCanvas.getTrimmedCanvas().toDataURL('image/png');
             const functions = getFunctions();
@@ -361,6 +384,7 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
             setToast({ message: 'Error al procesar la renovación', type: 'error' });
         } finally {
             setLoading(false);
+            setProcessing({ type: null, message: '' });
         }
     };
 
@@ -449,7 +473,20 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
 
     // --- RENDER: UI ---
     return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-200 font-sans selection:bg-proneo-green selection:text-black">
+        <div className="min-h-screen bg-zinc-950 text-zinc-200 font-sans selection:bg-proneo-green selection:text-black relative">
+            {/* FULL SCREEN PROCESSING OVERLAY */}
+            {processing.type && (
+                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-500">
+                    <div className="w-24 h-24 rounded-full border-4 border-proneo-green/20 border-t-proneo-green animate-spin mb-8 shadow-[0_0_50px_-12px_rgba(180,200,133,0.3)]"></div>
+                    <h2 className="text-3xl font-black italic uppercase text-white tracking-wider animate-pulse mb-4">
+                        {processing.type === 'contract' ? 'Firmando Contrato' : 'Procesando Imagen'}
+                    </h2>
+                    <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs">
+                        {processing.message}
+                    </p>
+                </div>
+            )}
+
             {toast && <PremiumToast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
             <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5">

@@ -22,8 +22,10 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         // 2. Load Template
         // WE WILL ASSUME A TEMPLATE EXISTS IN STORAGE for now, or use a blank one for testing if not found.
         // For local testing, ensure you have a file or handle the error gracefully.
+        // 2. Load Template & Fonts
         const bucket = storage.bucket();
         const templatePath = `templates/contract_${templateType || 'adult'}.pdf`;
+        // Check/Download Template
         const [exists] = await bucket.file(templatePath).exists();
         let pdfDoc;
         if (exists) {
@@ -31,32 +33,66 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
             pdfDoc = await pdf_lib_1.PDFDocument.load(buffer);
         }
         else {
-            // Fallback: Create new PDF if template missing (for testing)
             pdfDoc = await pdf_lib_1.PDFDocument.create();
             pdfDoc.addPage();
         }
+        // Register Fontkit
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const fontkit = require('@pdf-lib/fontkit');
+            pdfDoc.registerFontkit(fontkit);
+        }
+        catch (e) {
+            console.warn("Fontkit registration failed:", e);
+        }
+        // Load Fonts from Storage
+        let regularFont;
+        let boldFont;
+        try {
+            const regFile = bucket.file('templates/calibri.ttf');
+            const [regExists] = await regFile.exists();
+            if (regExists) {
+                const [regBuf] = await regFile.download();
+                regularFont = await pdfDoc.embedFont(new Uint8Array(regBuf));
+            }
+            else {
+                regularFont = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.Helvetica);
+            }
+            const boldFile = bucket.file('templates/calibrib.ttf');
+            const [boldExists] = await boldFile.exists();
+            if (boldExists) {
+                const [boldBuf] = await boldFile.download();
+                boldFont = await pdfDoc.embedFont(new Uint8Array(boldBuf));
+            }
+            else {
+                boldFont = regularFont; // Fallback to regular (or helvetica)
+            }
+        }
+        catch (e) {
+            console.warn("Font loading error, using Standard:", e);
+            regularFont = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.Helvetica);
+            boldFont = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.HelveticaBold);
+        }
+        // ... (Signature setup skipped, assume consistent)
         const pages = pdfDoc.getPages();
-        const font = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.Helvetica);
-        const boldFont = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.HelveticaBold);
+        const lastPage = pages[pages.length - 1];
         // Process Signature Image
         // Remove header "data:image/png;base64,"
         const signatureImageBytes = Buffer.from(signatureBase64.split(',')[1], 'base64');
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
         const signatureDims = signatureImage.scale(0.25); // Scale down
         // 3. Fill Fields & Sign (Iterate pages for side signature)
-        const { width } = pages[0].getSize();
-        pages.forEach((page, index) => {
+        // 3. Fill Fields & Sign (Iterate pages for side signature)
+        pages.forEach((page) => {
             // Lateral Signature (Left margin)
             page.drawImage(signatureImage, {
                 x: 20,
                 y: 100,
                 width: signatureDims.width * 0.5,
                 height: signatureDims.height * 0.5,
-                rotate: (0, pdf_lib_1.degrees)(90) // Vertical signature style? Or just small on side
+                rotate: (0, pdf_lib_1.degrees)(90)
             });
         });
-        // 4. Last Page Details
-        const lastPage = pages[pages.length - 1];
         // FILL FORM FIELDS IF THEY EXIST (AcroForms)
         const form = pdfDoc.getForm();
         try {
@@ -71,12 +107,27 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                     'ciudad': address.city,
                     'provincia': address.province,
                     'fecha_firma': (0, date_fns_1.format)(new Date(), 'dd/MM/yyyy'),
+                    'fecha_nacimiento': (playerData === null || playerData === void 0 ? void 0 : playerData.birthDate) ? (0, date_fns_1.format)(new Date(playerData.birthDate), 'dd/MM/yyyy') : '',
+                    'nacionalidad': (playerData === null || playerData === void 0 ? void 0 : playerData.nationality) || '',
                 };
                 Object.entries(fieldMap).forEach(([key, val]) => {
                     try {
                         const field = form.getTextField(key);
-                        if (field)
-                            field.setText(val);
+                        if (field) {
+                            let finalVal = val;
+                            let fontToUse = regularFont;
+                            if (key === 'nombre_jugador') {
+                                finalVal = val.toUpperCase();
+                                fontToUse = boldFont;
+                            }
+                            field.setText(finalVal);
+                            try {
+                                field.updateAppearances(fontToUse);
+                            }
+                            catch (errStyle) {
+                                console.warn("Style update failed for", key);
+                            }
+                        }
                     }
                     catch (e) {
                         // Field might not exist
@@ -88,16 +139,18 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         catch (e) {
             console.log("No form fields found, skipping form fill");
         }
-        // DRAW MAIN SIGNATURE (Assuming bottom right area roughly)
+        // DRAW MAIN SIGNATURE (Assuming Box 'EL JUGADOR' is at the top/table)
+        // Adjust coordinates based on PDF inspection - Moving drastically UP to approx y=550
+        const signatureDimsMain = signatureImage.scale(0.35);
         lastPage.drawImage(signatureImage, {
-            x: width - 150,
-            y: 150,
-            width: signatureDims.width,
-            height: signatureDims.height,
+            x: 320,
+            y: 550,
+            width: signatureDimsMain.width,
+            height: signatureDimsMain.height,
         });
         // Draw Name & DNI under signature
-        lastPage.drawText(`${playerName}`, { x: width - 150, y: 135, size: 10, font: boldFont });
-        lastPage.drawText(`DNI: ${dni}`, { x: width - 150, y: 120, size: 10, font });
+        lastPage.drawText(`${playerName}`, { x: 320, y: 540, size: 10, font: boldFont });
+        lastPage.drawText(`DNI: ${dni}`, { x: 320, y: 528, size: 10, font: regularFont });
         // Draw Dates
         const today = new Date();
         const endDate = (0, date_fns_1.addYears)(today, 2);
@@ -116,7 +169,7 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         // 6. Update Firestore
         await db.collection('players').doc(playerId).update({
             'proneo.agencyEndDate': (0, date_fns_1.format)(endDate, 'yyyy-MM-dd'),
-            'proneoStatus': 'Active',
+            'proneoStatus': 'PendingValidation',
             documents: admin.firestore.FieldValue.arrayUnion({
                 id: `contract_${Date.now()}`,
                 name: 'Contrato Agencia (Renovado)',

@@ -149,6 +149,7 @@ export interface Player {
     };
 
     photoStatus?: '✅' | '❌';
+    proneoStatus?: 'Active' | 'PendingValidation' | 'Inactive';
     documents: { id: string; name: string; url: string; type: 'contract' | 'other'; date: string }[];
 
     createdAt: number;

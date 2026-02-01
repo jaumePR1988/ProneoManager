@@ -1,0 +1,4 @@
+Comando para probar:
+node test_contract_local.cjs
+
+Revisa la salida en la terminal. Debe decir "Encontrados X campos".

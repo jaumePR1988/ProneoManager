@@ -1,0 +1,7 @@
+INSTRUCCIONES FINALES (CALIBRI NEGRITA):
+
+1. Copia 'calibrib.ttf' (Calibri Bold) a esta carpeta.
+2. Copia 'calibri.ttf' (Calibri Normal) a esta carpeta.
+3. Ejecuta: node test_contract_local.cjs
+
+El sistema usará Negrita + Mayúsculas para el nombre del jugador, y normal para el resto.

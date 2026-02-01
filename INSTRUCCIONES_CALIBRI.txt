@@ -1,0 +1,12 @@
+INSTRUCCIONES PARA INSTALAR CALIBRI:
+
+1. Abre el explorador de archivos.
+2. Ve a: C:\Windows\Fonts
+3. Busca "Calibri" (puede que veas "Calibri Normal" o similar).
+4. Copia ese archivo (calibri.ttf) y pégalo AQUÍ, en esta carpeta:
+   c:\Users\Jaume Pedragosa\.gemini\antigravity\scratch\ProneoManager\
+
+SOBRE EL TEXTO QUE "SE COME":
+Las cajas de formulario (campos azules) tienen un ancho fijo.
+Si el nombre "JUAN PRUEBA..." es muy largo y la caja es corta, se cortará o tapará lo siguiente.
+SOLUCIÓN: En tu editor de PDF, haz las cajas MUCHO MÁS ANCHAS de lo que necesites, para que quepa cualquier nombre.

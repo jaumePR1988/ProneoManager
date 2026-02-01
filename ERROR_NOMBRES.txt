@@ -1,0 +1,8 @@
+ERROR: NOMBRES DE CAMPOS INCORRECTOS
+El PDF tiene campos, pero se llaman 'text_1ffie', etc.
+Tienes que RENOMBRARLOS en el editor PDF para que coincidan con:
+- nombre_jugador
+- dni
+- calle
+...etc
+Si no coinciden, el sistema no sabe dónde escribir la información.
