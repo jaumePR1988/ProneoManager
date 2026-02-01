@@ -23,7 +23,7 @@ import NotificationCenter from './components/NotificationCenter';
 import AgendaInformeModule from './components/AgendaInformeModule';
 import MultimediaModule from './components/MultimediaModule';
 // import IAModule from './components/IAModule';
-import PublicPhotoUpload from './components/PublicPhotoUpload';
+import PlayerPortal from './components/PlayerPortal';
 
 import { usePlayers } from './hooks/usePlayers';
 import { useAutoLogout } from './hooks/useAutoLogout';
@@ -45,6 +45,15 @@ function App() {
 
     // Auto-logout hook (15 minutes by default)
     useAutoLogout(user);
+
+    // --- PUBLIC ROUTING CHECK ---
+    const path = window.location.pathname;
+    if (path.startsWith('/portal/')) {
+        const playerId = path.split('/portal/')[1];
+        if (playerId) {
+            return <PlayerPortal playerId={playerId} />;
+        }
+    }
 
     useEffect(() => {
         if (isDemoMode) {
@@ -138,13 +147,7 @@ function App() {
     }, []);
 
     // 1. PUBLIC ROUTE CHECK (Bypass everything for photo updates)
-    const pathname = window.location.pathname;
-    const isPublicUpdateRoute = pathname.startsWith('/update/');
-    const publicPlayerId = isPublicUpdateRoute ? pathname.split('/').pop() : null;
 
-    if (isPublicUpdateRoute && publicPlayerId) {
-        return <PublicPhotoUpload playerId={publicPlayerId} />;
-    }
 
 
     const renderContent = () => {

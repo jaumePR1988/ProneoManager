@@ -6,15 +6,44 @@ service firebase.storage {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Rules for Player Media
-    match /players/{playerId}/{allPaths=**} {
-      // Allow read/write if the user is authenticated as this player
-      allow read, write: if isOwner(playerId);
-      // Also allow admins (if needed, simplified here)
-      // allow read, write: if request.auth.token.role == 'admin';
+    // Helper to check for staff roles
+    function isStaff() {
+      return request.auth != null && 
+             request.auth.token != null &&
+             "email" in request.auth.token &&
+             request.auth.token.email.matches('.*@proneosports.com'); 
     }
-    
-    // Default deny
+
+    // Rules for Player Media (Regular & Scouting)
+    // Emergency Relaxation Level 2: Allow write if authenticated (ignoring UID match) to debug path/token issues.
+    match /players/{uid}/{allPaths=**} {
+      allow read: if true; 
+      allow write: if request.auth != null;
+    }
+
+    match /scouting_players/{uid}/{allPaths=**} {
+      allow read: if true; 
+      allow write: if request.auth != null;
+    }
+
+    // Fallback or legacy paths
+    match /player_videos/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && (request.auth.uid == uid || isStaff());
+    }
+
+    // Rules for Contracts
+    match /contracts/{allPaths=**} {
+      allow read, write: if isStaff();
+    }
+
+    // Rules for User Profiles (Settings)
+    match /profiles/{userEmail} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.email == userEmail;
+    }
+
+    // Default deny for anything else
     match /{allPaths=**} {
       allow read, write: if false;
     }

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadPlayerPhoto = exports.getPublicPlayerProfile = void 0;
+exports.generateAndSignContract = exports.updatePlayerProfile = exports.uploadPlayerPhoto = exports.getPublicPlayerProfile = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -53,7 +53,10 @@ exports.getPublicPlayerProfile = (0, https_1.onCall)({ cors: true }, async (requ
                 position: (data === null || data === void 0 ? void 0 : data.position) || '',
                 photoUrl: (data === null || data === void 0 ? void 0 : data.photoUrl) || null,
                 isScouting: isScouting,
-                accessCode: data === null || data === void 0 ? void 0 : data.accessCode // Return it back just in case client needs it for local state
+                accessCode: data === null || data === void 0 ? void 0 : data.accessCode,
+                documents: (data === null || data === void 0 ? void 0 : data.documents) || [],
+                seasons: (data === null || data === void 0 ? void 0 : data.seasons) || [],
+                customFields: (data === null || data === void 0 ? void 0 : data.customFields) || { palmares: [], achievements: '' }
             }
         };
     }
@@ -83,6 +86,7 @@ exports.uploadPlayerPhoto = (0, https_1.onCall)({ cors: true }, async (request) 
             throw new https_1.HttpsError('resource-exhausted', 'Image too large (Max 5MB)');
         }
         // Determine collection
+        // ... existing exports
         let collectionName = 'players';
         let playerRef = db.collection('players').doc(playerId);
         let playerSnap = await playerRef.get();
@@ -118,4 +122,55 @@ exports.uploadPlayerPhoto = (0, https_1.onCall)({ cors: true }, async (request) 
         throw new https_1.HttpsError('internal', 'Upload failed');
     }
 });
+/**
+ * Update Player Profile
+ * Securely updates allowed fields (trajectory, palmares) after verifying PIN.
+ */
+exports.updatePlayerProfile = (0, https_1.onCall)({ cors: true }, async (request) => {
+    const { playerId, pin, data } = request.data;
+    if (!playerId || !pin || !data) {
+        throw new https_1.HttpsError('invalid-argument', 'Missing parameters');
+    }
+    try {
+        // 1. Verify credentials
+        let playerRef = db.collection('players').doc(playerId);
+        let playerSnap = await playerRef.get();
+        if (!playerSnap.exists) {
+            // Check scouting
+            playerRef = db.collection('scouting_players').doc(playerId);
+            playerSnap = await playerRef.get();
+        }
+        if (!playerSnap.exists) {
+            throw new https_1.HttpsError('not-found', 'Player not found');
+        }
+        const playerData = playerSnap.data();
+        if ((playerData === null || playerData === void 0 ? void 0 : playerData.accessCode) !== pin) {
+            throw new https_1.HttpsError('permission-denied', 'Invalid Access Code');
+        }
+        // 2. Filter allowed fields to prevent overwriting sensitive data
+        const updates = {
+            updatedAt: Date.now()
+        };
+        // Allowed: customFields (palmares, achievements)
+        if (data.customFields) {
+            if (data.customFields.palmares !== undefined)
+                updates['customFields.palmares'] = data.customFields.palmares;
+            if (data.customFields.achievements !== undefined)
+                updates['customFields.achievements'] = data.customFields.achievements;
+        }
+        // Allowed: seasons (trajectory)
+        if (data.seasons !== undefined) {
+            updates['seasons'] = data.seasons;
+        }
+        // 3. Apply Update
+        await playerRef.update(updates);
+        return { success: true };
+    }
+    catch (error) {
+        logger.error("Error updating profile", error);
+        throw new https_1.HttpsError('internal', 'Update failed');
+    }
+});
+const contractGenerator_1 = require("./contractGenerator");
+Object.defineProperty(exports, "generateAndSignContract", { enumerable: true, get: function () { return contractGenerator_1.generateAndSignContract; } });
 //# sourceMappingURL=index.js.map

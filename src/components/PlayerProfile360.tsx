@@ -12,10 +12,12 @@ import {
     Banknote,
     Copy,
     Share2,
-    Download
+    Download,
+    FileText
 } from 'lucide-react';
 import { Player, PlayerSeason } from '../types/player';
 import { getCountryFlagUrl } from '../utils/countries';
+import { generatePlayerDossier } from '../utils/pdfGenerator';
 
 interface PlayerProfile360Props {
     player: Player;
@@ -24,7 +26,9 @@ interface PlayerProfile360Props {
 }
 
 const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, onSave }) => {
-    const [palmares, setPalmares] = useState(player.customFields?.palmares || '');
+    const [palmares, setPalmares] = useState(player.customFields?.palmares || []);
+    const [newPalmaresItem, setNewPalmaresItem] = useState('');
+    const [achievements, setAchievements] = useState(player.customFields?.achievements || '');
     const [internationalStatus, setInternationalStatus] = useState(player.selection || 'No internacional');
 
     // Editable Fields State
@@ -34,6 +38,7 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
     const [seasons, setSeasons] = useState<PlayerSeason[]>(player.seasons || []);
 
     const [isSaving, setIsSaving] = useState(false);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [showCopiedToast, setShowCopiedToast] = useState(false);
 
     // Ensure seasons is initialized if empty
@@ -49,7 +54,8 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
 
     // Sync other fields when player updates (Fix for "Save not updating view")
     useEffect(() => {
-        setPalmares(player.customFields?.palmares || '');
+        setPalmares(player.customFields?.palmares || []);
+        setAchievements(player.customFields?.achievements || '');
         setClause(player.contract?.clause || '');
         setInternationalStatus(player.selection || 'No internacional');
     }, [player]);
@@ -66,7 +72,8 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                 },
                 customFields: {
                     ...player.customFields,
-                    palmares: palmares
+                    palmares: palmares,
+                    achievements: achievements
                 },
                 seasons: seasons // Save the updated seasons
             });
@@ -153,6 +160,42 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                         <Save className="w-5 h-5 text-white" />
+                    )}
+                </button>
+
+                {/* Doseier PDF Button (NEW) */}
+                <button
+                    onClick={async () => {
+                        setIsGeneratingPDF(true);
+                        try {
+                            // Merge current state into player object for PDF
+                            const currentStatePlayer = {
+                                ...player,
+                                selection: internationalStatus, // Use local state
+                                contract: {
+                                    ...player.contract,
+                                    clause: clause // Use local state
+                                },
+                                customFields: {
+                                    ...player.customFields,
+                                    palmares: palmares, // Use local state
+                                    achievements: achievements // Use local state
+                                },
+                                seasons: seasons // Use local state
+                            };
+                            await generatePlayerDossier(currentStatePlayer);
+                        } finally {
+                            setIsGeneratingPDF(false);
+                        }
+                    }}
+                    disabled={isGeneratingPDF}
+                    className="absolute top-6 right-[15.5rem] z-20 w-10 h-10 bg-zinc-900 hover:bg-black rounded-full flex items-center justify-center transition-colors print:hidden shadow-sm border border-white/10 disabled:opacity-50"
+                    title="Exportar Dossier PRONEO (A4)"
+                >
+                    {isGeneratingPDF ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <FileText className="w-5 h-5 text-white" />
                     )}
                 </button>
 
@@ -301,12 +344,88 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                                     Palmarés y Logros
                                 </h3>
 
-                                <textarea
-                                    value={palmares}
-                                    onChange={(e) => setPalmares(e.target.value)}
-                                    placeholder="Escribe aquí los títulos, premios individuales y logros destacados..."
-                                    className="w-full flex-1 bg-transparent border-none resize-none outline-none text-zinc-600 text-sm font-medium leading-relaxed placeholder:text-zinc-300 focus:ring-0"
-                                />
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Palmarés / Títulos</label>
+
+                                        <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-3 min-h-[96px]">
+                                            {/* List */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {Array.isArray(palmares)
+                                                    ? palmares.map((item: string, idx: number) => (
+                                                        <span key={idx} className="bg-white text-zinc-700 text-xs px-2 py-1 rounded-md flex items-center gap-1 border border-zinc-100 shadow-sm font-medium">
+                                                            {item}
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newArr = palmares.filter((_: any, i: number) => i !== idx);
+                                                                    setPalmares(newArr);
+                                                                }}
+                                                                className="text-zinc-400 hover:text-red-500 rounded-full p-0.5"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    ))
+                                                    : palmares && (
+                                                        // Legacy string fallback
+                                                        <span className="bg-white text-zinc-700 text-xs px-2 py-1 rounded-md flex items-center gap-1 border border-zinc-100 shadow-sm font-medium">
+                                                            {palmares}
+                                                            <button
+                                                                onClick={() => setPalmares([])}
+                                                                className="text-zinc-400 hover:text-red-500 rounded-full p-0.5"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    )
+                                                }
+                                                {!palmares?.length && !palmares && (
+                                                    <span className="text-xs text-zinc-400 italic">Sin títulos</span>
+                                                )}
+                                            </div>
+
+                                            {/* Input */}
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={newPalmaresItem}
+                                                    onChange={(e) => setNewPalmaresItem(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            if (!newPalmaresItem.trim()) return;
+                                                            const current = Array.isArray(palmares) ? palmares : palmares ? [palmares] : [];
+                                                            setPalmares([...current, newPalmaresItem.trim()]);
+                                                            setNewPalmaresItem('');
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-xs text-zinc-700 focus:outline-none focus:border-proneo-green"
+                                                    placeholder="Nuevo título..."
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        if (!newPalmaresItem.trim()) return;
+                                                        const current = Array.isArray(palmares) ? palmares : palmares ? [palmares] : [];
+                                                        setPalmares([...current, newPalmaresItem.trim()]);
+                                                        setNewPalmaresItem('');
+                                                    }}
+                                                    className="bg-proneo-green text-black px-2 rounded-lg hover:bg-[#a3b875] transition-colors"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Logros Individuales</label>
+                                        <textarea
+                                            value={achievements}
+                                            onChange={(e) => setAchievements(e.target.value)}
+                                            placeholder="Premios individuales, récords, MVPs..."
+                                            className="w-full h-24 bg-transparent border border-zinc-200 rounded-xl resize-none outline-none text-zinc-600 text-sm font-medium leading-relaxed placeholder:text-zinc-300 focus:border-blue-400 p-3"
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -397,14 +516,14 @@ const PlayerProfile360: React.FC<PlayerProfile360Props> = ({ player, onClose, on
                                                         placeholder="División"
                                                     />
                                                     <span>•</span>
-                                                    <div className="flex items-center gap-1">
+                                                    <div className={`flex items-center gap-1 transition-opacity ${season.goals > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                                         <input
                                                             type="number"
-                                                            value={season.matches}
-                                                            onChange={(e) => handleSeasonChange(idx, 'matches', parseInt(e.target.value) || 0)}
+                                                            value={season.goals}
+                                                            onChange={(e) => handleSeasonChange(idx, 'goals', parseInt(e.target.value) || 0)}
                                                             className="bg-transparent border-none p-0 focus:ring-0 w-8 text-right placeholder-zinc-300"
                                                         />
-                                                        <span>Partidos</span>
+                                                        <span>Goles</span>
                                                     </div>
 
                                                     {/* Delete Button (Hover only) */}

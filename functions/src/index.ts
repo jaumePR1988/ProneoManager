@@ -61,7 +61,10 @@ export const getPublicPlayerProfile = onCall({ cors: true }, async (request) => 
                 position: data?.position || '',
                 photoUrl: data?.photoUrl || null,
                 isScouting: isScouting,
-                accessCode: data?.accessCode // Return it back just in case client needs it for local state
+                accessCode: data?.accessCode,
+                documents: data?.documents || [],
+                seasons: data?.seasons || [],
+                customFields: data?.customFields || { palmares: [], achievements: '' }
             }
         };
 
@@ -97,6 +100,9 @@ export const uploadPlayerPhoto = onCall({ cors: true }, async (request) => {
         }
 
         // Determine collection
+        // ... existing exports
+
+
         let collectionName = 'players';
         let playerRef = db.collection('players').doc(playerId);
         let playerSnap = await playerRef.get();
@@ -139,3 +145,64 @@ export const uploadPlayerPhoto = onCall({ cors: true }, async (request) => {
         throw new HttpsError('internal', 'Upload failed');
     }
 });
+
+/**
+ * Update Player Profile
+ * Securely updates allowed fields (trajectory, palmares) after verifying PIN.
+ */
+export const updatePlayerProfile = onCall({ cors: true }, async (request) => {
+    const { playerId, pin, data } = request.data;
+
+    if (!playerId || !pin || !data) {
+        throw new HttpsError('invalid-argument', 'Missing parameters');
+    }
+
+    try {
+        // 1. Verify credentials
+        let playerRef = db.collection('players').doc(playerId);
+        let playerSnap = await playerRef.get();
+
+        if (!playerSnap.exists) {
+            // Check scouting
+            playerRef = db.collection('scouting_players').doc(playerId);
+            playerSnap = await playerRef.get();
+        }
+
+        if (!playerSnap.exists) {
+            throw new HttpsError('not-found', 'Player not found');
+        }
+
+        const playerData = playerSnap.data();
+        if (playerData?.accessCode !== pin) {
+            throw new HttpsError('permission-denied', 'Invalid Access Code');
+        }
+
+        // 2. Filter allowed fields to prevent overwriting sensitive data
+        const updates: any = {
+            updatedAt: Date.now()
+        };
+
+        // Allowed: customFields (palmares, achievements)
+        if (data.customFields) {
+            if (data.customFields.palmares !== undefined) updates['customFields.palmares'] = data.customFields.palmares;
+            if (data.customFields.achievements !== undefined) updates['customFields.achievements'] = data.customFields.achievements;
+        }
+
+        // Allowed: seasons (trajectory)
+        if (data.seasons !== undefined) {
+            updates['seasons'] = data.seasons;
+        }
+
+        // 3. Apply Update
+        await playerRef.update(updates);
+
+        return { success: true };
+
+    } catch (error) {
+        logger.error("Error updating profile", error);
+        throw new HttpsError('internal', 'Update failed');
+    }
+});
+
+import { generateAndSignContract } from './contractGenerator';
+export { generateAndSignContract };

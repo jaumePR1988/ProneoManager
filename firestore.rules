@@ -3,7 +3,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper to check if user is authenticated and part of the organization
     function isAuthenticated() {
-      return request.auth != null && request.auth.token.email.endsWith('@proneosports.com');
+      return request.auth != null && 
+             request.auth.token.keys().hasAny(['email']) && 
+             request.auth.token.email.endsWith('@proneosports.com');
     }
 
     // Helper to check if user is approved

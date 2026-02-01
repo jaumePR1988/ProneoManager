@@ -153,6 +153,12 @@ export const usePlayers = (isScouting: boolean = false) => {
             return;
         }
 
+        // Prevent fetching in Portal mode (Player does not have permissions for settings)
+        if (window.location.pathname.startsWith('/portal/')) {
+            setLoading(false);
+            return;
+        }
+
         const schemaRef = doc(db, 'settings', 'database_schema');
         const unsubSchema = onSnapshot(schemaRef, (snapshot) => {
             if (snapshot.exists()) {
@@ -178,6 +184,12 @@ export const usePlayers = (isScouting: boolean = false) => {
     useEffect(() => {
         if (isDemoMode) {
             setPlayers(SESSION_PLAYERS.filter(p => p.isScouting === isScouting));
+            setLoading(false);
+            return;
+        }
+
+        // Prevent fetching in Portal mode (Player does not have permissions for players collection)
+        if (window.location.pathname.startsWith('/portal/')) {
             setLoading(false);
             return;
         }

@@ -22,9 +22,20 @@ export const useNotifications = () => {
                 setPermission(status);
 
                 if (status === 'granted') {
-                    // Replace with your VAPID key from Firebase Console -> Project Settings -> Cloud Messaging
+                    // Register SW explicitly if not found (fixes AbortError)
+                    if ('serviceWorker' in navigator) {
+                        try {
+                            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                            console.log('Service Worker registered with scope:', registration.scope);
+                        } catch (err) {
+                            console.error('Service Worker registration failed:', err);
+                        }
+                    }
+
+                    // Replace with your VAPID key from Firebase Console
                     const fcmToken = await getToken(messaging, {
-                        vapidKey: 'BOUzsUo5hx3dtWfTBxMbzStxKtrJRcubmy4jbrDKaHow9qwj1RFzepvXyZ5HGIvvy0YOVLh4QDcX92DnhQPCi_k'
+                        vapidKey: 'BOUzsUo5hx3dtWfTBxMbzStxKtrJRcubmy4jbrDKaHow9qwj1RFzepvXyZ5HGIvvy0YOVLh4QDcX92DnhQPCi_k',
+                        serviceWorkerRegistration: await navigator.serviceWorker.getRegistration()
                     });
 
                     if (fcmToken) {

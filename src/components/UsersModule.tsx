@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, X, Shield, Plus, Save, AlertCircle, Key, Link as LinkIcon, Copy, Users, UserCog, RefreshCcw } from 'lucide-react';
+import { Check, X, Shield, Plus, Save, AlertCircle, Key, Link as LinkIcon, Copy, Users, UserCog, RefreshCcw, Search } from 'lucide-react';
 import { doc, updateDoc, deleteDoc, setDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useUsers } from '../hooks/useUsers';
@@ -46,22 +46,12 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole = 'guest', userSport
     );
     const [filterAgent, setFilterAgent] = useState<string>('All');
 
+    const [searchTerm, setSearchTerm] = useState('');
+
     // Derived Lists for Filters
     const availableAgents = React.useMemo(() => {
-        // Extract unique agents from players list
         const agents = new Set<string>();
         players.forEach(p => {
-            // Logic to find agent? Usually customFields.agent or scouting.currentAgent or something?
-            // Looking at Player type: I don't see a direct 'agent' field on the root level.
-            // It might be in 'scouting?.currentAgent' but these are PLAYERS (often 'Club' payerType).
-            // Let's assume 'scouting.currentAgent' OR 'proneo.contactPerson' (legacy) OR we might need to add it?
-            // Inspecting typical data... let's check standard fields.
-            // Assuming specific 'agent' logic might be complex. 
-            // EDIT: Checking usePlayers hook - keysToSort includes 'agents'.
-            // Let's try to find where agent is stored. Usually 'scouting.currentAgent'. 
-            // But for registered players they might have an assigned internal agent.
-            // Let's look at `MultimediaModule` or `PlayerModule` to see how they filter by agent.
-            // MultimediaModule uses `p.scouting?.currentAgent`.
             if (p.scouting?.currentAgent) agents.add(p.scouting.currentAgent);
         });
         return Array.from(agents).sort();
@@ -69,12 +59,20 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole = 'guest', userSport
 
     const filteredPlayers = React.useMemo(() => {
         return players.filter(p => {
+            // 0. Search Filter
+            if (searchTerm) {
+                const lowerSearch = searchTerm.toLowerCase();
+                const matchesName = p.name?.toLowerCase().includes(lowerSearch) ||
+                    p.firstName?.toLowerCase().includes(lowerSearch) ||
+                    p.lastName1?.toLowerCase().includes(lowerSearch);
+                if (!matchesName) return false;
+            }
+
             // 1. Category Filter
             if (filterCategory !== 'All') {
                 if (filterCategory === 'Fútbol' && p.category !== 'Fútbol') return false;
                 if (filterCategory === 'F. Sala' && p.category !== 'F. Sala') return false;
                 if (filterCategory === 'Femenino' && p.category !== 'Femenino') return false;
-                // If filter is specific but player doesn't match
                 if (p.category !== filterCategory) return false;
             }
 
@@ -85,7 +83,18 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole = 'guest', userSport
 
             return true;
         });
-    }, [players, filterCategory, filterAgent]);
+    }, [players, filterCategory, filterAgent, searchTerm]);
+
+    const filteredUsers = React.useMemo(() => {
+        if (!searchTerm) return users;
+        const lowerSearch = searchTerm.toLowerCase();
+        return users.filter(u =>
+            u.name?.toLowerCase().includes(lowerSearch) ||
+            u.email.toLowerCase().includes(lowerSearch) ||
+            u.role?.toLowerCase().includes(lowerSearch)
+        );
+    }, [users, searchTerm]);
+
 
 
     if (loadingUsers || loadingPlayers) return (
@@ -263,7 +272,17 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole = 'guest', userSport
             {/* --- TAB: STAFF --- */}
             {activeTab === 'staff' && isAdmin && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                    <div className="flex justify-end">
+                    <div className="flex justify-between gap-4">
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                            <input
+                                type="text"
+                                placeholder="Buscar en Staff..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="h-12 w-64 pl-12 pr-4 rounded-2xl bg-white border border-zinc-200 text-xs font-bold uppercase tracking-wide placeholder:text-zinc-300 outline-none focus:border-zinc-900 focus:ring-4 focus:ring-zinc-900/5 transition-all shadow-sm"
+                            />
+                        </div>
                         <button
                             onClick={() => setShowCreateModal(true)}
                             className="flex items-center gap-2 bg-zinc-900 text-white px-5 py-3 rounded-2xl hover:bg-zinc-800 transition-all font-black uppercase tracking-widest text-xs shadow-lg"
@@ -285,7 +304,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole = 'guest', userSport
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100">
-                                {users.map((user) => (
+                                {filteredUsers.map((user) => (
                                     <tr key={user.email} className="group hover:bg-zinc-50/50 transition-colors">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
@@ -378,7 +397,17 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole = 'guest', userSport
                         </div>
 
                         {/* FILTERS */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar jugador..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="h-12 w-64 pl-12 pr-4 rounded-xl bg-white border border-zinc-200 text-xs font-bold uppercase tracking-wide placeholder:text-zinc-300 outline-none focus:border-[#b4c885] focus:ring-4 focus:ring-[#b4c885]/10 transition-all"
+                                />
+                            </div>
                             <select
                                 value={filterCategory}
                                 onChange={(e) => setFilterCategory(e.target.value)}
