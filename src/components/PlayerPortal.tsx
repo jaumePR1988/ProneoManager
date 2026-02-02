@@ -375,9 +375,27 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
             });
 
             if (result.data.success) {
+                // Optimistic update of local state to show contract immediately
+                const newDoc = {
+                    id: `contract_${Date.now()}`,
+                    name: 'Contrato Agencia (Renovado)',
+                    type: 'contract',
+                    url: result.data.url,
+                    date: new Date().toISOString()
+                };
+
+                setPlayer((prev: any) => ({
+                    ...prev,
+                    proneoStatus: 'PendingValidation',
+                    documents: [...(prev.documents || []), newDoc],
+                    proneo: {
+                        ...prev.proneo,
+                        agencyEndDate: result.data.renewalDate ? result.data.renewalDate.split('/').reverse().join('-') : prev.proneo?.agencyEndDate
+                    }
+                }));
+
                 setRenewalStep('complete');
                 setToast({ message: 'Contrato renovado correctamente', type: 'success' });
-                // Update local player data?
             }
         } catch (error) {
             console.error("Renewal error", error);

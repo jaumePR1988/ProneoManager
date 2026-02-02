@@ -21,7 +21,6 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         const playerName = (playerData === null || playerData === void 0 ? void 0 : playerData.name) || 'Jugador';
         // 2. Load Template
         // WE WILL ASSUME A TEMPLATE EXISTS IN STORAGE for now, or use a blank one for testing if not found.
-        // For local testing, ensure you have a file or handle the error gracefully.
         // 2. Load Template & Fonts
         const bucket = storage.bucket();
         const templatePath = `templates/contract_${templateType || 'adult'}.pdf`;
@@ -29,10 +28,12 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         const [exists] = await bucket.file(templatePath).exists();
         let pdfDoc;
         if (exists) {
+            console.log("[DEBUG] Loading template from Storage...");
             const [buffer] = await bucket.file(templatePath).download();
             pdfDoc = await pdf_lib_1.PDFDocument.load(buffer);
         }
         else {
+            console.warn("[DEBUG] Template NOT found. Creating blank PDF.");
             pdfDoc = await pdf_lib_1.PDFDocument.create();
             pdfDoc.addPage();
         }
@@ -81,22 +82,24 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         const signatureImageBytes = Buffer.from(signatureBase64.split(',')[1], 'base64');
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
         const signatureDims = signatureImage.scale(0.5); // Doubled from 0.25
-        // ...
-        pages.forEach((page) => {
-            // Lateral Signature (Left margin)
+        // Iterate all pages EXCEPT the last one for Lateral Signature
+        for (let i = 0; i < pages.length - 1; i++) {
+            const page = pages[i];
+            // Lateral Signature (Reverted to 45 as requested)
             page.drawImage(signatureImage, {
-                x: 20,
+                x: 45,
                 y: 100,
                 width: signatureDims.width,
                 height: signatureDims.height,
                 rotate: (0, pdf_lib_1.degrees)(90)
             });
-        });
+        }
         // ...
         // FILL FORM FIELDS IF THEY EXIST (AcroForms)
         const form = pdfDoc.getForm();
         try {
             const fields = form.getFields();
+            console.log("Found Form Fields:", fields.map(f => f.getName())); // DEBUG: List all fields
             if (fields.length > 0) {
                 // Map data to fields
                 const fieldMap = {
@@ -137,23 +140,25 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
             }
         }
         catch (e) {
-            console.log("No form fields found, skipping form fill");
+            console.log("Form processing error", e);
         }
         // DRAW MAIN SIGNATURE
         // Strategy: Look for a form field named 'box_firma' to get exact coordinates.
         // If not found, use default coordinates.
         const signatureDimsMain = signatureImage.scale(0.6); // Keep for default scaling
         let sigX = 310;
-        let sigY = 550;
+        let sigY = 450; // Lowered default (was 550) to see if it makes a difference
         let sigWidth = signatureDimsMain.width;
         let sigHeight = signatureDimsMain.height;
         let hasCustomBox = false;
         try {
             const signatureField = form.getTextField('box_firma');
             if (signatureField) {
+                console.log("Found box_firma field!");
                 const widgets = signatureField.getWidgets();
                 if (widgets.length > 0) {
                     const rect = widgets[0].getRectangle();
+                    console.log("Box Rect:", rect);
                     sigX = rect.x;
                     sigY = rect.y;
                     // Fit signature within the box maintaining aspect ratio
@@ -172,14 +177,27 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                     // Center in box
                     sigX += (rect.width - sigWidth) / 2;
                     sigY += (rect.height - sigHeight) / 2;
+                    // MANUAL CORRECTION: Push down
+                    sigY -= 80;
                     hasCustomBox = true;
                     // Remove the field appearance so it doesn't show a border/bg
-                    signatureField.setText('');
+                    // signatureField.setText(''); // Removing this as we flatten before if filled?
+                    // Verify if calling setText on a flattened form throws.
+                    // Actually we flatten fields BEFORE this block in existing code?
+                    // Wait, previous code flattened inside the `if (fields.length > 0)` block.
+                    // If 'box_firma' is part of `fields`, it might be flattened.
+                    // If flattened, getTextField might fail?
+                    // NO, `form.flatten()` makes fields into static content. They are no longer accessible as fields.
+                    // CRITICAL BUG FOUND: We flattened the form (line 160) BEFORE looking for 'box_firma' (line 178).
+                    // This explains why it never found the signature box and used defaults!
                 }
+            }
+            else {
+                console.log("box_firma field not found (or flattened)");
             }
         }
         catch (e) {
-            console.log("No specific 'box_firma' field found, using defaults.");
+            console.log("Error finding signature box:", e);
         }
         lastPage.drawImage(signatureImage, {
             x: sigX,
@@ -199,10 +217,12 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                     const rect = widgets[0].getRectangle();
                     textX = rect.x;
                     textY = rect.y + rect.height - 10; // Start from top of box
+                    // MANUAL CORRECTION: Push down
+                    textY -= 80;
                 }
             }
             else if (hasCustomBox) {
-                // If we had a signature box but no data box, 
+                // If we had a signature box but no data box,
                 // align text with the start of the signature box, below it
                 const signatureField = form.getTextField('box_firma');
                 const rect = signatureField.getWidgets()[0].getRectangle();

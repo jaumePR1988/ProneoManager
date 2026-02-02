@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateAndSignContract = exports.updatePlayerProfile = exports.uploadPlayerPhoto = exports.getPublicPlayerProfile = void 0;
+exports.onPlayerContractSigned = exports.checkDailyAlerts = exports.generateAndSignContract = exports.updatePlayerProfile = exports.uploadPlayerPhoto = exports.getPublicPlayerProfile = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -173,4 +173,7 @@ exports.updatePlayerProfile = (0, https_1.onCall)({ cors: true }, async (request
 });
 const contractGenerator_1 = require("./contractGenerator");
 Object.defineProperty(exports, "generateAndSignContract", { enumerable: true, get: function () { return contractGenerator_1.generateAndSignContract; } });
+const notifications_1 = require("./notifications");
+Object.defineProperty(exports, "checkDailyAlerts", { enumerable: true, get: function () { return notifications_1.checkDailyAlerts; } });
+Object.defineProperty(exports, "onPlayerContractSigned", { enumerable: true, get: function () { return notifications_1.onPlayerContractSigned; } });
 //# sourceMappingURL=index.js.map

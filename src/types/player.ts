@@ -134,6 +134,7 @@ export interface Player {
     scouting?: ScoutingData;
 
     contractYears?: ContractYear[];
+    proneoStatus?: 'PendingValidation' | 'Active' | 'Inactive' | 'Expired';
 
     customFields: Record<string, any>;
 
@@ -149,7 +150,6 @@ export interface Player {
     };
 
     photoStatus?: '✅' | '❌';
-    proneoStatus?: 'Active' | 'PendingValidation' | 'Inactive';
     documents: { id: string; name: string; url: string; type: 'contract' | 'other'; date: string }[];
 
     createdAt: number;

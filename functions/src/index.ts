@@ -206,3 +206,6 @@ export const updatePlayerProfile = onCall({ cors: true }, async (request) => {
 
 import { generateAndSignContract } from './contractGenerator';
 export { generateAndSignContract };
+
+import { checkDailyAlerts, onPlayerContractSigned } from './notifications';
+export { checkDailyAlerts, onPlayerContractSigned };
