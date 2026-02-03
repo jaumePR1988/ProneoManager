@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onPlayerContractSigned = exports.checkDailyAlerts = void 0;
+exports.testDailyAlerts = exports.onPlayerContractSigned = exports.checkDailyAlerts = void 0;
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const date_fns_1 = require("date-fns");
+const https_1 = require("firebase-functions/v2/https");
 if (admin.apps.length === 0) {
     admin.initializeApp();
 }
@@ -202,6 +203,70 @@ exports.onPlayerContractSigned = (0, firestore_1.onDocumentUpdated)("players/{pl
         const roles = ['admin', 'director', 'tesorero'];
         const tokens = await getRecipients(roles, 'General');
         await sendNotifications(tokens, "🚨 CONTRATO FIRMADO", `${name} ha firmado su renovación. Requiere validación.`);
+    }
+});
+/**
+ * MANUAL TEST TRIGGER
+ * URL: http://127.0.0.1:5001/proneomanager/us-central1/testDailyAlerts
+ */
+exports.testDailyAlerts = (0, https_1.onRequest)(async (req, res) => {
+    var _a;
+    logger.info("MANUAL TRIGGER: Starting Daily Alert Check...");
+    const logs = [];
+    const log = (msg) => {
+        logger.info(msg);
+        logs.push(msg);
+    };
+    try {
+        const today = new Date();
+        // Force specific date if needed for testing, e.g.:
+        // const today = new Date('2026-02-02T10:00:00'); 
+        const alertsToSend = [];
+        const playersSnap = await db.collection('players').get();
+        const scoutingSnap = await db.collection('scouting_players').get();
+        const allDocs = [...playersSnap.docs, ...scoutingSnap.docs];
+        log(`Loaded ${allDocs.length} total docs.`);
+        // --- COPY OF LOGIC (Simplified for Test) ---
+        // B. BIRTHDAYS
+        for (const doc of allDocs) {
+            const p = doc.data();
+            if (!p.birthDate)
+                continue;
+            try {
+                const dob = new Date(p.birthDate);
+                if (dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()) {
+                    log(`MATCH: Birthday ${p.name}`);
+                    alertsToSend.push({ roles: ['admin'], category: 'General', title: 'Test Birthday', body: `Cumpleaños: ${p.name}` });
+                }
+            }
+            catch (e) { }
+        }
+        // C. CLAUSES
+        for (const doc of playersSnap.docs) {
+            const p = doc.data();
+            if ((_a = p.contract) === null || _a === void 0 ? void 0 : _a.optionalNoticeDate) {
+                const noticeDate = new Date(p.contract.optionalNoticeDate);
+                const daysDiff = (0, date_fns_1.differenceInDays)(noticeDate, today);
+                const notifyDays = [60, 30, 7, 0, -1, -7];
+                if (notifyDays.includes(daysDiff)) {
+                    log(`MATCH: Clause ${p.name} (Diff: ${daysDiff})`);
+                    alertsToSend.push({ roles: ['admin'], category: 'General', title: 'Test Clause', body: `Cláusula: ${p.name}` });
+                }
+            }
+        }
+        // SENDING
+        for (const alert of alertsToSend) {
+            log(`Sending alert: ${alert.title} to roles ${alert.roles}`);
+            const recipients = await getRecipients(alert.roles, alert.category);
+            log(`Found ${recipients.length} tokens.`);
+            // UNCOMMENT TO ACTUALLY SEND IN TEST:
+            // if (recipients.length > 0) await sendNotifications(recipients, alert.title, alert.body);
+        }
+        res.json({ success: true, logs, alertsFound: alertsToSend.length });
+    }
+    catch (error) {
+        logger.error(error);
+        res.status(500).json({ error: error.message });
     }
 });
 //# sourceMappingURL=notifications.js.map

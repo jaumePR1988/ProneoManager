@@ -3,7 +3,6 @@ import * as admin from "firebase-admin";
 import { PDFDocument, StandardFonts, degrees } from 'pdf-lib';
 import { addYears, format } from 'date-fns';
 
-
 const storage = admin.storage();
 const db = admin.firestore();
 
@@ -35,14 +34,11 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
         const playerName = playerData?.name || 'Jugador';
 
         // 2. Load Template
-        // WE WILL ASSUME A TEMPLATE EXISTS IN STORAGE for now, or use a blank one for testing if not found.
-        // 2. Load Template & Fonts
         const bucket = storage.bucket();
         const templatePath = `templates/contract_${templateType || 'adult'}.pdf`;
 
         // Check/Download Template
         const [exists] = await bucket.file(templatePath).exists();
-
         let pdfDoc;
 
         if (exists) {
@@ -64,7 +60,7 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
             console.warn("Fontkit registration failed:", e);
         }
 
-        // Load Fonts from Storage
+        // Load Fonts
         let regularFont: any;
         let boldFont: any;
 
@@ -84,15 +80,13 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
                 const [boldBuf] = await boldFile.download();
                 boldFont = await pdfDoc.embedFont(new Uint8Array(boldBuf));
             } else {
-                boldFont = regularFont; // Fallback to regular (or helvetica)
+                boldFont = regularFont;
             }
         } catch (e) {
             console.warn("Font loading error, using Standard:", e);
             regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
             boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
         }
-
-        // ... (Signature setup skipped, assume consistent)
 
         const pages = pdfDoc.getPages();
         const lastPage = pages[pages.length - 1];
@@ -101,12 +95,11 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
         // Remove header "data:image/png;base64,"
         const signatureImageBytes = Buffer.from(signatureBase64.split(',')[1], 'base64');
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
-        const signatureDims = signatureImage.scale(0.5); // Doubled from 0.25
+        const signatureDims = signatureImage.scale(0.5);
 
         // Iterate all pages EXCEPT the last one for Lateral Signature
         for (let i = 0; i < pages.length - 1; i++) {
             const page = pages[i];
-            // Lateral Signature (Reverted to 45 as requested)
             page.drawImage(signatureImage, {
                 x: 45,
                 y: 100,
@@ -116,63 +109,72 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
             });
         }
 
-        // ...
-
         // FILL FORM FIELDS IF THEY EXIST (AcroForms)
         const form = pdfDoc.getForm();
-        try {
-            const fields = form.getFields();
-            console.log("Found Form Fields:", fields.map(f => f.getName())); // DEBUG: List all fields
-            if (fields.length > 0) {
-                // Map data to fields
-                const fieldMap: Record<string, string> = {
-                    'nombre_jugador': playerName,
-                    'dni': dni,
-                    'calle': address.street,
-                    'cp': address.cp,
-                    'ciudad': address.city,
-                    'provincia': address.province,
-                    'fecha_firma': format(new Date(), 'dd/MM/yyyy'),
-                    'fecha_nacimiento': playerData?.birthDate ? format(new Date(playerData.birthDate), 'dd/MM/yyyy') : '',
-                    'nacionalidad': playerData?.nationality || '',
-                };
+        const fields = form.getFields();
+        console.log(`[DEBUG] Found ${fields.length} fields in template.`);
 
-                Object.entries(fieldMap).forEach(([key, val]) => {
-                    try {
-                        const field = form.getTextField(key);
-                        if (field) {
-                            let finalVal = val;
-                            let fontToUse = regularFont;
-
-                            if (key === 'nombre_jugador') {
-                                finalVal = val.toUpperCase();
-                                fontToUse = boldFont;
-                            }
-
-                            field.setText(finalVal);
-                            try {
-                                field.updateAppearances(fontToUse);
-                            } catch (errStyle) {
-                                console.warn("Style update failed for", key);
-                            }
-                        }
-                    } catch (e) {
-                        // Field might not exist
-                    }
-                });
-                form.flatten();
+        // --- DEBUG: LOG ALL FIELDS AND COORDINATES ---
+        fields.forEach(f => {
+            const name = f.getName();
+            console.log(`[DEBUG] Field: ${name}`);
+            try {
+                const widgets = (f as any).getWidgets();
+                if (widgets.length > 0) {
+                    const rect = widgets[0].getRectangle();
+                    console.log(`       -> Rect: x=${rect.x}, y=${rect.y}, w=${rect.width}, h=${rect.height}`);
+                } else {
+                    console.log(`       -> No widgets`);
+                }
+            } catch (err) {
+                console.log(`       -> Error reading widgets:`, err);
             }
-        } catch (e) {
-            console.log("Form processing error", e);
+        });
+
+        if (fields.length > 0) {
+            // Map data to fields
+            const fieldMap: Record<string, string> = {
+                'nombre_jugador': playerName,
+                'dni': dni,
+                'calle': address.street,
+                'cp': address.cp,
+                'ciudad': address.city,
+                'provincia': address.province,
+                'fecha_firma': format(new Date(), 'dd/MM/yyyy'),
+                'fecha_nacimiento': playerData?.birthDate ? format(new Date(playerData.birthDate), 'dd/MM/yyyy') : '',
+                'nacionalidad': playerData?.nationality || '',
+            };
+
+            Object.entries(fieldMap).forEach(([key, val]) => {
+                try {
+                    const field = form.getTextField(key);
+                    if (field) {
+                        let finalVal = val;
+                        let fontToUse = regularFont;
+
+                        if (key === 'nombre_jugador') {
+                            finalVal = val.toUpperCase();
+                            fontToUse = boldFont;
+                        }
+
+                        field.setText(finalVal);
+                        try {
+                            field.updateAppearances(fontToUse);
+                        } catch (errStyle) {
+                            console.warn("Style update failed for", key);
+                        }
+                    }
+                } catch (e) {
+                    // Field might not exist
+                }
+            });
+            form.flatten();
         }
 
-        // DRAW MAIN SIGNATURE
-        // Strategy: Look for a form field named 'box_firma' to get exact coordinates.
-        // If not found, use default coordinates.
-
-        const signatureDimsMain = signatureImage.scale(0.6); // Keep for default scaling
+        // DRAW MAIN SIGNATURE (Last Page)
+        const signatureDimsMain = signatureImage.scale(0.6);
         let sigX = 310;
-        let sigY = 450; // Lowered default (was 550) to see if it makes a difference
+        let sigY = 450;
         let sigWidth = signatureDimsMain.width;
         let sigHeight = signatureDimsMain.height;
         let hasCustomBox = false;
@@ -193,11 +195,9 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
                     const sigRatio = signatureImage.width / signatureImage.height;
 
                     if (sigRatio > boxRatio) {
-                        // Limited by width
                         sigWidth = rect.width;
                         sigHeight = rect.width / sigRatio;
                     } else {
-                        // Limited by height
                         sigHeight = rect.height;
                         sigWidth = rect.height * sigRatio;
                     }
@@ -210,16 +210,6 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
                     sigY -= 80;
 
                     hasCustomBox = true;
-                    // Remove the field appearance so it doesn't show a border/bg
-                    // signatureField.setText(''); // Removing this as we flatten before if filled?
-                    // Verify if calling setText on a flattened form throws.
-                    // Actually we flatten fields BEFORE this block in existing code?
-                    // Wait, previous code flattened inside the `if (fields.length > 0)` block.
-                    // If 'box_firma' is part of `fields`, it might be flattened.
-                    // If flattened, getTextField might fail?
-                    // NO, `form.flatten()` makes fields into static content. They are no longer accessible as fields.
-                    // CRITICAL BUG FOUND: We flattened the form (line 160) BEFORE looking for 'box_firma' (line 178).
-                    // This explains why it never found the signature box and used defaults!
                 }
             } else {
                 console.log("box_firma field not found (or flattened)");
@@ -236,7 +226,6 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
         });
 
         // Draw Name & DNI
-        // Strategy: Look for 'box_datos' or place relative to signature
         let textX = sigX;
         let textY = sigY - 20; // Default: below signature
 
@@ -253,22 +242,21 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
                     textY -= 80;
                 }
             } else if (hasCustomBox) {
-                // If we had a signature box but no data box,
-                // align text with the start of the signature box, below it
-                const signatureField = form.getTextField('box_firma');
-                const rect = (signatureField as any).getWidgets()[0].getRectangle();
-                textX = rect.x;
-                textY = rect.y - 15;
+                // If we had a signature box but no data box, align text relative to it if possible
+                // But since form is flattened, we might rely on the calculated sigX/sigY or original logic
+                // For simplicity, using sigX/Y calculated above minus offsets
             }
         } catch (e) {
             // Ignore
         }
 
-        // Draw Name & DNI under signature
+        // Draw Name & DNI text
         lastPage.drawText(`${playerName}`, { x: textX, y: textY, size: 10, font: boldFont });
         lastPage.drawText(`DNI: ${dni}`, { x: textX, y: textY - 12, size: 10, font: regularFont });
 
         // Draw Dates
+        // (Optional: Draw specific date text if needed, relying on form fields above mostly)
+
         const today = new Date();
         const endDate = addYears(today, 2);
 
@@ -290,7 +278,7 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
         // 6. Update Firestore
         await db.collection('players').doc(playerId).update({
             'proneo.agencyEndDate': format(endDate, 'yyyy-MM-dd'),
-            'proneoStatus': 'PendingValidation', // Se requiere validación por administración
+            'proneoStatus': 'PendingValidation',
             documents: admin.firestore.FieldValue.arrayUnion({
                 id: `contract_${Date.now()}`,
                 name: 'Contrato Agencia (Renovado)',

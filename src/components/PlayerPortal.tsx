@@ -97,11 +97,35 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
                 const playerRef = doc(db, 'players', playerId);
                 unsubscribe = onSnapshot(playerRef, (docSnap) => {
                     if (docSnap.exists()) {
-                        setPlayer((prev: any) => ({
-                            ...prev,
-                            ...docSnap.data(),
-                            id: docSnap.id // ensure ID is preserved
-                        }));
+                        const newData = docSnap.data();
+                        setPlayer((prev: any) => {
+                            // Smart Merge for Documents to prevent flickering (Optimistic UI preservation)
+                            const incomingDocs = newData.documents || [];
+                            const existingDocs = prev?.documents || [];
+
+                            // Find documents in local state that are NOT in incoming data (potential optimistic ones)
+                            const localOnlyDocs = existingDocs.filter((d: any) =>
+                                !incomingDocs.some((idoc: any) => idoc.id === d.id)
+                            );
+
+                            // Keep them ONLY if they look like recent contracts (e.g., added in last minute)
+                            // This prevents "resurrecting" actually deleted documents.
+                            // We use the ID format `contract_${timestamp}`
+                            const retainedDocs = localOnlyDocs.filter((d: any) => {
+                                if (d.id && d.id.startsWith('contract_')) {
+                                    const ts = parseInt(d.id.split('_')[1]);
+                                    return (Date.now() - ts) < 60000; // 60 seconds grace period
+                                }
+                                return false; // discard other local-only docs
+                            });
+
+                            return {
+                                ...prev,
+                                ...newData,
+                                documents: [...incomingDocs, ...retainedDocs],
+                                id: docSnap.id // ensure ID is preserved
+                            };
+                        });
                     }
                 });
             }
@@ -293,11 +317,10 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
                 setUploading(false);
                 setProcessing({ type: null, message: '' });
             };
-        } catch (error) {
-            console.error(error);
-            setToast({ message: 'Error al subir foto', type: 'error' });
-            setUploading(false);
+        } finally {
+            setLoading(false);
             setProcessing({ type: null, message: '' });
+            e.target.value = ''; // Allow re-selecting same file
         }
     };
 
@@ -342,9 +365,12 @@ const PlayerPortal: React.FC<PlayerPortalProps> = ({ playerId }) => {
                     fetchMedia(); // Refresh gallery
                 }
             );
+
         } catch (error) {
             console.error(error);
             setVideoUploading(false);
+        } finally {
+            e.target.value = ''; // Allow re-selecting same file
         }
     };
 

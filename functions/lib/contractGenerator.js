@@ -97,50 +97,66 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         // ...
         // FILL FORM FIELDS IF THEY EXIST (AcroForms)
         const form = pdfDoc.getForm();
-        try {
-            const fields = form.getFields();
-            console.log("Found Form Fields:", fields.map(f => f.getName())); // DEBUG: List all fields
-            if (fields.length > 0) {
-                // Map data to fields
-                const fieldMap = {
-                    'nombre_jugador': playerName,
-                    'dni': dni,
-                    'calle': address.street,
-                    'cp': address.cp,
-                    'ciudad': address.city,
-                    'provincia': address.province,
-                    'fecha_firma': (0, date_fns_1.format)(new Date(), 'dd/MM/yyyy'),
-                    'fecha_nacimiento': (playerData === null || playerData === void 0 ? void 0 : playerData.birthDate) ? (0, date_fns_1.format)(new Date(playerData.birthDate), 'dd/MM/yyyy') : '',
-                    'nacionalidad': (playerData === null || playerData === void 0 ? void 0 : playerData.nationality) || '',
-                };
-                Object.entries(fieldMap).forEach(([key, val]) => {
-                    try {
-                        const field = form.getTextField(key);
-                        if (field) {
-                            let finalVal = val;
-                            let fontToUse = regularFont;
-                            if (key === 'nombre_jugador') {
-                                finalVal = val.toUpperCase();
-                                fontToUse = boldFont;
-                            }
-                            field.setText(finalVal);
-                            try {
-                                field.updateAppearances(fontToUse);
-                            }
-                            catch (errStyle) {
-                                console.warn("Style update failed for", key);
-                            }
+        const fields = form.getFields();
+        console.log(`[DEBUG] Found ${fields.length} fields in template.`);
+        // --- DEBUG: LOG ALL FIELDS AND COORDINATES ---
+        fields.forEach(f => {
+            const name = f.getName();
+            console.log(`[DEBUG] Field: ${name}`);
+            try {
+                const widgets = f.getWidgets();
+                if (widgets.length > 0) {
+                    const rect = widgets[0].getRectangle();
+                    console.log(`       -> Rect: x=${rect.x}, y=${rect.y}, w=${rect.width}, h=${rect.height}`);
+                }
+                else {
+                    console.log(`       -> No widgets`);
+                }
+            }
+            catch (err) {
+                console.log(`       -> Error reading widgets:`, err);
+            }
+        });
+        // ---------------------------------------------
+        // Fill Data
+        // ... (rest of code)
+        if (fields.length > 0) {
+            // Map data to fields
+            const fieldMap = {
+                'nombre_jugador': playerName,
+                'dni': dni,
+                'calle': address.street,
+                'cp': address.cp,
+                'ciudad': address.city,
+                'provincia': address.province,
+                'fecha_firma': (0, date_fns_1.format)(new Date(), 'dd/MM/yyyy'),
+                'fecha_nacimiento': (playerData === null || playerData === void 0 ? void 0 : playerData.birthDate) ? (0, date_fns_1.format)(new Date(playerData.birthDate), 'dd/MM/yyyy') : '',
+                'nacionalidad': (playerData === null || playerData === void 0 ? void 0 : playerData.nationality) || '',
+            };
+            Object.entries(fieldMap).forEach(([key, val]) => {
+                try {
+                    const field = form.getTextField(key);
+                    if (field) {
+                        let finalVal = val;
+                        let fontToUse = regularFont;
+                        if (key === 'nombre_jugador') {
+                            finalVal = val.toUpperCase();
+                            fontToUse = boldFont;
+                        }
+                        field.setText(finalVal);
+                        try {
+                            field.updateAppearances(fontToUse);
+                        }
+                        catch (errStyle) {
+                            console.warn("Style update failed for", key);
                         }
                     }
-                    catch (e) {
-                        // Field might not exist
-                    }
-                });
-                form.flatten();
-            }
-        }
-        catch (e) {
-            console.log("Form processing error", e);
+                }
+                catch (e) {
+                    // Field might not exist
+                }
+            });
+            form.flatten();
         }
         // DRAW MAIN SIGNATURE
         // Strategy: Look for a form field named 'box_firma' to get exact coordinates.
