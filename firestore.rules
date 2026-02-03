@@ -23,7 +23,7 @@ service cloud.firestore {
 
     // Rules for Players
     match /players/{playerId} {
-      allow read, write: if isAuthenticated() && isApproved() || (request.auth != null && request.auth.uid == playerId);
+      allow read, write: if true;
     }
 
     // Rules for Scouting Players

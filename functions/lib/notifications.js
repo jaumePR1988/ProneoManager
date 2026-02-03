@@ -52,14 +52,21 @@ const getRecipients = async (roles, category = null) => {
     const tokens = [];
     snapshot.forEach(doc => {
         const userData = doc.data();
-        if (userData.fcmToken) {
+        if (userData.fcmToken || (userData.fcmTokens && userData.fcmTokens.length > 0)) {
             // Apply Category Filter if strictly required
             const userCategory = userData.category || userData.userSport || 'General';
             if (category && userCategory !== 'General' && category !== 'General') {
                 if (userCategory !== category)
                     return;
             }
-            tokens.push(userData.fcmToken);
+            // A. New Method: Array
+            if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
+                tokens.push(...userData.fcmTokens);
+            }
+            // B. Legacy Fallback
+            else if (userData.fcmToken) {
+                tokens.push(userData.fcmToken);
+            }
         }
     });
     return tokens;
@@ -260,7 +267,8 @@ exports.testDailyAlerts = (0, https_1.onRequest)(async (req, res) => {
             const recipients = await getRecipients(alert.roles, alert.category);
             log(`Found ${recipients.length} tokens.`);
             // UNCOMMENT TO ACTUALLY SEND IN TEST:
-            // if (recipients.length > 0) await sendNotifications(recipients, alert.title, alert.body);
+            if (recipients.length > 0)
+                await sendNotifications(recipients, alert.title, alert.body);
         }
         res.json({ success: true, logs, alertsFound: alertsToSend.length });
     }

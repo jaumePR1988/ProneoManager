@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onPlayerContractSigned = exports.checkDailyAlerts = exports.generateAndSignContract = exports.updatePlayerProfile = exports.uploadPlayerPhoto = exports.getPublicPlayerProfile = void 0;
+exports.testDailyAlerts = exports.onPlayerContractSigned = exports.checkDailyAlerts = exports.generateAndSignContract = exports.updatePlayerProfile = exports.uploadPlayerPhoto = exports.getPublicPlayerProfile = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -176,4 +176,5 @@ Object.defineProperty(exports, "generateAndSignContract", { enumerable: true, ge
 const notifications_1 = require("./notifications");
 Object.defineProperty(exports, "checkDailyAlerts", { enumerable: true, get: function () { return notifications_1.checkDailyAlerts; } });
 Object.defineProperty(exports, "onPlayerContractSigned", { enumerable: true, get: function () { return notifications_1.onPlayerContractSigned; } });
+Object.defineProperty(exports, "testDailyAlerts", { enumerable: true, get: function () { return notifications_1.testDailyAlerts; } });
 //# sourceMappingURL=index.js.map

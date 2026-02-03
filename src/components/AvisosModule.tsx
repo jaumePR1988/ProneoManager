@@ -512,7 +512,7 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                     title: `🚨 VALIDAR CONTRATO (${daysLeft > 0 ? daysLeft + ' días' : 'EXPIRA HOY'})`,
                     message: `${p.name} ha firmado su renovación. TIENES 10 DÍAS PARA VALIDARLO.`,
                     player: p,
-                    category: 'Administración',
+                    category: p.category || 'Administración',
                     icon: FileText,
                     color: 'bg-orange-600 animate-pulse'
                 });
@@ -566,12 +566,30 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
         <div className="max-w-5xl mx-auto pb-20">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-black text-zinc-900 uppercase tracking-tighter flex items-center gap-3">
-                    Centro de <span className="text-proneo-green">Avisos</span>
-                    <div className="w-8 h-8 rounded-full bg-red-500 text-white text-sm flex items-center justify-center shadow-lg shadow-red-500/30">
-                        {alerts.length}
-                    </div>
-                </h1>
+                <div className="flex items-center justify-between">
+                    <h1 className="text-3xl font-black text-zinc-900 uppercase tracking-tighter flex items-center gap-3">
+                        Centro de <span className="text-proneo-green">Avisos</span>
+                        <div className="w-8 h-8 rounded-full bg-red-500 text-white text-sm flex items-center justify-center shadow-lg shadow-red-500/30">
+                            {alerts.length}
+                        </div>
+                    </h1>
+
+                    {/* RESTORE BUTTON */}
+                    {(completedAlerts.length > 0 || Object.keys(snoozedAlerts).length > 0) && (
+                        <button
+                            onClick={async () => {
+                                if (confirm("¿Quieres restaurar TODOS los avisos borrados/pospuestos?")) {
+                                    setCompletedAlerts([]);
+                                    setSnoozedAlerts({});
+                                    await persistPrefs([], {});
+                                }
+                            }}
+                            className="bg-zinc-100 text-zinc-500 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors flex items-center gap-2"
+                        >
+                            <Clock4 className="w-4 h-4" /> Restaurar Historial
+                        </button>
+                    )}
+                </div>
                 <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs mt-2 mb-6">
                     Notificaciones inteligentes y recordatorios críticos
                 </p>

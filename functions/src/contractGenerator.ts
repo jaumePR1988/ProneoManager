@@ -207,7 +207,7 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
                     sigY += (rect.height - sigHeight) / 2;
 
                     // MANUAL CORRECTION: Push down
-                    sigY -= 120;
+                    sigY -= 650;
 
                     hasCustomBox = true;
                 }
@@ -239,7 +239,7 @@ export const generateAndSignContract = onCall({ cors: true }, async (request) =>
                     textY = rect.y + rect.height - 10; // Start from top of box
 
                     // MANUAL CORRECTION: Push down
-                    textY -= 120;
+                    textY -= 650;
                 }
             } else if (hasCustomBox) {
                 // If we had a signature box but no data box, align text relative to it if possible

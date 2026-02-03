@@ -182,7 +182,7 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                     sigX += (rect.width - sigWidth) / 2;
                     sigY += (rect.height - sigHeight) / 2;
                     // MANUAL CORRECTION: Push down
-                    sigY -= 120;
+                    sigY -= 650;
                     hasCustomBox = true;
                 }
             }
@@ -211,7 +211,7 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                     textX = rect.x;
                     textY = rect.y + rect.height - 10; // Start from top of box
                     // MANUAL CORRECTION: Push down
-                    textY -= 120;
+                    textY -= 650;
                 }
             }
             else if (hasCustomBox) {

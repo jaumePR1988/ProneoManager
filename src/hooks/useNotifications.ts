@@ -64,6 +64,9 @@ export const useNotifications = () => {
                         setToken(t);
                         saveTokenToUser(t);
                     }
+                })
+                .catch(err => {
+                    console.warn("Failed to get token (silently ignored):", err);
                 });
         }
 
