@@ -491,7 +491,8 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                 // Assuming createdAt or updatedAt is close to signature time, or looking for contract doc date
                 // For safety, we default to "URGENTE"
                 let daysLeft = 10;
-                const contractDoc = p.documents?.find(d => d.type === 'contract' && d.name.includes('Renovado'));
+                const contractDoc = p.documents?.find((d: any) => d.type === 'contract' && d.name.includes('Renovado'));
+
                 if (contractDoc && contractDoc.date) {
                     const signDate = new Date(contractDoc.date);
                     const deadline = new Date(signDate);
@@ -499,6 +500,9 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                     const now = new Date();
                     const diffTime = deadline.getTime() - now.getTime();
                     daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                } else {
+                    // Fallback if doc is missing: assume freshly signed (10 days)
+                    daysLeft = 10;
                 }
 
                 alerts.push({

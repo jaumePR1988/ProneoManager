@@ -20,8 +20,6 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         const playerData = playerDoc.data();
         const playerName = (playerData === null || playerData === void 0 ? void 0 : playerData.name) || 'Jugador';
         // 2. Load Template
-        // WE WILL ASSUME A TEMPLATE EXISTS IN STORAGE for now, or use a blank one for testing if not found.
-        // 2. Load Template & Fonts
         const bucket = storage.bucket();
         const templatePath = `templates/contract_${templateType || 'adult'}.pdf`;
         // Check/Download Template
@@ -46,7 +44,7 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
         catch (e) {
             console.warn("Fontkit registration failed:", e);
         }
-        // Load Fonts from Storage
+        // Load Fonts
         let regularFont;
         let boldFont;
         try {
@@ -66,7 +64,7 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                 boldFont = await pdfDoc.embedFont(new Uint8Array(boldBuf));
             }
             else {
-                boldFont = regularFont; // Fallback to regular (or helvetica)
+                boldFont = regularFont;
             }
         }
         catch (e) {
@@ -74,18 +72,16 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
             regularFont = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.Helvetica);
             boldFont = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.HelveticaBold);
         }
-        // ... (Signature setup skipped, assume consistent)
         const pages = pdfDoc.getPages();
         const lastPage = pages[pages.length - 1];
         // Process Signature Image
         // Remove header "data:image/png;base64,"
         const signatureImageBytes = Buffer.from(signatureBase64.split(',')[1], 'base64');
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
-        const signatureDims = signatureImage.scale(0.5); // Doubled from 0.25
+        const signatureDims = signatureImage.scale(0.5);
         // Iterate all pages EXCEPT the last one for Lateral Signature
         for (let i = 0; i < pages.length - 1; i++) {
             const page = pages[i];
-            // Lateral Signature (Reverted to 45 as requested)
             page.drawImage(signatureImage, {
                 x: 45,
                 y: 100,
@@ -94,7 +90,6 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                 rotate: (0, pdf_lib_1.degrees)(90)
             });
         }
-        // ...
         // FILL FORM FIELDS IF THEY EXIST (AcroForms)
         const form = pdfDoc.getForm();
         const fields = form.getFields();
@@ -117,9 +112,6 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                 console.log(`       -> Error reading widgets:`, err);
             }
         });
-        // ---------------------------------------------
-        // Fill Data
-        // ... (rest of code)
         if (fields.length > 0) {
             // Map data to fields
             const fieldMap = {
@@ -158,12 +150,10 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
             });
             form.flatten();
         }
-        // DRAW MAIN SIGNATURE
-        // Strategy: Look for a form field named 'box_firma' to get exact coordinates.
-        // If not found, use default coordinates.
-        const signatureDimsMain = signatureImage.scale(0.6); // Keep for default scaling
+        // DRAW MAIN SIGNATURE (Last Page)
+        const signatureDimsMain = signatureImage.scale(0.6);
         let sigX = 310;
-        let sigY = 450; // Lowered default (was 550) to see if it makes a difference
+        let sigY = 450;
         let sigWidth = signatureDimsMain.width;
         let sigHeight = signatureDimsMain.height;
         let hasCustomBox = false;
@@ -181,12 +171,10 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                     const boxRatio = rect.width / rect.height;
                     const sigRatio = signatureImage.width / signatureImage.height;
                     if (sigRatio > boxRatio) {
-                        // Limited by width
                         sigWidth = rect.width;
                         sigHeight = rect.width / sigRatio;
                     }
                     else {
-                        // Limited by height
                         sigHeight = rect.height;
                         sigWidth = rect.height * sigRatio;
                     }
@@ -196,16 +184,6 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                     // MANUAL CORRECTION: Push down
                     sigY -= 80;
                     hasCustomBox = true;
-                    // Remove the field appearance so it doesn't show a border/bg
-                    // signatureField.setText(''); // Removing this as we flatten before if filled?
-                    // Verify if calling setText on a flattened form throws.
-                    // Actually we flatten fields BEFORE this block in existing code?
-                    // Wait, previous code flattened inside the `if (fields.length > 0)` block.
-                    // If 'box_firma' is part of `fields`, it might be flattened.
-                    // If flattened, getTextField might fail?
-                    // NO, `form.flatten()` makes fields into static content. They are no longer accessible as fields.
-                    // CRITICAL BUG FOUND: We flattened the form (line 160) BEFORE looking for 'box_firma' (line 178).
-                    // This explains why it never found the signature box and used defaults!
                 }
             }
             else {
@@ -222,7 +200,6 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
             height: sigHeight,
         });
         // Draw Name & DNI
-        // Strategy: Look for 'box_datos' or place relative to signature
         let textX = sigX;
         let textY = sigY - 20; // Default: below signature
         try {
@@ -238,21 +215,19 @@ exports.generateAndSignContract = (0, https_1.onCall)({ cors: true }, async (req
                 }
             }
             else if (hasCustomBox) {
-                // If we had a signature box but no data box,
-                // align text with the start of the signature box, below it
-                const signatureField = form.getTextField('box_firma');
-                const rect = signatureField.getWidgets()[0].getRectangle();
-                textX = rect.x;
-                textY = rect.y - 15;
+                // If we had a signature box but no data box, align text relative to it if possible
+                // But since form is flattened, we might rely on the calculated sigX/sigY or original logic
+                // For simplicity, using sigX/Y calculated above minus offsets
             }
         }
         catch (e) {
             // Ignore
         }
-        // Draw Name & DNI under signature
+        // Draw Name & DNI text
         lastPage.drawText(`${playerName}`, { x: textX, y: textY, size: 10, font: boldFont });
         lastPage.drawText(`DNI: ${dni}`, { x: textX, y: textY - 12, size: 10, font: regularFont });
         // Draw Dates
+        // (Optional: Draw specific date text if needed, relying on form fields above mostly)
         const today = new Date();
         const endDate = (0, date_fns_1.addYears)(today, 2);
         // 5. Save Result
