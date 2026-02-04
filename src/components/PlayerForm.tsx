@@ -954,7 +954,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                             <p className="mb-1 text-xs font-bold text-zinc-500">
                                                 <span className="text-zinc-800">Click para subir</span> o arrastra el archivo
                                             </p>
-                                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">PDF (Máx. 5MB)</p>
+                                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">PDF (Máx. 10MB)</p>
                                         </div>
                                         <input
                                             type="file"
@@ -969,8 +969,8 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                                     return;
                                                 }
 
-                                                if (file.size > 5 * 1024 * 1024) {
-                                                    alert("El archivo excede los 5MB.");
+                                                if (file.size > 10 * 1024 * 1024) {
+                                                    alert("El archivo excede los 10MB.");
                                                     return;
                                                 }
 

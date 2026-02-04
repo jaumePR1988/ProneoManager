@@ -578,15 +578,31 @@ const AvisosModule: React.FC<AvisosModuleProps> = ({ userSport = 'General', user
                     {(completedAlerts.length > 0 || Object.keys(snoozedAlerts).length > 0) && (
                         <button
                             onClick={async () => {
-                                if (confirm("¿Quieres restaurar TODOS los avisos borrados/pospuestos?")) {
-                                    setCompletedAlerts([]);
-                                    setSnoozedAlerts({});
-                                    await persistPrefs([], {});
+                                if (confirm("¿Quieres restaurar los avisos CRÍTICOS (Validaciones, Cláusulas, Renovaciones) borrados?")) {
+                                    // Remove critical IDs from completed list
+                                    const newCompleted = completedAlerts.filter(id =>
+                                        !id.startsWith('validation-') &&
+                                        !id.startsWith('clause-') &&
+                                        !id.startsWith('agency-end-')
+                                    );
+
+                                    // Remove critical IDs from snoozed list
+                                    const newSnoozed = { ...snoozedAlerts };
+                                    Object.keys(newSnoozed).forEach(key => {
+                                        if (key.startsWith('validation-') || key.startsWith('clause-') || key.startsWith('agency-end-')) {
+                                            delete newSnoozed[key];
+                                        }
+                                    });
+
+                                    setCompletedAlerts(newCompleted);
+                                    setSnoozedAlerts(newSnoozed);
+                                    await persistPrefs(newCompleted, newSnoozed);
+                                    window.location.reload(); // Refresh to ensure they appear
                                 }
                             }}
-                            className="bg-zinc-100 text-zinc-500 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors flex items-center gap-2"
+                            className="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-colors flex items-center gap-2 border border-red-200"
                         >
-                            <Clock4 className="w-4 h-4" /> Restaurar Historial
+                            <AlertTriangle className="w-4 h-4" /> Restaurar Críticos
                         </button>
                     )}
                 </div>

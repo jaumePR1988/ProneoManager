@@ -47,6 +47,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
     React.useEffect(() => {
         if (!canSeeAlerts) return;
 
+        // DEBUG: Check tokens
+        if (user?.email === 'admin@proneosports.com' && user?.fcmTokens) {
+            console.log(`📱 DISPOSITIVOS REGISTRADOS: ${user.fcmTokens.length}`);
+            console.log('Tokens:', user.fcmTokens);
+        }
+
         // 1. Pending Users (Only Admin/Director)
         let unsubUsers = () => { };
         if (isAdmin) {
@@ -131,6 +137,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                             alt="Profile"
                         />
                         <div className="overflow-hidden">
+                            {user?.email === 'admin@proneosports.com' && (
+                                <div className="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full w-fit mb-1 animate-pulse">
+                                    📱 {user.fcmTokens?.length || 0}
+                                </div>
+                            )}
                             <p className="text-sm font-black text-zinc-900 truncate">{user?.displayName || 'Usuario'}</p>
                             <p className="text-[9px] font-bold text-proneo-green/50 uppercase tracking-widest bg-proneo-green/5 px-2 py-1 rounded">
                                 Sistema de Gestión

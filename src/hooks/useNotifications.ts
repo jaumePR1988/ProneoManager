@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getToken, onMessage } from 'firebase/messaging';
 import { messaging, db, auth } from '../firebase/config';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
 export const useNotifications = () => {
     const [permission, setPermission] = useState<NotificationPermission>(
@@ -38,6 +38,7 @@ export const useNotifications = () => {
                         return;
                     }
 
+                    console.log("🔔 Intentando obtener token FCM...");
                     // Replace with your VAPID key from Firebase Console
                     const fcmToken = await getToken(messaging, {
                         vapidKey: 'BOUzsUo5hx3dtWfTBxMbzStxKtrJRcubmy4jbrDKaHow9qwj1RFzepvXyZ5HGIvvy0YOVLh4QDcX92DnhQPCi_k',
@@ -45,8 +46,11 @@ export const useNotifications = () => {
                     });
 
                     if (fcmToken) {
+                        console.log("✅ Token FCM Obtenido:", fcmToken.substring(0, 10) + "...");
                         setToken(fcmToken);
                         saveTokenToUser(fcmToken);
+                    } else {
+                        console.warn("⚠️ No se pudo obtener token FCM (Vacio)");
                     }
                 }
             } catch (err) {
@@ -57,17 +61,27 @@ export const useNotifications = () => {
         if (auth.currentUser && permission !== 'granted') {
             requestPermission();
         } else if (auth.currentUser && permission === 'granted') {
-            // Already granted, just ensure we have the token and it's updated
-            getToken(messaging, { vapidKey: 'BOUzsUo5hx3dtWfTBxMbzStxKtrJRcubmy4jbrDKaHow9qwj1RFzepvXyZ5HGIvvy0YOVLh4QDcX92DnhQPCi_k' })
-                .then(t => {
-                    if (t) {
-                        setToken(t);
-                        saveTokenToUser(t);
-                    }
+            console.log("🔔 Permiso ya concedido. Iniciando Service Worker...");
+
+            // Wait for SW to be ready before asking for token
+            navigator.serviceWorker.ready.then((registration) => {
+                console.log("✅ Service Worker Activo. Solicitando token...");
+
+                getToken(messaging, {
+                    vapidKey: 'BOUzsUo5hx3dtWfTBxMbzStxKtrJRcubmy4jbrDKaHow9qwj1RFzepvXyZ5HGIvvy0YOVLh4QDcX92DnhQPCi_k',
+                    serviceWorkerRegistration: registration
                 })
-                .catch(err => {
-                    console.warn("Failed to get token (silently ignored):", err);
-                });
+                    .then(t => {
+                        if (t) {
+                            console.log("✅ Token Refrescado:", t.substring(0, 10) + "...");
+                            setToken(t);
+                            saveTokenToUser(t);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("❌ Error obteniendo token (SW Ready):", err);
+                    });
+            });
         }
 
         // Handle foreground messages
@@ -80,16 +94,42 @@ export const useNotifications = () => {
     }, [auth.currentUser, permission]);
 
     const saveTokenToUser = async (fcmToken: string) => {
-        if (!auth.currentUser?.email) return;
+        if (!auth.currentUser?.email) {
+            console.warn("❌ No se puede guardar token: Usuario no identificado");
+            return;
+        }
+
+        console.log(`💾 Guardando token para ${auth.currentUser.email}...`);
+
         try {
-            await updateDoc(doc(db, 'users', auth.currentUser.email), {
-                fcmToken: fcmToken,
-                lastTokenRefresh: new Date().toISOString()
-            });
+            const userRef = doc(db, 'users', auth.currentUser.email);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                const currentTokens = userData.fcmTokens || [];
+
+                // Add if not exists
+                if (!currentTokens.includes(fcmToken)) {
+                    console.log("➕ Token NUEVO detectado. Actualizando lista...");
+                    const newTokens = [...currentTokens, fcmToken];
+                    await updateDoc(userRef, {
+                        fcmToken: fcmToken, // Legacy: Keep most recent
+                        fcmTokens: newTokens,
+                        lastTokenRefresh: new Date().toISOString()
+                    });
+                    console.log("✅ Token guardado en Firestore correctamente.");
+                } else {
+                    console.log("👌 El token ya existe en la lista. No se requieren cambios.");
+                }
+            } else {
+                console.error("❌ Documento de usuario no encontrado en Firestore.");
+            }
         } catch (err) {
-            console.error('Error saving FCM token to user:', err);
+            console.error("❌ Error guardando token en Firestore:", err);
         }
     };
+
 
     return { permission, token };
 };

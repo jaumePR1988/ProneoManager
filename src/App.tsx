@@ -105,7 +105,15 @@ function App() {
 
                             setUserRole(finalRole);
                             setUserSport(userData.sport || 'General');
-                            setUser(firebaseUser);
+
+                            // MERGE FIRESTORE DATA into User Object (Crucial for fcmTokens)
+                            const fullUser = {
+                                ...firebaseUser,
+                                ...userData, // This brings fcmTokens, approved, etc.
+                                role: finalRole // Ensure role is correct
+                            };
+                            setUser(fullUser as any);
+
                             setError(null);
                         } else {
                             // SELF-HEALING: Create missing doc

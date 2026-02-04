@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Camera, Lock, User, Save } from 'lucide-react';
 import { updateProfile, updatePassword, User as FirebaseUser } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase/config';
+import { storage, db, messaging } from '../firebase/config';
+import { doc, updateDoc } from 'firebase/firestore';
+import { getToken } from 'firebase/messaging';
 
 interface ProfileModuleProps {
     user: FirebaseUser;
@@ -15,6 +17,36 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ user, hideHeader = false 
     const [newPassword, setNewPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    const handleCleanDevices = async () => {
+        if (!confirm('¿Seguro que quieres desconectar todos los otros dispositivos? Solo recibirás notificaciones en ESTE navegador.')) return;
+        setLoading(true);
+        try {
+            let currentToken = '';
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.ready;
+                currentToken = await getToken(messaging, {
+                    vapidKey: 'BOUzsUo5hx3dtWfTBxMbzStxKtrJRcubmy4jbrDKaHow9qwj1RFzepvXyZ5HGIvvy0YOVLh4QDcX92DnhQPCi_k',
+                    serviceWorkerRegistration: registration
+                });
+            }
+
+            if (!currentToken) throw new Error("No se pudo identificar este dispositivo (Token no encontrado).");
+
+            if (user.email) {
+                const userRef = doc(db, 'users', user.email);
+                await updateDoc(userRef, {
+                    fcmTokens: [currentToken],
+                    lastTokenRefresh: new Date().toISOString()
+                });
+                setMessage({ type: 'success', text: 'Dispositivos antiguos eliminados. Solo este dispositivo está activo.' });
+            }
+        } catch (e: any) {
+            setMessage({ type: 'error', text: 'Error: ' + e.message });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -110,14 +142,26 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ user, hideHeader = false 
                         </div>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-zinc-900 text-white h-14 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-proneo-green transition-colors flex items-center justify-center gap-2"
-                    >
-                        <Save className="w-4 h-4" />
-                        {loading ? 'Guardando...' : 'Guardar Cambios'}
-                    </button>
+                    <div className="pt-4 border-t border-zinc-100 space-y-4">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-zinc-900 text-white h-14 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-proneo-green transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Save className="w-4 h-4" />
+                            {loading ? 'Guardando...' : 'Guardar Cambios'}
+                        </button>
+
+                        <button
+                            type="button"
+                            disabled={loading}
+                            onClick={handleCleanDevices}
+                            className="w-full bg-white border-2 border-zinc-100 text-zinc-400 h-14 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Lock className="w-4 h-4" />
+                            Cerrar sesión en otros dispositivos (Limpiar Tokens)
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
