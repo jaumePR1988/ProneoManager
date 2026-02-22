@@ -38,7 +38,7 @@ const Label = ({ children }: { children: React.ReactNode }) => (
 const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
-        className="flex-1 bg-white border border-zinc-200 rounded-sm px-4 h-10 text-sm font-bold text-zinc-700 outline-none focus:border-[#b4c885] transition-all"
+        className="flex-1 w-full bg-white border border-zinc-200 rounded-sm px-4 h-10 text-sm font-bold text-zinc-700 outline-none focus:border-[#b4c885] transition-all"
     />
 );
 
@@ -118,6 +118,17 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
     const [showSuccess, setShowSuccess] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+
+    const handleClose = () => {
+        if (isDirty) {
+            if (window.confirm('Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar la ventana?')) {
+                onClose();
+            }
+        } else {
+            onClose();
+        }
+    };
 
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showProfile360, setShowProfile360] = useState(false);
@@ -143,6 +154,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
     }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        setIsDirty(true);
         const { name, value } = e.target;
 
         setFormData(prev => {
@@ -235,7 +247,14 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
 
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4 md:p-8">
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4 md:p-8"
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget) {
+                    handleClose();
+                }
+            }}
+        >
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-[10000] bg-zinc-900/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
                     <div className="bg-white p-8 rounded-[30px] shadow-2xl border border-zinc-100 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-200 min-w-[320px] max-w-sm text-center">
@@ -286,7 +305,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
             <div className="bg-white w-full max-w-7xl h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row relative animate-in zoom-in-95 duration-200">
                 {/* Close Button - Absolute */}
                 <button
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="absolute top-4 right-4 z-50 p-2 bg-white/50 hover:bg-white text-zinc-400 hover:text-red-500 rounded-full transition-all backdrop-blur-sm"
                 >
                     <X className="w-6 h-6" />
@@ -354,12 +373,36 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
 
                 {/* Right Panel - Scrollable Form */}
                 <div className="flex-1 flex flex-col h-full overflow-hidden bg-white">
-                    <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 scroll-smooth">
+                    {/* Anchor Navigation */}
+                    <div className="bg-white/95 backdrop-blur-md border-b border-zinc-100 p-3 flex gap-2 overflow-x-auto no-scrollbar shadow-sm z-30 shrink-0">
+                        {[
+                            { id: 'section-personal', label: 'Personal' },
+                            { id: 'section-sports', label: 'Deportivo' },
+                            { id: 'section-contract', label: 'Contrato Club' },
+                            { id: 'section-agency', label: 'Agencia' },
+                            { id: 'section-financial', label: 'Económico' },
+                            { id: 'section-documents', label: 'Docs' }
+                        ].map(section => (
+                            <button
+                                key={section.id}
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="px-4 h-8 rounded-full bg-zinc-50 hover:bg-[#b4c885] text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 border border-zinc-200 hover:border-transparent focus:ring-2 focus:ring-[#b4c885]/20 outline-none"
+                            >
+                                {section.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 scroll-smooth" id="form-container">
 
                         {/* Section 1: Personal + Sports */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                             {/* Personal Data */}
-                            <div className="space-y-4">
+                            <div id="section-personal" className="space-y-4">
                                 <h3 className="flex items-center gap-2 text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-4 border-b border-zinc-100 pb-2">
                                     <User className="w-4 h-4" />
                                     Datos Personales
@@ -469,7 +512,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                             </div>
 
                             {/* Sports Data */}
-                            <div className="space-y-4">
+                            <div id="section-sports" className="space-y-4">
                                 <h3 className="flex items-center gap-2 text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-4 border-b border-zinc-100 pb-2">
                                     <Trophy className="w-4 h-4" />
                                     Datos Deportivos
@@ -580,7 +623,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                         {/* Section 2: Club & Agency */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                             {/* Club Data */}
-                            <div className="space-y-4">
+                            <div id="section-contract" className="space-y-4">
                                 <h3 className="flex items-center gap-2 text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-4 border-b border-zinc-100 pb-2">
                                     <Building2 className="w-4 h-4" />
                                     Situación Contractual
@@ -615,24 +658,32 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                                         {formData.loanData?.isLoaned && (
                                             <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                                                 <Label>CLUB PROPIETARIO</Label>
-                                                <Select
+                                                <Input
                                                     name="loanData.ownerClub"
-                                                    value={formData.loanData?.ownerClub}
+                                                    value={formData.loanData?.ownerClub || ''}
                                                     onChange={handleInputChange}
-                                                    options={formData.category === 'F. Sala' ? ((systemLists as any).clubs_futsal || []) : systemLists.clubs}
+                                                    list="clubs-list"
+                                                    placeholder="Ej. FC Barcelona"
                                                 />
                                             </div>
                                         )}
 
                                         <div className="flex items-center gap-3">
                                             <Label>{formData.loanData?.isLoaned ? 'CLUB DESTINO' : 'EQUIPO'}</Label>
-                                            <Select
+                                            <Input
                                                 name="club"
-                                                value={formData.club}
+                                                value={formData.club || ''}
                                                 onChange={handleInputChange}
-                                                options={formData.category === 'F. Sala' ? ((systemLists as any).clubs_futsal || []) : systemLists.clubs}
+                                                list="clubs-list"
+                                                placeholder="Ej. FC Barcelona"
                                             />
                                         </div>
+
+                                        <datalist id="clubs-list">
+                                            {(formData.category === 'F. Sala' ? ((systemLists as any).clubs_futsal || []) : (systemLists.clubs || [])).map((c: string) => (
+                                                <option key={c} value={c} />
+                                            ))}
+                                        </datalist>
 
                                         {formData.loanData?.isLoaned && (
                                             <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
@@ -670,7 +721,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
                             </div>
 
                             {/* Agency Data */}
-                            <div className="space-y-4">
+                            <div id="section-agency" className="space-y-4">
                                 <h3 className="flex items-center gap-2 text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-4 border-b border-zinc-100 pb-2">
                                     <Briefcase className="w-4 h-4" />
                                     Datos Agencia
@@ -751,7 +802,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
 
                         {/* Financial Details Section - Compact */}
                         {!isCommunication && (
-                            <div className="mt-4 pt-4 border-t border-zinc-100">
+                            <div id="section-financial" className="mt-4 pt-4 border-t border-zinc-100">
                                 <h3 className="text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-6 text-center">Detalles Económicos del Contrato</h3>
 
                                 <div className="space-y-4">
@@ -939,7 +990,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onClose, onSave, onDelete, isSc
 
 
                         {/* Contract Repository Section */}
-                        <div className="mt-8 pt-8 border-t border-zinc-100">
+                        <div id="section-documents" className="mt-8 pt-8 border-t border-zinc-100">
                             <h3 className="flex items-center justify-center gap-2 text-xs font-black text-[#b4c885] uppercase tracking-[0.2em] mb-6">
                                 <FileText className="w-4 h-4" />
                                 Repositorio de Contratos

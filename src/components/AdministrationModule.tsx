@@ -15,6 +15,7 @@ import BillingTable from './administration/BillingTable';
 const AdministrationModule: React.FC = () => {
     const { players, updatePlayer } = usePlayers(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
 
     // Set Current Season to 2025/2026
     const CURRENT_SEASON = "2025/2026";
@@ -36,14 +37,16 @@ const AdministrationModule: React.FC = () => {
         }));
     });
 
-    // Filter Logic
     const filteredRows = billingRows.filter(row => {
         const playerName = row.playerName || '';
         const playerClub = row.playerClub || '';
 
         const matchesSearch = playerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             playerClub.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
+
+        const matchesCategory = selectedCategory === 'Todas' || row.category === selectedCategory;
+
+        return matchesSearch && matchesCategory;
     });
 
     // Split into Current vs Future/Past Debts
@@ -134,6 +137,17 @@ const AdministrationModule: React.FC = () => {
 
                     <div className="h-12 w-[1px] bg-zinc-200 mx-2" />
 
+                    <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="h-12 px-4 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-600 outline-none cursor-pointer focus:ring-4 focus:ring-zinc-100 transition-all shadow-sm"
+                    >
+                        <option value="Todas">Todas las especialidades</option>
+                        <option value="Fútbol">Fútbol 11</option>
+                        <option value="F. Sala">Fútbol Sala</option>
+                        <option value="Femenino">Femenino</option>
+                    </select>
+
                     <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-proneo-green transition-colors" />
                         <input
@@ -148,7 +162,7 @@ const AdministrationModule: React.FC = () => {
             </div>
 
             {/* Stats Summary */}
-            <StatsSummary billingRows={billingRows} />
+            <StatsSummary billingRows={filteredRows} />
 
             {/* Tables */}
             {filteredRows.length > 0 ? (

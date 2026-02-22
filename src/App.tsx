@@ -17,7 +17,7 @@ import AdministrationModule from './components/AdministrationModule';
 import AvisosModule from './components/AvisosModule';
 import SettingsModule from './components/SettingsModule';
 import UsersModule from './components/UsersModule';
-import ProfileModule from './components/ProfileModule';
+
 import PlayerForm from './components/PlayerForm';
 import NotificationCenter from './components/NotificationCenter';
 import AgendaInformeModule from './components/AgendaInformeModule';
@@ -37,6 +37,7 @@ function App() {
     const [error, setError] = useState<string | null>(null);
     const [showPlayerForm, setShowPlayerForm] = useState(false);
     const [playerView, setPlayerView] = useState<'players' | 'contacts'>('players');
+    const [quickFilter, setQuickFilter] = useState<string | null>(null);
 
     const { addPlayer } = usePlayers();
 
@@ -161,13 +162,14 @@ function App() {
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
-                return <Dashboard setActiveTab={setActiveTab} userRole={userRole} userSport={userSport} />;
+                return <Dashboard setActiveTab={setActiveTab} userRole={userRole} userSport={userSport} onSetQuickFilter={setQuickFilter} />;
             case 'players':
                 return <PlayerModule
                     userRole={userRole}
                     userSport={userSport}
                     userName={user?.displayName || user?.email?.split('@')[0]}
                     activeView={playerView}
+                    initialFilter={quickFilter}
                 />;
             case 'scouting':
                 return <ScoutingModule userSport={userSport} userName={user?.displayName || user?.email?.split('@')[0]} userRole={userRole} />;

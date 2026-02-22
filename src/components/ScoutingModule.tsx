@@ -46,6 +46,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDivision, setSelectedDivision] = useState<string>('all');
     const [selectedPosition, setSelectedPosition] = useState<string>('all');
+    const [fastFilter, setFastFilter] = useState<'all' | 'active' | 'mine'>('active');
 
     const scoutingPlayers = useMemo(() => {
         let filtered = allScoutingPlayers || [];
@@ -58,14 +59,22 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
             filtered = filtered.filter(p => p.category === filterSport);
         }
 
-        // 2. External Scout Filter
-        if (userRole === 'external_scout' && userName) {
+        // 2. External Scout Filter OR "My Reports" Fast Filter
+        if ((userRole === 'external_scout' || fastFilter === 'mine') && userName) {
             filtered = filtered.filter(p =>
                 p.monitoringAgent?.toLowerCase() === userName.toLowerCase()
             );
         }
 
-        // 3. Search Filter
+        // 3. Active Reports Fast Filter
+        if (fastFilter === 'active') {
+            filtered = filtered.filter(p => {
+                const status = (p.scouting?.status || '').toLowerCase();
+                return !status.includes('rechazado') && !status.includes('descartado') && !status.includes('fichado');
+            });
+        }
+
+        // 4. Search Filter
         if (searchTerm) {
             const lowTerm = searchTerm.toLowerCase();
             filtered = filtered.filter(p =>
@@ -86,7 +95,7 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
         }
 
         return filtered;
-    }, [allScoutingPlayers, selectedSport, userRole, userName, searchTerm, selectedDivision, selectedPosition]);
+    }, [allScoutingPlayers, selectedSport, userRole, userName, searchTerm, selectedDivision, selectedPosition, fastFilter]);
 
 
     const handleSaveScouting = async (data: Partial<Player>) => {
@@ -260,6 +269,37 @@ const ScoutingModule: React.FC<ScoutingModuleProps> = ({ userSport = 'General', 
 
                             {/* Filters Group */}
                             <div className="hidden lg:flex items-center gap-2 pr-4">
+                                {/* Fast Filters */}
+                                <div className="hidden lg:flex items-center gap-1 pr-2 border-r border-zinc-200 mr-1">
+                                    <button
+                                        onClick={() => setFastFilter('all')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${fastFilter === 'all'
+                                            ? 'bg-zinc-800 text-white shadow-md'
+                                            : 'bg-white text-zinc-500 border border-zinc-200 hover:bg-zinc-50'
+                                            }`}
+                                    >
+                                        Todos
+                                    </button>
+                                    <button
+                                        onClick={() => setFastFilter('active')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${fastFilter === 'active'
+                                            ? 'bg-proneo-green text-white shadow-md shadow-proneo-green/20'
+                                            : 'bg-white text-proneo-green border border-proneo-green/30 hover:bg-proneo-green/10'
+                                            }`}
+                                    >
+                                        Activos
+                                    </button>
+                                    <button
+                                        onClick={() => setFastFilter('mine')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${fastFilter === 'mine'
+                                            ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
+                                            : 'bg-white text-blue-500 border border-blue-200 hover:bg-blue-50'
+                                            }`}
+                                    >
+                                        Míos
+                                    </button>
+                                </div>
+
                                 {/* Division Filter */}
                                 <div className="relative">
                                     <select

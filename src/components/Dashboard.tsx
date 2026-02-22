@@ -20,9 +20,10 @@ interface DashboardProps {
     setActiveTab: (tab: string) => void;
     userRole?: string;
     userSport?: string;
+    onSetQuickFilter?: (filter: string | null) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport = 'General' }) => {
+const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport = 'General', onSetQuickFilter }) => {
     const { players: allDbPlayers, loading } = usePlayers(false);
     const { players: allScoutingPlayers } = usePlayers(true);
 
@@ -160,7 +161,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport
             trend: 'Cartera actual', // Static text as we don't have historical data yet
             icon: Users,
             color: 'bg-blue-500',
-            bg: 'bg-blue-50'
+            bg: 'bg-blue-50',
+            actionId: 'active'
         },
         {
             label: 'Objetivos Scouting',
@@ -168,7 +170,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport
             trend: 'En seguimiento',
             icon: Target,
             color: 'bg-proneo-green',
-            bg: 'bg-emerald-50'
+            bg: 'bg-emerald-50',
+            actionId: 'scouting'
         },
         {
             label: 'Comisiones Totales',
@@ -184,9 +187,23 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport
             trend: 'Próx. 6 meses',
             icon: AlertCircle,
             color: expiringCount > 0 ? 'bg-red-500' : 'bg-green-500',
-            bg: expiringCount > 0 ? 'bg-red-50' : 'bg-green-50'
+            bg: expiringCount > 0 ? 'bg-red-50' : 'bg-green-50',
+            actionId: 'expiring'
         },
     ];
+
+    const handleKpiClick = (actionId?: string) => {
+        if (!actionId) return;
+        if (actionId === 'scouting') {
+            setActiveTab('scouting');
+        } else if (actionId === 'active') {
+            if (onSetQuickFilter) onSetQuickFilter(null);
+            setActiveTab('players');
+        } else if (actionId === 'expiring') {
+            if (onSetQuickFilter) onSetQuickFilter('renovar');
+            setActiveTab('players');
+        }
+    };
 
     if (loading) {
         return (
@@ -230,11 +247,15 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport
             {/* KPI Row: High Level Summary */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, i) => (
-                    <div key={i} className="bg-white p-8 rounded-[40px] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-zinc-200/50 transition-all group overflow-hidden relative border-t-4 border-t-transparent hover:border-t-proneo-green">
-                        <div className={`absolute top-0 right-0 w-32 h-32 ${stat.bg} rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-110 transition-transform`} />
+                    <div
+                        key={i}
+                        onClick={() => handleKpiClick(stat.actionId)}
+                        className={`bg-white p-8 rounded-[40px] border border-zinc-100 shadow-sm transition-all group overflow-hidden relative border-t-4 border-t-transparent ${stat.actionId ? 'cursor-pointer hover:shadow-xl hover:shadow-zinc-200/50 hover:border-t-proneo-green' : ''}`}
+                    >
+                        <div className={`absolute top-0 right-0 w-32 h-32 ${stat.bg} rounded-full -mr-16 -mt-16 opacity-50 ${stat.actionId ? 'group-hover:scale-110' : ''} transition-transform`} />
 
                         <div className="relative z-10 flex flex-col h-full">
-                            <div className={`${stat.color} w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg mb-6 group-hover:rotate-6 transition-transform`}>
+                            <div className={`${stat.color} w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg mb-6 ${stat.actionId ? 'group-hover:rotate-6' : ''} transition-transform`}>
                                 <stat.icon className="w-6 h-6" />
                             </div>
                             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -306,21 +327,35 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, userRole, userSport
                     </div>
 
                     <div className="space-y-4">
-                        {[
-                            { label: 'Fin Contrato Proneo (Año)', value: renovationCount.toString(), color: renovationCount > 0 ? 'text-red-500' : 'text-zinc-600' },
-                            { label: 'Ligas Activas', value: new Set(filteredPlayers.map(p => p.league).filter(Boolean)).size.toString(), color: 'text-blue-500' },
-                            { label: 'Scouting Activo', value: scoutingCount.toString(), color: 'text-proneo-green' },
-                        ].map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-5 rounded-3xl bg-zinc-50 border border-zinc-100 group hover:border-proneo-green/20 transition-all">
-                                <span className="text-xs font-black text-zinc-500 uppercase tracking-widest">{item.label}</span>
-                                <span className={`text-lg font-black ${item.color} italic tracking-tighter`}>{item.value}</span>
-                            </div>
-                        ))}
+                        <div
+                            onClick={() => {
+                                if (onSetQuickFilter) onSetQuickFilter('agencia');
+                                setActiveTab('players');
+                            }}
+                            className="flex items-center justify-between p-5 rounded-3xl bg-zinc-50 border border-zinc-100 group hover:border-red-500/30 cursor-pointer transition-all"
+                        >
+                            <span className="text-xs font-black text-zinc-500 uppercase tracking-widest">Fin Contrato Proneo (Año)</span>
+                            <span className={`text-lg font-black ${renovationCount > 0 ? 'text-red-500' : 'text-zinc-600'} italic tracking-tighter group-hover:scale-110 transition-transform`}>{renovationCount}</span>
+                        </div>
+                        <div className="flex items-center justify-between p-5 rounded-3xl bg-zinc-50 border border-zinc-100">
+                            <span className="text-xs font-black text-zinc-500 uppercase tracking-widest">Ligas Activas</span>
+                            <span className="text-lg font-black text-blue-500 italic tracking-tighter">{new Set(filteredPlayers.map(p => p.league).filter(Boolean)).size}</span>
+                        </div>
+                        <div
+                            onClick={() => setActiveTab('scouting')}
+                            className="flex items-center justify-between p-5 rounded-3xl bg-zinc-50 border border-zinc-100 group hover:border-proneo-green/30 cursor-pointer transition-all"
+                        >
+                            <span className="text-xs font-black text-zinc-500 uppercase tracking-widest">Scouting Activo</span>
+                            <span className="text-lg font-black text-proneo-green italic tracking-tighter group-hover:scale-110 transition-transform">{scoutingCount}</span>
+                        </div>
                     </div>
 
                     <div className="flex-1 flex items-end">
                         <button
-                            onClick={() => setActiveTab('players')}
+                            onClick={() => {
+                                if (onSetQuickFilter) onSetQuickFilter(null);
+                                setActiveTab('players');
+                            }}
                             className="w-full bg-zinc-900 text-white h-16 rounded-3xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-xl hover:shadow-zinc-900/20 transition-all shadow-lg group"
                         >
                             Ver Base de Datos

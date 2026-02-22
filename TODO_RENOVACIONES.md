@@ -1,4 +1,4 @@
-# 📝 Tareas Pendientes - Sistema de Renovaciones
+pero lo has implementa- Sistema de Renovaciones
 
 ## 1. Subir Plantillas PDF (Imprescindible) 📄
 Para que la firma funcione, necesitas subir los contratos base a **Firebase Storage**.
